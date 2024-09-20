@@ -1,6 +1,5 @@
-package com.darkona.toolset.logging.colors;
+package com.darkona.logged.colors;
 
-import com.darkona.toolset.logging.ColorEnum;
 
 public enum Red implements ColorEnum {
 

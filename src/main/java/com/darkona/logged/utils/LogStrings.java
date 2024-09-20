@@ -1,5 +1,6 @@
-package com.darkona.logged;
+package com.darkona.logged.utils;
 
+import com.darkona.logged.colors.ColorEnum;
 import com.darkona.logged.colors.LogColor;
 import jakarta.annotation.Nullable;
 
@@ -24,30 +25,20 @@ public class LogStrings {
     private static final String u_d_right_t = "╣";
     private static final String u_d_cross = "╬";
 
-    private static final String d_top_l = "+";
-    private static final String d_top_r = "+";
-    private static final String d_bot_l = "+";
-    private static final String d_bot_r = "+";
     private static final String d_hor = "-";
     private static final String d_ver = "|";
-    private static final String d_top_t = "+";
-    private static final String d_bot_t = "+";
-    private static final String d_left_t = "+";
-    private static final String d_right_t = "+";
     private static final String d_cross = "+";
     private static final String RESET = "\u001B[0m";
-
+    private static final OutputStreamWriter writer = new OutputStreamWriter(System.out, StandardCharsets.UTF_8);
     public static boolean isUtf = true;
     static boolean enabled = false;
 
-    private static final OutputStreamWriter writer = new OutputStreamWriter(System.out, StandardCharsets.UTF_8);
+    private LogStrings() {}
 
     public static void enableUtf() {
         System.setOut(new PrintStream(System.out, true, StandardCharsets.UTF_8));
         enabled = true;
     }
-
-    private LogStrings() {}
 
     /**
      * Create an ornament of a given width;
@@ -363,7 +354,7 @@ public class LogStrings {
     public static String bannerize(String color, String s, int width) {
         return isUtf ?
                bannerizeInternal(color, s, width, u_d_ver, u_d_hor, u_d_top_l, u_d_top_r, u_d_bot_l, u_d_bot_r) :
-               bannerizeInternal(color, s, width, d_ver, d_hor, d_top_l, d_top_r, d_bot_l, d_bot_r);
+               bannerizeInternal(color, s, width, d_ver, d_hor, d_cross, d_cross, d_cross, d_cross);
     }
 
     /**
@@ -385,9 +376,7 @@ public class LogStrings {
      * @return the string inside a banner
      */
     public static String bannerize(String s, int width) {
-        return isUtf ?
-               bannerizeInternal("", s, width, u_d_ver, u_d_hor, u_d_top_l, u_d_top_r, u_d_bot_l, u_d_bot_r) :
-               bannerizeInternal("", s, width, d_ver, d_hor, d_top_l, d_top_r, d_bot_l, d_bot_r);
+        return bannerize("", s, width);
     }
 
     private static String specialCenter(String s, String clean, int width) {

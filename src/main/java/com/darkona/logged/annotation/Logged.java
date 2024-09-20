@@ -1,4 +1,4 @@
-package com.darkona.logged;
+package com.darkona.logged.annotation;
 
 
 import java.lang.annotation.Retention;
@@ -35,9 +35,9 @@ public @interface Logged {
 
     String exceptionLevel() default "ERROR";
 
+    boolean logStackTrace() default false;
+
     enum Values {
         NONE, ALL, NULL
     }
-
-    boolean logStackTrace() default false;
 }

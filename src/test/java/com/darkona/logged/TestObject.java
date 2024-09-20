@@ -1,16 +1,13 @@
-package com.darkona.toolset.objects;
+package com.darkona.logged;
 
 
 import com.darkona.logged.annotation.Logged;
-import lombok.Data;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static com.darkona.toolset.App.faker;
 
-@Data
 public class TestObject {
 
     private String name;
@@ -18,11 +15,11 @@ public class TestObject {
     private String address;
     private String email;
     private String phone;
-    private List<Animal> animalList;
+    private List<Pokemon> pokemonList;
 
     @Logged
     public String givePokemon(){
-        return faker.pokemon().name();
+        return "Bulbasaur";
     }
 
     @Logged
@@ -33,21 +30,72 @@ public class TestObject {
 
     @Logged
     public void make(){
-        name = faker.name().fullName();
-        age = faker.number().numberBetween(1, 100);
-        address = faker.address().fullAddress();
+        name = "Dr. Oak";
+        age = 32;
+        address = "1234 Elm St.";
         email = "email@email.com";
-        phone = faker.phoneNumber().cellPhone();
-        animalList = new ArrayList<>();
+        phone = "555-555-5555";
+        pokemonList = new ArrayList<>();
 
         for (int i = 0; i < 50; i++) {
-            animalList.add(new Animal(faker.animal().name(), faker.animal().species(), Map.of("color", faker.color().name())));
+            pokemonList.add(new Pokemon("Bulbasaur", 1, Map.of("Move 1", "Tackle", "Move 2", "Growl")));
         }
+    }
+
+    TestObject() {
+    }
+
+    String getName() {
+        return name;
+    }
+
+    void setName(String name) {
+        this.name = name;
+    }
+
+    int getAge() {
+        return age;
+    }
+
+    void setAge(int age) {
+        this.age = age;
+    }
+
+    String getAddress() {
+        return address;
+    }
+
+    void setAddress(String address) {
+        this.address = address;
+    }
+
+    String getEmail() {
+        return email;
+    }
+
+    void setEmail(String email) {
+        this.email = email;
+    }
+
+    String getPhone() {
+        return phone;
+    }
+
+    void setPhone(String phone) {
+        this.phone = phone;
+    }
+
+    List<Pokemon> getPokemonList() {
+        return pokemonList;
+    }
+
+    void setPokemonList(List<Pokemon> pokemonList) {
+        this.pokemonList = pokemonList;
     }
 
     public String doSomething(String a, String b, String c){
         return a + b + c;
     }
 
-    public record Animal(String name, String species, Map<String, String> properties){};
+    public record Pokemon(String name, int pokeDexNumber, Map<String, String> properties){};
 }

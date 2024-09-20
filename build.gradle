@@ -1,15 +1,76 @@
+import org.springframework.boot.gradle.plugin.SpringBootPlugin
+
 plugins {
-    id 'java'
+    id 'java-library'
+    id 'maven-publish'
+    id 'org.springframework.boot' version '3.3.3' apply false
+    id 'io.spring.dependency-management' version '1.1.5'
 }
 
-group = 'com.darkona'
-version = '1.0-SNAPSHOT'
+group = 'com.darkona.logged'
+version = '1.0.0'
 
 repositories {
     mavenCentral()
+    mavenLocal()
+}
+def filename = "${rootProject.name}-${this.version}.jar"
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+    compileJava {
+        options.encoding = 'UTF-8'
+        options.compilerArgs += [
+                '-parameters'
+        ]
+    }
+    artifacts {
+        archives jar
+
+    }
+    //withJavadocJar()
+    withSourcesJar()
+}
+
+jar {
+    enabled = true
+    archiveFileName = filename
+    archiveClassifier = ''
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+            artifacts {
+                filename
+                sourcesJar
+            }
+
+        }
+    }
+    repositories {
+        mavenLocal() // Publish to local Maven repository
+    }
+}
+
+dependencyManagement {
+    imports {
+        mavenBom SpringBootPlugin.BOM_COORDINATES
+    }
 }
 
 dependencies {
+    annotationProcessor 'org.springframework.boot:spring-boot-autoconfigure-processor:3.3.0'
+    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor:2.0.5.RELEASE'
+
+    implementation 'org.springframework.boot:spring-boot-starter-aop'
+    implementation 'org.slf4j:slf4j-api:2.0.16'
+    implementation 'org.apache.commons:commons-lang3:3.12.0'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation platform('org.junit:junit-bom:5.10.0')
     testImplementation 'org.junit.jupiter:junit-jupiter'
 }
@@ -17,3 +78,5 @@ dependencies {
 test {
     useJUnitPlatform()
 }
+
+compileJava.dependsOn(processResources)

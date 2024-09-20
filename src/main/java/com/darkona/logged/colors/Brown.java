@@ -1,6 +1,5 @@
-package com.darkona.toolset.logging.colors;
+package com.darkona.logged.colors;
 
-import com.darkona.toolset.logging.ColorEnum;
 
 public enum Brown implements ColorEnum {
 
@@ -21,8 +20,6 @@ public enum Brown implements ColorEnum {
     SIENNA((short) 160, (short) 82, (short) 45),
     BROWN((short) 165, (short) 42, (short) 42),
     MAROON((short) 128, (short) 0, (short) 0);
-
-
 
 
     private final short r;

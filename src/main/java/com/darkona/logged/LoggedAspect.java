@@ -1,6 +1,7 @@
-package com.darkona.logged.annotation;
+package com.darkona.logged;
 
 
+import com.darkona.logged.annotation.Logged;
 import com.darkona.logged.utils.LogStrings;
 import jakarta.annotation.PostConstruct;
 import org.apache.commons.lang3.StringUtils;
@@ -11,7 +12,6 @@ import org.aspectj.lang.reflect.MethodSignature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.event.Level;
-import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -20,7 +20,6 @@ import java.util.stream.Collectors;
 
 
 @Aspect
-@Component
 public class LoggedAspect {
 
     private static final String METHOD_NAME = "m";
@@ -37,6 +36,14 @@ public class LoggedAspect {
     private static final String NULL = "null";
 
     public LoggedAspect() {
+    }
+
+    private static void assembleExceptionData(Throwable e, Data data, StackTraceElement origin) {
+        data.map.put(EXCEPTION_CLASS, e.getClass().getName());
+        data.map.put(EXCEPTION_MESSAGE, e.getLocalizedMessage());
+        data.map.put(EXCEPTION_ORIGIN_CLASS, origin.getClassName());
+        data.map.put(EXCEPTION_ORIGIN_METHOD, origin.getMethodName());
+        data.map.put(LINE, String.valueOf(origin.getLineNumber()));
     }
 
     @PostConstruct
@@ -75,7 +82,6 @@ public class LoggedAspect {
             throw e;
         }
     }
-
 
     void logCall(Logger log, Level level, Data data, Logged options) {
 
@@ -175,14 +181,6 @@ public class LoggedAspect {
         data.map.put(DURATION, String.valueOf(System.currentTimeMillis() - data.start));
         data.map.put(RETURN_CLASS, (o == null) ? NULL : o.getClass().getSimpleName());
         data.map.put(RETURN_VALUE, objectString(o));
-    }
-
-    private static void assembleExceptionData(Throwable e, Data data, StackTraceElement origin) {
-        data.map.put(EXCEPTION_CLASS, e.getClass().getName());
-        data.map.put(EXCEPTION_MESSAGE, e.getLocalizedMessage());
-        data.map.put(EXCEPTION_ORIGIN_CLASS, origin.getClassName());
-        data.map.put(EXCEPTION_ORIGIN_METHOD, origin.getMethodName());
-        data.map.put(LINE, String.valueOf(origin.getLineNumber()));
     }
 
     private Level getLoggingLevel(String level, Level defaultLevel) {

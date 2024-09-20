@@ -1,4 +1,4 @@
-package com.darkona.logged;
+package com.darkona.logged.colors;
 
 public enum LogColor implements ColorEnum {
 
