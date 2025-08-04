@@ -1,4 +1,4 @@
-package com.darkona.logged.utils;
+package com.darkona.logged;
 
 import com.darkona.logged.colors.ColorEnum;
 import com.darkona.logged.colors.LogColor;
@@ -7,11 +7,27 @@ import jakarta.annotation.Nullable;
 import java.awt.*;
 import java.io.OutputStreamWriter;
 import java.io.PrintStream;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
+
+/**
+ * Utility class for formatting log messages with optional ANSI color codes
+ * and fixed-width padding. Intended for use in development environments
+ * to improve readability of structured logs.
+ * <p>
+ * This class provides helper methods for creating stylized log segments
+ * (e.g., tags, labels, values) in colorized or aligned formats.
+ * <p>
+ * For production environments, usage of this class should be conditional
+ * to avoid ANSI escape codes in centralized log systems.
+ *
+ * @author Darkona
+ * @since 1.0
+ */
 @SuppressWarnings("unused")
-public class LogStrings {
+class LogStrings {
 
     private static final String u_d_top_l = "╔";
     private static final String u_d_top_r = "╗";
@@ -32,21 +48,26 @@ public class LogStrings {
     private static final OutputStreamWriter writer = new OutputStreamWriter(System.out, StandardCharsets.UTF_8);
     public static boolean isUtf = true;
     static boolean enabled = false;
-
+    static Charset oldcharset;
     private LogStrings() {}
 
     public static void enableUtf() {
+        oldcharset= System.out.charset();
         System.setOut(new PrintStream(System.out, true, StandardCharsets.UTF_8));
         enabled = true;
     }
 
+    public static void disableUtf() {
+        System.setOut(new PrintStream(System.out, true, oldcharset));
+        enabled = false;
+    }
     /**
      * Create an ornament of a given width;
      *
      * @param width the width of the ornament
      * @return the ornament. Example: ||====================||
      */
-    private static String ornament(int width) {
+    public static String ornament(int width) {
         return "||" + fill("=", width) + "||";
     }
 
@@ -60,7 +81,7 @@ public class LogStrings {
      */
     public static String center(String s, int width) {
         if (s == null) return "";
-        var msg = cleanColor(s);
+        var msg = clearColor(s);
         return specialCenter(s, msg, width);
     }
 
@@ -101,7 +122,7 @@ public class LogStrings {
      * @param s the string to rainbowify
      * @return the rainbowified string
      */
-    public static String rainbow(String s) {
+    public static String rainbowify(String s) {
         if (!enabled) return s;
         var r = new StringBuilder();
         int x = 0;
@@ -117,6 +138,24 @@ public class LogStrings {
         }
         r.append(ColorEnum.reset());
         return r.toString();
+    }
+
+    public static String colorizeChars(String s, List<ColorEnum> colors){
+        if(!enabled) return s;
+        var b = new StringBuilder();
+        int x = 0;
+        for (int i = 0; i < s.length(); i++) {
+            String c = Character.toString(s.charAt(i));
+            if(!" ".equals(c) && !System.lineSeparator().equals(c)) {
+                b.append(colors.get(x).toString());
+                x = (x + 1) % colors.size();
+            } else if (System.lineSeparator().equals(c)) {
+                x = 0;
+            }
+            b.append(c);
+        }
+        b.append(ColorEnum.reset());
+        return b.toString();
     }
 
     /**
@@ -170,10 +209,10 @@ public class LogStrings {
     }
 
     /**
-     * Make a string cyan
+     * Make a string pink
      *
      * @param s the string to color
-     * @return the cyan string
+     * @return the pink string
      */
     public static String pink(String s) {
         return enabled ? LogColor.PINK + s + ColorEnum.reset() : s;
@@ -222,13 +261,22 @@ public class LogStrings {
     /**
      * Make a string dark gray
      *
-     * @param s
+     * @param s the string to color
      * @return the dark gray string
      */
     public static String darkGray(String s) {
         return enabled ? LogColor.DARK_GRAY + s + ColorEnum.reset() : s;
     }
 
+    /**
+     * Make a string magenta
+     *
+     * @param s the string to color
+     * @return the string in magenta
+     */
+    public static String magenta(String s) {
+        return enabled ? LogColor.MAGENTA + s + ColorEnum.reset() : s;
+    }
     /**
      * Make a string custom color.
      *
@@ -237,7 +285,7 @@ public class LogStrings {
      * @return the colored string
      */
     public static String custom(Color c, String s) {
-        return enabled ? "\u001B[38;2;" + c.getRed() + ";" + c.getGreen() + ";" + c.getBlue() + "m" + s + reset() : s;
+        return custom(c.getRed(), c.getGreen(), c.getBlue(), s);
     }
 
     public static String custom(int r, int g, int b, String s) {
@@ -261,8 +309,8 @@ public class LogStrings {
      * @param maskChar the character to use for masking
      * @return the masked string
      */
-    public static String getMaskedString(String string, @Nullable Integer unmasked, @Nullable Character maskChar) {
-        return getMaskedString(string.toCharArray(), unmasked, maskChar);
+    public static String mask(String string, @Nullable Integer unmasked, @Nullable Character maskChar) {
+        return mask(string.toCharArray(), unmasked, maskChar);
     }
 
     /**
@@ -273,7 +321,7 @@ public class LogStrings {
      * @param maskChar the character to use for masking
      * @return the masked string
      */
-    public static String getMaskedString(char[] bytes, @Nullable Integer unmasked, @Nullable Character maskChar) {
+    public static String mask(char[] bytes, @Nullable Integer unmasked, @Nullable Character maskChar) {
         if (unmasked == null || unmasked < 0) {
             unmasked = 0;
         }
@@ -293,7 +341,7 @@ public class LogStrings {
      * @param day the day to get the suffix for
      * @return the suffix
      */
-    public static String getDaySuffix(int day) {
+    public static String daySuffix(int day) {
         if (day >= 11 && day <= 13) {
             return "th";
         }
@@ -305,12 +353,25 @@ public class LogStrings {
         };
     }
 
-
+    /**
+     *
+     * @param str
+     * @param begin
+     * @param end
+     * @return
+     */
     public static String getSubStr(String str, int begin, int end) {
         if (str == null || str.isEmpty()) return "";
         return (end <= str.length() && begin < end && begin >= 0) ? str.substring(begin, end) : str;
     }
 
+    /**
+     *
+     * @param str
+     * @param begin
+     * @param delimiter
+     * @return
+     */
     public static String getSubStr(String str, int begin, String delimiter) {
         if (str == null || str.isEmpty()) return "";
         var trimmed = str.trim();
@@ -322,7 +383,8 @@ public class LogStrings {
     }
 
     /**
-     * Capitalize a string. Example: capitalize("hello") -> "Hello"
+     * Capitalize a string. Example: capitalize("hello") -> "Hello". Only the first letter of the entire string is converted to uppercase.
+     * Good for normalizing names.
      *
      * @param s the string to capitalize
      * @return the capitalized string
@@ -387,14 +449,14 @@ public class LogStrings {
         return fill(" ", half) + s + fill(" ", space);
     }
 
-    public static String cleanColor(String s) {
+    public static String clearColor(String s) {
         return s.replaceAll("\u001B\\[[\\d;]*[m;]", "");
     }
 
     private static String bannerizeInternal(String color, String s, int width, String v, String h, String topL, String topR, String botL, String botR) {
         StringBuilder sb = new StringBuilder();
         if (s == null) return "";
-        var clean = cleanColor(s);
+        var clean = clearColor(s);
         if (clean.length() > width - 4) return s;
 
         var top = topL + fill(h, width / 2 - 2) + "◄►" + fill(h, width / 2 - 2) + topR;
@@ -413,8 +475,9 @@ public class LogStrings {
         }
 
         sb.append(bottom);
-        if (!color.isEmpty()) sb.append(RESET);
+        if (!color.isEmpty()) sb.append(reset());
         return sb.toString();
     }
+
 
 }

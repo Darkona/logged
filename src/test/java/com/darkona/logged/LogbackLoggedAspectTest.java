@@ -4,7 +4,6 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
-import com.darkona.logged.annotation.Logged;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,11 +20,12 @@ class LogbackLoggedAspectTest {
     private ProceedingJoinPoint point;
     private Logged logged;
     private MethodSignature methodSignature;
-
+    private final LogDecorator logDecorator = new ColorLogDecorator();
+    private final LoggedProperties loggedProperties = new LoggedProperties();
 
     @BeforeEach
     public void setup() {
-        unit = new LoggedAspect();
+        unit = new LoggedAspect(loggedProperties, logDecorator);
         point = mock(ProceedingJoinPoint.class);
         logged = mock(Logged.class);
         methodSignature = mock(MethodSignature.class);
@@ -49,9 +49,6 @@ class LogbackLoggedAspectTest {
     void testLoggingPrintsMethodLogs() throws Throwable{
 
         var methodName = "doSomething";
-
-
-
 
         ListAppender<ILoggingEvent> loggedAppender = new ListAppender<>();
         Logger logger = (Logger) LoggerFactory.getLogger(this.getClass());

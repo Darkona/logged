@@ -32,4 +32,8 @@ public enum AnsiColor implements ColorEnum {
     public String toString() {
         return "\u001B[0;" + ansi + "m";
     }
+
+    public String apply(String text) {
+        return "\u001B[0;" + ansi + "m" + text + "\u001B[0m";
+    }
 }

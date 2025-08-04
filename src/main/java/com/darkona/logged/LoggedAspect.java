@@ -1,8 +1,6 @@
 package com.darkona.logged;
 
 
-import com.darkona.logged.annotation.Logged;
-import com.darkona.logged.utils.LogStrings;
 import jakarta.annotation.PostConstruct;
 import org.apache.commons.lang3.StringUtils;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -22,6 +20,9 @@ import java.util.stream.Collectors;
 @Aspect
 public class LoggedAspect {
 
+    private final LoggedProperties loggedProperties;
+    private final LogDecorator logDecorator;
+
     private static final String METHOD_NAME = "m";
     private static final String METHOD_TYPE = "t";
     private static final String CLASS_NAME = "c";
@@ -31,24 +32,32 @@ public class LoggedAspect {
     private static final String EXCEPTION_MESSAGE = "eM";
     private static final String EXCEPTION_ORIGIN_CLASS = "ec";
     private static final String EXCEPTION_ORIGIN_METHOD = "em";
+    private static final String ARGUMENTS = "a";
     private static final String RETURN_CLASS = "rC";
     private static final String LINE = "L";
     private static final String NULL = "null";
+    private static final String FILENAME = "f";
 
-    public LoggedAspect() {
+    private static final String ENTRY_ICON = "eI";
+    private static final String EXIT_ICON = "xI";
+    private static final String THROW_ICON = "tI";
+
+    private static final String ENTRY = "→○";
+    private static final String EXIT = "←○";
+    private static final String THROW = "↑x";
+    private static final String ENTRY2 = "↓○";
+
+    public LoggedAspect(LoggedProperties loggedProperties, LogDecorator logDecorator) {
+        this.loggedProperties = loggedProperties;
+
+        this.logDecorator = logDecorator;
     }
 
-    private static void assembleExceptionData(Throwable e, Data data, StackTraceElement origin) {
-        data.map.put(EXCEPTION_CLASS, e.getClass().getName());
-        data.map.put(EXCEPTION_MESSAGE, e.getLocalizedMessage());
-        data.map.put(EXCEPTION_ORIGIN_CLASS, origin.getClassName());
-        data.map.put(EXCEPTION_ORIGIN_METHOD, origin.getMethodName());
-        data.map.put(LINE, String.valueOf(origin.getLineNumber()));
-    }
+
 
     @PostConstruct
     void init() {
-        LoggerFactory.getLogger(LoggedAspect.class).info(LogStrings.custom(156, 123, 23, "@Logged initialized."));
+        LoggerFactory.getLogger(LoggedAspect.class).info(logDecorator.custom(156, 123, 23, "@Logged initialized."));
     }
 
     @Around("@annotation(options)")
@@ -83,84 +92,14 @@ public class LoggedAspect {
         }
     }
 
-    void logCall(Logger log, Level level, Data data, Logged options) {
-
-        if (options.callMsg() != null && !options.callMsg().isEmpty()) {
-
-            log.atLevel(level).log(applyPattern(data, options.callMsg()));
-
-        } else if (options.onCall()) {
-            StringBuilder sb = new StringBuilder(String.format("→○ %s::%s called", data.map.get(CLASS_NAME), data.map.get(METHOD_NAME)));
-
-            if (options.args()) {
-                sb.append(" with args: [")
-                  .append(makePrintableArgs(data.args, options.argValues()))
-                  .append("]");
-            } else {
-                sb.append(".");
-            }
-            log.atLevel(level).log(sb.toString());
-        }
-    }
-
-    void logExit(Logger log, Level level, Data data, Logged options) {
-        if (options.onReturn() && options.returnMsg().isEmpty()) {
-            StringBuilder sb = new StringBuilder(String.format("←○ %s::%s returned", data.map.get(CLASS_NAME), data.map.get(METHOD_NAME)));
-
-            if (options.returnValue().equals(Logged.Values.ALL)) {
-                sb.append(String.format(" with value: [(%s) %s]", data.map.get(RETURN_CLASS), objectString(data.map.get(RETURN_VALUE))));
-            }
-
-            if (options.time()) {
-                sb.append(String.format(" Time taken: %s%s", data.map.get(DURATION), "ms"));
-            }
-
-            log.atLevel(level).log(sb.toString());
-        } else if (!options.returnMsg().isEmpty()) {
-            log.atLevel(level).log(applyPattern(data, options.returnMsg()));
-        }
-    }
-
-    void logException(Logger log, Throwable e, Data data, Logged options) {
-        var origin = e.getStackTrace()[0];
-
-        if (options.onException() && options.exceptionMsg().isEmpty()) {
-            StringBuilder sb = new StringBuilder(String.format("↑x %s::%s threw a %s: %s \n\tat %s.%s (%s:%d)",
-                    data.map.get(CLASS_NAME),
-                    data.map.get(METHOD_NAME),
-                    e.getClass().getName(),
-                    e.getLocalizedMessage(),
-                    origin.getClassName(),
-                    origin.getMethodName(),
-                    origin.getFileName(),
-                    origin.getLineNumber()
-            ));
-
-            if (options.time()) {
-                sb.append(String.format(" Time taken: %s%s", data.map.get(DURATION), "ms"));
-            }
-            if (options.logStackTrace()) {
-                log.atLevel(getLoggingLevel(options.exceptionLevel(), Level.ERROR)).log(sb.toString(), e);
-            } else {
-                log.atLevel(getLoggingLevel(options.exceptionLevel(), Level.ERROR)).log(sb.toString());
-            }
-        } else if (!options.exceptionMsg().isEmpty()) {
-
-            assembleExceptionData(e, data, origin);
-
-            if (options.logStackTrace()) {
-                log.atLevel(getLoggingLevel(options.exceptionLevel(), Level.ERROR)).log(applyPattern(data, options.exceptionMsg()), e);
-            } else {
-                log.atLevel(getLoggingLevel(options.exceptionLevel(), Level.ERROR)).log(applyPattern(data, options.exceptionMsg()));
-            }
-        }
-    }
-
     private Data assembleCallData(ProceedingJoinPoint pjp) {
 
         var start = System.currentTimeMillis();
 
         Map<String, String> map = new HashMap<>();
+        map.put(ENTRY_ICON, loggedProperties.getIcons() ? logDecorator.blue(loggedProperties.getEntryIcon()) + " " : "");
+        map.put(EXIT_ICON, loggedProperties.getIcons() ? logDecorator.blue(loggedProperties.getExitIcon()) + " " : "");
+        map.put(THROW_ICON, loggedProperties.getIcons() ? logDecorator.blue(loggedProperties.getThrowIcon()) + " " : "");
 
         map.put(CLASS_NAME, pjp.getSignature().getDeclaringType().getSimpleName());
         map.put(METHOD_NAME, pjp.getSignature().getName());
@@ -177,10 +116,85 @@ public class LoggedAspect {
         return new Data(map, args, start);
     }
 
+    void logCall(Logger log, Level level, Data data, Logged options) {
+
+        String template;
+        data.map.put(ARGUMENTS, makePrintableArgs(data.args, options.argValues()));
+
+        if (options.callMsg() != null && !options.callMsg().isEmpty()) {
+            template = options.callMsg();
+            log.atLevel(level).log(StringInterpolator.interpolate(template, data.map));
+        } else if (options.onCall()) {
+
+            if (options.args()) {
+                template = loggedProperties.getCallMsgArgs();
+            } else {
+                template = loggedProperties.getCallMsgNoArgs();
+            }
+            log.atLevel(level).log(StringInterpolator.interpolate(template, data.map));
+        }
+
+    }
+
     private void assembleReturnData(Data data, Object o) {
         data.map.put(DURATION, String.valueOf(System.currentTimeMillis() - data.start));
         data.map.put(RETURN_CLASS, (o == null) ? NULL : o.getClass().getSimpleName());
         data.map.put(RETURN_VALUE, objectString(o));
+    }
+
+    void logExit(Logger log, Level level, Data data, Logged options) {
+
+        String template;
+        if (options.onReturn() && options.returnMsg().isEmpty()) {
+            template = loggedProperties.getExitMsg();
+
+            if (options.returnValue().equals(Logged.Values.ALL)) {
+                template = loggedProperties.getExitMsgValue();
+            }
+
+            if (options.time()) {
+                template += " " + loggedProperties.getTimeTakenMsg();
+            }
+
+            log.atLevel(level).log(StringInterpolator.interpolate(template, data.map));
+        } else if (!options.returnMsg().isEmpty()) {
+            log.atLevel(level).log(StringInterpolator.interpolate(options.returnMsg(), data.map));
+        }
+    }
+
+    private static void assembleExceptionData(Throwable e, Data data, StackTraceElement origin) {
+        data.map.put(EXCEPTION_CLASS, e.getClass().getName());
+        data.map.put(EXCEPTION_MESSAGE, e.getLocalizedMessage());
+        data.map.put(EXCEPTION_ORIGIN_CLASS, origin.getClassName());
+        data.map.put(EXCEPTION_ORIGIN_METHOD, origin.getMethodName());
+        data.map.put(LINE, String.valueOf(origin.getLineNumber()));
+        data.map.put(NULL, String.valueOf(origin.getFileName()));
+        data.map.put(FILENAME, origin.getFileName());
+    }
+
+    void logException(Logger log, Throwable e, Data data, Logged options) {
+        var origin = e.getStackTrace()[0];
+        assembleExceptionData(e, data, origin);
+        String template;
+        if (options.onException() && options.exceptionMsg().isEmpty()) {
+            template = loggedProperties.getThrowMsg();
+            if (options.time()) {
+                template += " " + loggedProperties.getTimeTakenMsg();
+            }
+            log.atLevel(getLoggingLevel(options.exceptionLevel(), Level.ERROR)).log();
+            if (options.logStackTrace()) {
+                log.atLevel(getLoggingLevel(options.exceptionLevel(), Level.ERROR)).log(StringInterpolator.interpolate(template, data.map), e);
+            } else {
+                log.atLevel(getLoggingLevel(options.exceptionLevel(), Level.ERROR)).log(StringInterpolator.interpolate(template, data.map));
+            }
+        } else if (!options.exceptionMsg().isEmpty()) {
+            template = options.exceptionMsg();
+            if (options.logStackTrace()) {
+                log.atLevel(getLoggingLevel(options.exceptionLevel(), Level.ERROR)).log(StringInterpolator.interpolate(template, data.map), e);
+            } else {
+                log.atLevel(getLoggingLevel(options.exceptionLevel(), Level.ERROR)).log(StringInterpolator.interpolate(template, data.map));
+            }
+        }
     }
 
     private Level getLoggingLevel(String level, Level defaultLevel) {
@@ -189,54 +203,6 @@ public class LoggedAspect {
         } catch (Exception ignored) {
             return defaultLevel;
         }
-    }
-
-
-    private String applyPattern(Data data, String s) {
-
-        String[] tokenKeys = {"%c", "%t", "%m", "%d", "%r", "%f", "%x", "%p", "%j", "%y", "%l"};
-
-        String[] tokenValues = {
-                data.map.get(CLASS_NAME),
-                data.map.get(METHOD_TYPE),
-                data.map.get(METHOD_NAME),
-                data.map.get(DURATION),
-                data.map.get(RETURN_VALUE),
-                data.map.get(RETURN_CLASS),
-                objectString(data.map.get(EXCEPTION_CLASS)),
-                objectString(data.map.get(EXCEPTION_MESSAGE)),
-                objectString(data.map.get(EXCEPTION_ORIGIN_CLASS)),
-                objectString(data.map.get(EXCEPTION_ORIGIN_METHOD)),
-                objectString(data.map.get(LINE))
-        };
-
-        var initialLength = 3 * data.args.length + tokenKeys.length;
-
-        String[] keys = new String[initialLength];
-        String[] vals = new String[initialLength];
-        int i = 0;
-        for (; i < data.args.length; i++) {
-
-            keys[i * 3] = "%k[" + i + "]";
-            keys[i * 3 + 1] = "%n[" + i + "]";
-            keys[i * 3 + 2] = "%a[" + i + "]";
-
-            vals[i * 3] = data.args[i].className;
-            vals[i * 3 + 1] = data.args[i].name;
-            vals[i * 3 + 2] = data.args[i].value;
-
-            if (i * 3 + 2 == initialLength - tokenKeys.length - 1) {
-                break;
-            }
-        }
-        i += 3;
-
-        for (; i < initialLength; i++) {
-            keys[i] = tokenKeys[i];
-            vals[i] = tokenValues[i];
-        }
-
-        return StringUtils.replaceEach(s, keys, vals);
     }
 
     private String objectString(Object o) {
@@ -257,7 +223,7 @@ public class LoggedAspect {
         public String toString(Logged.Values values) {
             return String.format("(%s) \"%s\"%s", className, name,
                     values == Logged.Values.ALL ? "= " + value :
-                    values == Logged.Values.NULL ? "= " + NULL : "");
+                    values == Logged.Values.NULL && value == null ? "= " + NULL : "");
         }
 
     }

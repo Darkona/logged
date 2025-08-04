@@ -66,9 +66,9 @@ dependencies {
     annotationProcessor 'org.springframework.boot:spring-boot-autoconfigure-processor:3.3.0'
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor:2.0.5.RELEASE'
 
-    implementation 'org.springframework.boot:spring-boot-starter-aop'
+    api 'org.springframework.boot:spring-boot-starter-aop'
     implementation 'org.slf4j:slf4j-api:2.0.16'
-    implementation 'org.apache.commons:commons-lang3:3.12.0'
+    implementation 'org.apache.commons:commons-lang3:3.18.0'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation platform('org.junit:junit-bom:5.10.0')
