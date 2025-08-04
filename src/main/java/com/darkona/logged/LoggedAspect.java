@@ -2,7 +2,6 @@ package com.darkona.logged;
 
 
 import jakarta.annotation.PostConstruct;
-import org.apache.commons.lang3.StringUtils;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -20,9 +19,6 @@ import java.util.stream.Collectors;
 @Aspect
 public class LoggedAspect {
 
-    private final LoggedProperties loggedProperties;
-    private final LogDecorator logDecorator;
-
     private static final String METHOD_NAME = "m";
     private static final String METHOD_TYPE = "t";
     private static final String CLASS_NAME = "c";
@@ -37,15 +33,15 @@ public class LoggedAspect {
     private static final String LINE = "L";
     private static final String NULL = "null";
     private static final String FILENAME = "f";
-
     private static final String ENTRY_ICON = "eI";
     private static final String EXIT_ICON = "xI";
     private static final String THROW_ICON = "tI";
-
     private static final String ENTRY = "→○";
     private static final String EXIT = "←○";
     private static final String THROW = "↑x";
     private static final String ENTRY2 = "↓○";
+    private final LoggedProperties loggedProperties;
+    private final LogDecorator logDecorator;
 
     public LoggedAspect(LoggedProperties loggedProperties, LogDecorator logDecorator) {
         this.loggedProperties = loggedProperties;
@@ -53,7 +49,15 @@ public class LoggedAspect {
         this.logDecorator = logDecorator;
     }
 
-
+    private static void assembleExceptionData(Throwable e, Data data, StackTraceElement origin) {
+        data.map.put(EXCEPTION_CLASS, e.getClass().getName());
+        data.map.put(EXCEPTION_MESSAGE, e.getLocalizedMessage());
+        data.map.put(EXCEPTION_ORIGIN_CLASS, origin.getClassName());
+        data.map.put(EXCEPTION_ORIGIN_METHOD, origin.getMethodName());
+        data.map.put(LINE, String.valueOf(origin.getLineNumber()));
+        data.map.put(NULL, String.valueOf(origin.getFileName()));
+        data.map.put(FILENAME, origin.getFileName());
+    }
 
     @PostConstruct
     void init() {
@@ -160,16 +164,6 @@ public class LoggedAspect {
         } else if (!options.returnMsg().isEmpty()) {
             log.atLevel(level).log(StringInterpolator.interpolate(options.returnMsg(), data.map));
         }
-    }
-
-    private static void assembleExceptionData(Throwable e, Data data, StackTraceElement origin) {
-        data.map.put(EXCEPTION_CLASS, e.getClass().getName());
-        data.map.put(EXCEPTION_MESSAGE, e.getLocalizedMessage());
-        data.map.put(EXCEPTION_ORIGIN_CLASS, origin.getClassName());
-        data.map.put(EXCEPTION_ORIGIN_METHOD, origin.getMethodName());
-        data.map.put(LINE, String.valueOf(origin.getLineNumber()));
-        data.map.put(NULL, String.valueOf(origin.getFileName()));
-        data.map.put(FILENAME, origin.getFileName());
     }
 
     void logException(Logger log, Throwable e, Data data, Logged options) {

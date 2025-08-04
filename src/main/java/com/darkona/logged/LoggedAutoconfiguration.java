@@ -18,7 +18,7 @@ public class LoggedAutoconfiguration {
     @Bean
     @Profile({"dev", "local"})
     @ConditionalOnProperty(value = "logged.color", havingValue = "true")
-    public LogDecorator colorLogDecorator( ) {
+    public LogDecorator colorLogDecorator() {
         return new ColorLogDecorator();
     }
 

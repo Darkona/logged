@@ -65,11 +65,12 @@ public class LoggedProperties {
         this.throwMsg = throwMsg;
     }
 
-    public void setIcons(final Boolean icons) {
-        this.icons = icons;
-    }
     public Boolean getIcons() {
         return icons;
+    }
+
+    public void setIcons(final Boolean icons) {
+        this.icons = icons;
     }
 
     String getEntryIcon() {

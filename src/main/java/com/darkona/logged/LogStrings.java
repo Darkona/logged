@@ -49,10 +49,11 @@ class LogStrings {
     public static boolean isUtf = true;
     static boolean enabled = false;
     static Charset oldcharset;
+
     private LogStrings() {}
 
     public static void enableUtf() {
-        oldcharset= System.out.charset();
+        oldcharset = System.out.charset();
         System.setOut(new PrintStream(System.out, true, StandardCharsets.UTF_8));
         enabled = true;
     }
@@ -61,6 +62,7 @@ class LogStrings {
         System.setOut(new PrintStream(System.out, true, oldcharset));
         enabled = false;
     }
+
     /**
      * Create an ornament of a given width;
      *
@@ -140,13 +142,13 @@ class LogStrings {
         return r.toString();
     }
 
-    public static String colorizeChars(String s, List<ColorEnum> colors){
-        if(!enabled) return s;
+    public static String colorizeChars(String s, List<ColorEnum> colors) {
+        if (!enabled) return s;
         var b = new StringBuilder();
         int x = 0;
         for (int i = 0; i < s.length(); i++) {
             String c = Character.toString(s.charAt(i));
-            if(!" ".equals(c) && !System.lineSeparator().equals(c)) {
+            if (!" ".equals(c) && !System.lineSeparator().equals(c)) {
                 b.append(colors.get(x).toString());
                 x = (x + 1) % colors.size();
             } else if (System.lineSeparator().equals(c)) {
@@ -277,6 +279,7 @@ class LogStrings {
     public static String magenta(String s) {
         return enabled ? LogColor.MAGENTA + s + ColorEnum.reset() : s;
     }
+
     /**
      * Make a string custom color.
      *
@@ -354,7 +357,6 @@ class LogStrings {
     }
 
     /**
-     *
      * @param str
      * @param begin
      * @param end
@@ -366,7 +368,6 @@ class LogStrings {
     }
 
     /**
-     *
      * @param str
      * @param begin
      * @param delimiter

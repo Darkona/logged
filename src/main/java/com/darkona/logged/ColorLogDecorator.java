@@ -1,6 +1,5 @@
 package com.darkona.logged;
 
-import com.darkona.logged.colors.AnsiColor;
 import jakarta.annotation.Nullable;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;

@@ -15,19 +15,16 @@ public @interface Logged {
 
     /**
      * Print a log on method call/entry
-     *
      */
     boolean onCall() default true;
 
     /**
      * Print the call arguments (type, name)
-     *
      */
     boolean args() default true;
 
     /**
      * Print the call argument values
-     *
      */
     Values argValues() default Values.ALL;
 
@@ -53,7 +50,6 @@ public @interface Logged {
 
     /**
      * Print a custom message on this method's call.
-     *
      */
     String callMsg() default "";
 
