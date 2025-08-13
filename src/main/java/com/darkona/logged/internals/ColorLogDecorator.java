@@ -1,11 +1,16 @@
-package com.darkona.logged;
+package com.darkona.logged.internals;
 
 import com.darkona.logged.strings.Bannerizer;
+import com.darkona.logged.strings.Colorizer;
 import com.darkona.logged.strings.Transformer;
 import jakarta.annotation.Nullable;
+import org.springframework.context.annotation.Profile;
+import org.springframework.stereotype.Component;
 
-public class PlainLogDecorator implements LogDecorator {
 
+@Component
+@Profile({"local", "dev", "default"})
+public class ColorLogDecorator implements LogDecorator {
 
     @Override
     public String ornament(int width) {
@@ -24,72 +29,72 @@ public class PlainLogDecorator implements LogDecorator {
 
     @Override
     public String rainbowify(String s) {
-        return s;
+        return Colorizer.rainbowify(s);
     }
 
     @Override
     public String green(String s) {
-        return s;
+        return Colorizer.green(s);
     }
 
     @Override
     public String red(String s) {
-        return s;
+        return Colorizer.red(s);
     }
 
     @Override
     public String yellow(String s) {
-        return s;
+        return Colorizer.yellow(s);
     }
 
     @Override
     public String blue(String s) {
-        return s;
+        return Colorizer.blue(s);
     }
 
     @Override
     public String orange(String s) {
-        return s;
+        return Colorizer.orange(s);
     }
 
     @Override
     public String pink(String s) {
-        return s;
+        return Colorizer.pink(s);
     }
 
     @Override
     public String cyan(String s) {
-        return s;
+        return Colorizer.aqua(s);
     }
 
     @Override
     public String magenta(String s) {
-        return s;
+        return Colorizer.magenta(s);
     }
 
     @Override
     public String lightGray(String s) {
-        return s;
+        return Colorizer.gray(s);
     }
 
     @Override
     public String white(String s) {
-        return s;
+        return Colorizer.white(s);
     }
 
     @Override
     public String darkGray(String s) {
-        return s;
+        return Colorizer.darkGray(s);
     }
 
     @Override
     public String custom(int red, int green, int blue, String s) {
-        return s;
+        return Colorizer.custom(red, green, blue, s);
     }
 
     @Override
     public String reset() {
-        return "";
+        return Colorizer.reset();
     }
 
     @Override
@@ -114,7 +119,7 @@ public class PlainLogDecorator implements LogDecorator {
 
     @Override
     public String bannerize(String color, String s, int width) {
-        return Bannerizer.bannerize(s, width);
+        return Bannerizer.bannerize(color, s, width);
     }
 
     @Override
@@ -124,6 +129,6 @@ public class PlainLogDecorator implements LogDecorator {
 
     @Override
     public String clearColor(String s) {
-        return s;
+        return Bannerizer.clearColor(s);
     }
 }

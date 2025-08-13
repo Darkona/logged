@@ -1,10 +1,10 @@
 package com.darkona.logged;
 
+import com.darkona.logged.internals.LogDecorator;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
-import org.springframework.context.annotation.Profile;
 
 @Configuration
 @EnableAspectJAutoProxy()

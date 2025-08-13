@@ -95,52 +95,38 @@ class LogbackLoggedAspectTest {
 
     @Test
     void callWithoutArgs() {
-        callAndAssert("callWithoutArgs", testObject::methodWithoutArgs, logs -> {
-            assertFalse(logsContain("argValues"), "Args should not be present in log");
-        });
+        callAndAssert("callWithoutArgs", testObject::methodWithoutArgs, logs -> assertFalse(logsContain("argValues"), "Args should not be present in log"));
     }
 
     @Test
     void callWithExecutionTime() {
-        callAndAssert("callWithExecutionTime", testObject::methodWithTime, logs -> {
-            assertMessageContains("Time taken");
-        });
+        callAndAssert("callWithExecutionTime", testObject::methodWithTime, logs -> assertMessageContains("Time taken"));
     }
 
     @Test
     void callWithoutExecutionTime() {
-        callAndAssert("callWithoutExecutionTime", testObject::methodWithoutTime, logs -> {
-            assertFalse(logsContain("Time taken"), "Execution time should not be logged");
-        });
+        callAndAssert("callWithoutExecutionTime", testObject::methodWithoutTime, logs -> assertFalse(logsContain("Time taken"), "Execution time should not be logged"));
     }
 
     @Test
     void callWithNullReturnValue() {
-        callAndAssert("callWithNullReturnValue", testObject::methodReturnsNull, logs -> {
-            assertMessageContains("returned with value: null");
-        });
+        callAndAssert("callWithNullReturnValue", testObject::methodReturnsNull, logs -> assertMessageContains("returned with value: null"));
     }
 
     @Test
     void callWithoutReturnValue() {
-        callAndAssert("callWithoutReturnValue", testObject::methodWithoutReturnLogging, logs -> {
-            assertFalse(logsContain("returned with value"), "Return value should not be logged");
-        });
+        callAndAssert("callWithoutReturnValue", testObject::methodWithoutReturnLogging, logs -> assertFalse(logsContain("returned with value"), "Return value should not be logged"));
     }
 
     @Test
     void callWithReturnValueNullOnly() {
-        callAndAssert("callWithReturnValueNullOnly", testObject::methodReturnsNullOnlyWhenNull, logs -> {
-            assertMessageContains("returned with value: null");
-        });
+        callAndAssert("callWithReturnValueNullOnly", testObject::methodReturnsNullOnlyWhenNull, logs -> assertMessageContains("returned with value: null"));
 
     }
 
     @Test
     void callWithReturnValueNullOnlyNonNull() {
-        callAndAssert("callWithReturnValueNullOnlyNonNull", testObject::methodReturnsNonNullSuppressed, logs -> {
-            assertFalse(logsContain("with value:"), "Return value should not be logged when non-null and returnValue = NULL");
-        });
+        callAndAssert("callWithReturnValueNullOnlyNonNull", testObject::methodReturnsNonNullSuppressed, logs -> assertFalse(logsContain("with value:"), "Return value should not be logged when non-null and returnValue = NULL"));
     }
 
     @Test
@@ -156,7 +142,7 @@ class LogbackLoggedAspectTest {
         Exception ex = assertThrows(RuntimeException.class, testObject::methodThatThrows);
         assertEquals("kaboom", ex.getMessage());
         logs = listAppender.list;
-        assertMessageContains("threw an");
+        assertMessageContains("threw a");
     }
 
     @Test
@@ -186,9 +172,7 @@ class LogbackLoggedAspectTest {
 
     @Test
     void callWithArgValuesNone() {
-        callAndAssert("callWithArgValuesNone", () -> testObject.methodWithArgValuesNone("something"), logs -> {
-            assertFalse(logsContain("something"), "Argument value should not be present");
-        });
+        callAndAssert("callWithArgValuesNone", () -> testObject.methodWithArgValuesNone("something"), logs -> assertFalse(logsContain("something"), "Argument value should not be present"));
     }
 
     @Test

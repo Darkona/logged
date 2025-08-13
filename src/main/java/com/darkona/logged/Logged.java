@@ -1,15 +1,15 @@
 package com.darkona.logged;
 
 
+import org.slf4j.event.Level;
+
+import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-import static com.darkona.logged.Constants.ERROR;
-import static com.darkona.logged.Constants.INFO;
-import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-@Target({METHOD})
+@Target({ElementType.METHOD, ElementType.TYPE})
 @Retention(RUNTIME)
 public @interface Logged {
 
@@ -66,12 +66,12 @@ public @interface Logged {
     /**
      * Log level for this method's logs.
      */
-    String level() default INFO;
+    Level level() default Level.INFO;
 
     /**
      * Log level for exceptions
      */
-    String exceptionLevel() default ERROR;
+    Level exceptionLevel() default Level.ERROR;
 
     /**
      * Print the stack trace when an exception occurs.
@@ -87,4 +87,11 @@ public @interface Logged {
         NONE, ALL, NULL
     }
 
+    /** Redact parameter value by name of parameter */
+    String[] redactArgValues() default {};
+
+    /** Redact parameter value by position of parameter (0 is first parameter) */
+    int[] redactAtPos() default {};
+
+    boolean withMDC() default true;
 }

@@ -1,5 +1,8 @@
 package com.darkona.logged;
 
+import com.darkona.logged.internals.ColorLogDecorator;
+import com.darkona.logged.internals.LogDecorator;
+import com.darkona.logged.internals.PlainLogDecorator;
 import org.slf4j.Logger;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProperty;
@@ -7,11 +10,13 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.EnableAspectJAutoProxy;
 
 @AutoConfiguration
 @ConditionalOnMissingBean(LoggedAutoconfiguration.class)
 @ConditionalOnClass({LoggedAspect.class, Logged.class, Logger.class, LogDecorator.class, LoggedProperties.class})
 @EnableConfigurationProperties({LoggedProperties.class})
+@EnableAspectJAutoProxy(proxyTargetClass = true, exposeProxy = true)
 public class LoggedAutoconfiguration {
 
 

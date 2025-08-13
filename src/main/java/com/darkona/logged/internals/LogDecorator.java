@@ -1,4 +1,4 @@
-package com.darkona.logged;
+package com.darkona.logged.internals;
 
 import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;

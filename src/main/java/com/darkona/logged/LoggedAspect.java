@@ -1,7 +1,11 @@
 package com.darkona.logged;
 
 
+import com.darkona.logged.internals.LogDecorator;
+import com.darkona.logged.internals.MdcContext;
+import com.darkona.logged.internals.ParameterNames;
 import com.darkona.logged.strings.StringInterpolator;
+import com.darkona.logged.strings.Transformer;
 import jakarta.annotation.PostConstruct;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -13,7 +17,9 @@ import org.slf4j.event.Level;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 
@@ -37,10 +43,6 @@ public class LoggedAspect {
     private static final String ENTRY_ICON = "eI";
     private static final String EXIT_ICON = "xI";
     private static final String THROW_ICON = "tI";
-    private static final String ENTRY = "→○";
-    private static final String EXIT = "←○";
-    private static final String THROW = "↑x";
-    private static final String ENTRY2 = "↓○";
     private final LoggedProperties loggedProperties;
     private final LogDecorator logDecorator;
 
@@ -70,20 +72,25 @@ public class LoggedAspect {
 
     throws Throwable {
         //System.out.println("🔥🔥🔥 LOGGED ASPECT WAS CALLED 🔥🔥🔥");
-        Data data = assembleCallData(pjp);
+        Data data = assembleCallData(pjp, options);
 
-        Level level = getLoggingLevel(options.level(), Level.INFO);
+        Level level = options.level();
 
         Logger log = LoggerFactory.getLogger(pjp.getSignature().getDeclaringType());
-        logCall(log, level, data, options);
+
+        if (isEnabled(log, options.level())) {
+            logCall(log, level, data, options);
+        }
+
 
         try {
 
             var o = pjp.proceed();
 
-            assembleReturnData(data, o);
-
-            logExit(log, level, data, options);
+            if (isEnabled(log, options.level())) {
+                assembleReturnData(data, o);
+                logExit(log, level, data, options);
+            }
 
             return o;
 
@@ -91,13 +98,15 @@ public class LoggedAspect {
 
             data.map.put(DURATION, String.valueOf(System.currentTimeMillis() - data.start));
 
-            logException(log, e, data, options);
+            if (isEnabled(log, options.exceptionLevel())) {
+                logException(log, e, data, options);
+            }
 
             throw e;
         }
     }
 
-    private Data assembleCallData(ProceedingJoinPoint pjp) {
+    private Data assembleCallData(ProceedingJoinPoint pjp, Logged options) {
 
         var start = System.currentTimeMillis();
 
@@ -110,22 +119,40 @@ public class LoggedAspect {
         map.put(METHOD_NAME, pjp.getSignature().getName());
         map.put(METHOD_TYPE, pjp.getSignature().toLongString());
 
-        var signature = (MethodSignature) pjp.getSignature();
+        if (options.args()) {
+            var signature = (MethodSignature) pjp.getSignature();
 
-        Arg[] args = signature.getParameterTypes() != null ? new Arg[signature.getParameterTypes().length] : new Arg[0];
+            Arg[] args = signature.getParameterTypes() != null ? new Arg[signature.getParameterTypes().length] : new Arg[0];
+            var names = ParameterNames.resolve(pjp);
 
-        for (int i = 0; i < signature.getParameterTypes().length; i++) {
-            args[i] = new Arg(signature.getParameterTypes()[i].getSimpleName(), signature.getParameterNames()[i], objectString(pjp.getArgs()[i]));
+            Set<String> redacts = new HashSet<>();
+            Set<Integer> redactIndexes = new HashSet<>();
+
+            if (options.redactArgValues().length > 0) {
+                redacts.addAll(Arrays.asList(options.redactArgValues()));
+            }
+            if(options.redactAtPos().length > 0){
+                Arrays.stream(options.redactAtPos()).forEach(redactIndexes::add);
+            }
+            for (int i = 0; i < signature.getParameterTypes().length; i++) {
+                var value = objectString(pjp.getArgs()[i]);
+                if (redacts.contains(names[i]) || redactIndexes.contains(i)) {
+                    value = Transformer.mask(value, 0, '█').substring(0,5);
+                }
+
+                args[i] = new Arg(signature.getParameterTypes()[i].getSimpleName(), names[i], value);
+            }
+            return new Data(map, args, start);
         }
-
-        return new Data(map, args, start);
+        return new Data(map, new Arg[]{}, start);
     }
 
     void logCall(Logger log, Level level, Data data, Logged options) {
 
         String template = "";
-
-
+        if (options.withMDC()) {
+            template += MdcContext.asPrefix();
+        }
         if (options.callMsg() != null && !options.callMsg().isEmpty()) {
             template = options.callMsg();
             log.atLevel(level).log(StringInterpolator.interpolate(template, data.map));
@@ -203,30 +230,26 @@ public class LoggedAspect {
                 template += " " + loggedProperties.getTimeTakenMsg();
             }
             if (options.logStackTrace()) {
-                log.atLevel(getLoggingLevel(options.exceptionLevel(), Level.ERROR)).log(StringInterpolator.interpolate(template, data.map), e);
+                log.atLevel(options.exceptionLevel()).log(StringInterpolator.interpolate(template, data.map), e);
             } else {
-                log.atLevel(getLoggingLevel(options.exceptionLevel(), Level.ERROR)).log(StringInterpolator.interpolate(template, data.map));
+                log.atLevel(options.exceptionLevel()).log(StringInterpolator.interpolate(template, data.map));
             }
         } else if (!options.exceptionMsg().isEmpty()) {
             template = options.exceptionMsg();
             if (options.logStackTrace()) {
-                log.atLevel(getLoggingLevel(options.exceptionLevel(), Level.ERROR)).log(StringInterpolator.interpolate(template, data.map), e);
+                log.atLevel(options.exceptionLevel()).log(StringInterpolator.interpolate(template, data.map), e);
             } else {
-                log.atLevel(getLoggingLevel(options.exceptionLevel(), Level.ERROR)).log(StringInterpolator.interpolate(template, data.map));
+                log.atLevel(options.exceptionLevel()).log(StringInterpolator.interpolate(template, data.map));
             }
         }
     }
 
-    private Level getLoggingLevel(String level, Level defaultLevel) {
-        try {
-            return Level.valueOf(level);
-        } catch (Exception ignored) {
-            return defaultLevel;
-        }
-    }
-
     private String objectString(Object o) {
-        return o == null ? "null" : o.toString();
+        try {
+            return o == null ? "null" : o.toString();
+        } catch (Throwable t) {
+            return "toString Error: " + o.getClass().getSimpleName();
+        }
     }
 
     private String makePrintableArgs(Arg[] args, Logged.Values argValues) {
@@ -246,5 +269,15 @@ public class LoggedAspect {
                     values == Logged.Values.NULL && value == null ? "= " + NULL : "");
         }
 
+    }
+
+    private boolean isEnabled(Logger log, Level lvl) {
+        return switch (lvl) {
+            case TRACE -> log.isTraceEnabled();
+            case DEBUG -> log.isDebugEnabled();
+            case INFO -> log.isInfoEnabled();
+            case WARN -> log.isWarnEnabled();
+            case ERROR -> log.isErrorEnabled();
+        };
     }
 }
