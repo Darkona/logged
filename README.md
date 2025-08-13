@@ -56,121 +56,77 @@ public void compute() {
 ```
 
 > The library uses compile-time constants from `LogStrings` for consistent message formatting.
-🧩 Message Formatting with Tokens
+
+## 🧩 Message Formatting with Tokens
 
 You can customize how your log messages look for method entry, exit, and exception cases using configurable templates.
 
 Each template supports a specific set of tokens. These tokens will be dynamically replaced at runtime depending on the log context.
 
-There are three kinds of log messages:
+There are **three kinds of log messages**:
 
-Entry: before the method runs (may or may not have arguments).
+- **Entry**: before the method runs (may or may not have arguments).
 
-Exit: after successful execution (may or may not return a value).
+- **Exit**: after successful execution (may or may not return a value).
 
-Exception: when a method throws an exception.
+- **Exception**: when a method throws an exception.
 
-✍️ Syntax
+These customizations work both for the normal messages via configuration in your application.properties or application.yaml, and for custom messages for 
+different methods.
+---
 
-Use {token} to inject a runtime value. Example:
+### ✍️ Syntax
 
+Use `{token}` to inject a runtime value. Example:
+
+```yaml
 entry: "{eI} → Entering {m}({a})"
 exit:  "{xI} ← {m} returned {rV} in {d}ms"
 exception: "{tI} !! {m} threw {ex}: {eM}"
+```
 
-📥 Entry Message Tokens (format.entry)
+---
 
-Token
+## 📥 Entry Message Tokens (`format.entry`)
 
-Description
+|Token|Description|
+|---|---|
+|`{m}`|Method name|
+|`{c}`|Class name (simple name only)|
+|`{a}`|Arguments passed to the method|
+|`{eI}`|Entry icon (from config)|
 
-{m}
+---
 
-Method name
+## 📤 Exit Message Tokens (`format.exit`)
 
-{c}
+|Token|Description|
+|---|---|
+|`{m}`|Method name|
+|`{c}`|Class name|
+|`{rV}`|Return value (null-safe)|
+|`{rC}`|Return value class name|
+|`{d}`|Duration of method execution in milliseconds|
+|`{xI}`|Exit icon (from config)|
 
-Class name (simple name only)
+---
 
-{a}
+## 💥 Exception Message Tokens (`format.exception`)
 
-Arguments passed to the method
+|Token|Description|
+|---|---|
+|`{m}`|Method name|
+|`{c}`|Class name|
+|`{ex}`|Exception class name|
+|`{eM}`|Exception message|
+|`{ec}`|Class where the exception originated|
+|`{em}`|Method where the exception originated|
+|`{f}`|File name (from the stack trace, if available)|
+|`{L}`|Line number (from the stack trace, if available)|
+|`{tI}`|Throw icon (from config)|
 
-{eI}
 
-Entry icon (from config)
 
-📤 Exit Message Tokens (format.exit)
-
-Token
-
-Description
-
-{m}
-
-Method name
-
-{c}
-
-Class name
-
-{rV}
-
-Return value (null-safe)
-
-{rC}
-
-Return value class name
-
-{d}
-
-Duration of method execution in milliseconds
-
-{xI}
-
-Exit icon (from config)
-
-💥 Exception Message Tokens (format.exception)
-
-Token
-
-Description
-
-{m}
-
-Method name
-
-{c}
-
-Class name
-
-{ex}
-
-Exception class name
-
-{eM}
-
-Exception message
-
-{ec}
-
-Class where the exception originated
-
-{em}
-
-Method where the exception originated
-
-{f}
-
-File name (from the stack trace, if available)
-
-{L}
-
-Line number (from the stack trace, if available)
-
-{tI}
-
-Throw icon (from config)
 
 ℹ️ Notes
 

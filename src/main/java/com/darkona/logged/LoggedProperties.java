@@ -2,106 +2,184 @@ package com.darkona.logged;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+/**
+ * Configuration properties for the @Logged annotation system.
+ */
 @ConfigurationProperties(prefix = "logged")
 public class LoggedProperties {
 
+    /**
+     * Use color in Logged logs.
+     */
     private Boolean color = true;
+
+    /**
+     * Enable symbol "icons" to Logged logs: "↑○"
+     */
     private Boolean icons = true;
+
+    /**
+     * Enable Utf8 in `System.out` for pretty character use.
+     */
+    private Boolean useUtf8 = true;
+
+    /**
+     * Icon to represent a log statement from the entry into a method.
+     */
     private String entryIcon = "↓○";
+
+    /**
+     * Icon to represent a log statement from the exit of a method.
+     */
     private String exitIcon = "↑○";
+
+    /**
+     * Icon to represent a log statement from an exception in the method.
+     */
     private String throwIcon = "↑x";
+
+    /**
+     * Template for method entry when there are no arguments.
+     * <p>Default: {@code "{eI}{c}::{m} called."}</p>
+     * <p>Meaning: Logs the method entry using the entry icon, class name, and method name.</p>
+     * <p>Example: {@code ↓○MyClass::myMethod called.}</p>
+     */
     private String callMsgNoArgs = "{eI}{c}::{m} called.";
+
+    /**
+     * Template for method entry when there are arguments.
+     * <p>Default: {@code "{eI}{c}::{m} called with args: [{a}]"} </p>
+     * <p>Meaning: Logs method entry and includes the argument list.</p>
+     * <p>Example: {@code ↓○MyClass::myMethod called with args: [42, "foo"]}</p>
+     */
     private String callMsgArgs = "{eI}{c}::{m} called with args: [{a}]";
+
+    /**
+     * Template for method exit without a return value.
+     * <p>Default: {@code "{xI}{c}::{m} returned."}</p>
+     * <p>Meaning: Logs the fact that a method has returned, without showing any return value.</p>
+     * <p>Example: {@code ↑○MyClass::myMethod returned.}</p>
+     */
     private String exitMsg = "{xI}{c}::{m} returned.";
+
+    /**
+     * Template for method exit with a return value.
+     * <p>Default: {@code "{xI}{c}::{m} returned with value: {rV}"}</p>
+     * <p>Meaning: Logs that the method returned and shows the return value.</p>
+     * <p>Example: {@code ↑○MyClass::myMethod returned with value: 123}</p>
+     */
     private String exitMsgValue = "{xI}{c}::{m} returned with value: {rV}";
+
+    /**
+     * Template for logging method execution time.
+     * <p>Default: {@code "Time taken: {d} ms"}</p>
+     * <p>Meaning: Logs how long the method took to execute, in milliseconds.</p>
+     * <p>Example: {@code Time taken: 42 ms}</p>
+     */
     private String timeTakenMsg = "Time taken: {d} ms";
+
+    /**
+     * Template for exception thrown during method execution.
+     * <p>Default: {@code "{tI}{c}::{m} threw a {ex}: {eM} \n\tat {ec}.{em} ({f}:{L})"}</p>
+     * <p>Meaning: Logs the exception with its type, message, and origin point in the code.</p>
+     * <p>Example: {@code ↑xMyClass::myMethod threw a NullPointerException: boom at MyClass.otherMethod (MyClass.java:42)}</p>
+     */
     private String throwMsg = "{tI}{c}::{m} threw a {ex}: {eM} \n\tat {ec}.{em} ({f}:{L})";
 
-    String getTimeTakenMsg() {
-        return timeTakenMsg;
+
+    public Boolean getUseUtf8() {
+        return useUtf8;
     }
 
-    void setTimeTakenMsg(String timeTakenMsg) {
-        this.timeTakenMsg = timeTakenMsg;
+    public void setUseUtf8(Boolean useUtf8) {
+        this.useUtf8 = useUtf8;
     }
 
-    String getExitMsgValue() {
-        return exitMsgValue;
+    public Boolean getColor() {
+        return color;
     }
 
-    void setExitMsgValue(String exitMsgValue) {
-        this.exitMsgValue = exitMsgValue;
-    }
-
-    String getCallMsgNoArgs() {
-        return callMsgNoArgs;
-    }
-
-    void setCallMsgNoArgs(String callMsgNoArgs) {
-        this.callMsgNoArgs = callMsgNoArgs;
-    }
-
-    String getCallMsgArgs() {
-        return callMsgArgs;
-    }
-
-    void setCallMsgArgs(String callMsgArgs) {
-        this.callMsgArgs = callMsgArgs;
-    }
-
-    String getExitMsg() {
-        return exitMsg;
-    }
-
-    void setExitMsg(String exitMsg) {
-        this.exitMsg = exitMsg;
-    }
-
-    String getThrowMsg() {
-        return throwMsg;
-    }
-
-    void setThrowMsg(String throwMsg) {
-        this.throwMsg = throwMsg;
+    public void setColor(Boolean color) {
+        this.color = color;
     }
 
     public Boolean getIcons() {
         return icons;
     }
 
-    public void setIcons(final Boolean icons) {
+    public void setIcons(Boolean icons) {
         this.icons = icons;
     }
 
-    String getEntryIcon() {
+    public String getEntryIcon() {
         return entryIcon;
     }
 
-    void setEntryIcon(String entryIcon) {
+    public void setEntryIcon(String entryIcon) {
         this.entryIcon = entryIcon;
     }
 
-    String getExitIcon() {
+    public String getExitIcon() {
         return exitIcon;
     }
 
-    void setExitIcon(String exitIcon) {
+    public void setExitIcon(String exitIcon) {
         this.exitIcon = exitIcon;
     }
 
-    String getThrowIcon() {
+    public String getThrowIcon() {
         return throwIcon;
     }
 
-    void setThrowIcon(String throwIcon) {
+    public void setThrowIcon(String throwIcon) {
         this.throwIcon = throwIcon;
     }
 
-    Boolean getColor() {
-        return color;
+    public String getCallMsgNoArgs() {
+        return callMsgNoArgs;
     }
 
-    void setColor(Boolean color) {
-        this.color = color;
+    public void setCallMsgNoArgs(String callMsgNoArgs) {
+        this.callMsgNoArgs = callMsgNoArgs;
+    }
+
+    public String getCallMsgArgs() {
+        return callMsgArgs;
+    }
+
+    public void setCallMsgArgs(String callMsgArgs) {
+        this.callMsgArgs = callMsgArgs;
+    }
+
+    public String getExitMsg() {
+        return exitMsg;
+    }
+
+    public void setExitMsg(String exitMsg) {
+        this.exitMsg = exitMsg;
+    }
+
+    public String getExitMsgValue() {
+        return exitMsgValue;
+    }
+
+    public void setExitMsgValue(String exitMsgValue) {
+        this.exitMsgValue = exitMsgValue;
+    }
+
+    public String getTimeTakenMsg() {
+        return timeTakenMsg;
+    }
+
+    public void setTimeTakenMsg(String timeTakenMsg) {
+        this.timeTakenMsg = timeTakenMsg;
+    }
+
+    public String getThrowMsg() {
+        return throwMsg;
+    }
+
+    public void setThrowMsg(String throwMsg) {
+        this.throwMsg = throwMsg;
     }
 }

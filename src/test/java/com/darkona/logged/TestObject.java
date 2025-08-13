@@ -1,99 +1,95 @@
 package com.darkona.logged;
 
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.EnableAspectJAutoProxy;
+import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
-
+@SuppressWarnings("UnusedReturnValue")
+@Component
 public class TestObject {
 
-    private String name;
-    private int age;
-    private String address;
-    private String email;
-    private String phone;
-    private List<Pokemon> pokemonList;
-
     @Logged
-    public String givePokemon(){
-        return "Bulbasaur";
+    public void methodWithArgs(String str, int num) {
+        System.out.println("Processing string: " + str + ", number: " + num);
     }
 
-    @Logged
-    public String explode()
-    throws IllegalAccessException {
-        throw new IllegalAccessException("BOOM!");
+    @Logged(args = false)
+    public void methodWithoutArgs() {
+        System.out.println("Running method without args");
     }
 
-    @Logged
-    public void make(){
-        name = "Dr. Oak";
-        age = 32;
-        address = "1234 Elm St.";
-        email = "email@email.com";
-        phone = "555-555-5555";
-        pokemonList = new ArrayList<>();
-
-        for (int i = 0; i < 50; i++) {
-            pokemonList.add(new Pokemon("Bulbasaur", 1, Map.of("Move 1", "Tackle", "Move 2", "Growl")));
+    @Logged(time = true)
+    public void methodWithTime() {
+        try {
+            Thread.sleep(50);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 
-    TestObject() {
+    @Logged(time = false)
+    public void methodWithoutTime() {
+        for (int i = 0; i < 1000; i++) {
+            Math.sqrt(i);
+        }
     }
 
-    String getName() {
-        return name;
+    @Logged(returnValue = Logged.Values.ALL)
+    public String methodReturnsNull() {
+        return null;
     }
 
-    void setName(String name) {
-        this.name = name;
+    @Logged(returnValue = Logged.Values.NONE)
+    public String methodWithoutReturnLogging() {
+        return "This value should be hidden in logs";
     }
 
-    int getAge() {
-        return age;
+    @Logged(returnValue = Logged.Values.NULL)
+    public String methodReturnsNullOnlyWhenNull() {
+        return null;
     }
 
-    void setAge(int age) {
-        this.age = age;
+    @Logged(returnValue = Logged.Values.NULL)
+    public String methodReturnsNonNullSuppressed() {
+        return "You shouldn't see this";
     }
 
-    String getAddress() {
-        return address;
+    @Logged(argValues = Logged.Values.NULL)
+    public void methodWithNullArgValues(String nonNull, String maybeNull) {
+        if (maybeNull == null) {
+            System.out.println("Received a null parameter");
+        }
     }
 
-    void setAddress(String address) {
-        this.address = address;
+    @Logged
+    public void methodThatThrows() {
+        throw new RuntimeException("kaboom");
     }
 
-    String getEmail() {
-        return email;
+    @Logged(logStackTrace = true)
+    public void methodThatThrowsWithStacktrace() {
+        throw new RuntimeException("boom");
     }
 
-    void setEmail(String email) {
-        this.email = email;
+    @Logged(onException = false)
+    public void methodThatThrowsNoLogging() {
+        throw new RuntimeException("silent fail");
     }
 
-    String getPhone() {
-        return phone;
+    @Logged(callMsg = "🧪 calling method", returnMsg = "✅ method done")
+    public String methodWithCustomMessages() {
+        return "Custom done";
     }
 
-    void setPhone(String phone) {
-        this.phone = phone;
+    @Logged(argValues = Logged.Values.NONE)
+    public void methodWithArgValuesNone(String something) {
+        System.out.println("Arg value is ignored: " + something);
     }
 
-    List<Pokemon> getPokemonList() {
-        return pokemonList;
+    @Logged
+    public String methodWithDefaults() {
+        return "default";
     }
 
-    void setPokemonList(List<Pokemon> pokemonList) {
-        this.pokemonList = pokemonList;
-    }
-
-    public String doSomething(String a, String b, String c){
-        return a + b + c;
-    }
-
-    public record Pokemon(String name, int pokeDexNumber, Map<String, String> properties){};
 }

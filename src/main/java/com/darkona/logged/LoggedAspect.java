@@ -1,6 +1,7 @@
 package com.darkona.logged;
 
 
+import com.darkona.logged.strings.StringInterpolator;
 import jakarta.annotation.PostConstruct;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -66,14 +67,14 @@ public class LoggedAspect {
 
     @Around("@annotation(options)")
     public Object logMethod(ProceedingJoinPoint pjp, Logged options)
-    throws Throwable {
 
+    throws Throwable {
+        //System.out.println("🔥🔥🔥 LOGGED ASPECT WAS CALLED 🔥🔥🔥");
         Data data = assembleCallData(pjp);
 
         Level level = getLoggingLevel(options.level(), Level.INFO);
 
         Logger log = LoggerFactory.getLogger(pjp.getSignature().getDeclaringType());
-
         logCall(log, level, data, options);
 
         try {
@@ -102,8 +103,8 @@ public class LoggedAspect {
 
         Map<String, String> map = new HashMap<>();
         map.put(ENTRY_ICON, loggedProperties.getIcons() ? logDecorator.blue(loggedProperties.getEntryIcon()) + " " : "");
-        map.put(EXIT_ICON, loggedProperties.getIcons() ? logDecorator.blue(loggedProperties.getExitIcon()) + " " : "");
-        map.put(THROW_ICON, loggedProperties.getIcons() ? logDecorator.blue(loggedProperties.getThrowIcon()) + " " : "");
+        map.put(EXIT_ICON, loggedProperties.getIcons() ? logDecorator.green(loggedProperties.getExitIcon()) + " " : "");
+        map.put(THROW_ICON, loggedProperties.getIcons() ? logDecorator.red(loggedProperties.getThrowIcon()) + " " : "");
 
         map.put(CLASS_NAME, pjp.getSignature().getDeclaringType().getSimpleName());
         map.put(METHOD_NAME, pjp.getSignature().getName());
@@ -111,9 +112,9 @@ public class LoggedAspect {
 
         var signature = (MethodSignature) pjp.getSignature();
 
-        Arg[] args = new Arg[signature.getParameterNames().length];
+        Arg[] args = signature.getParameterTypes() != null ? new Arg[signature.getParameterTypes().length] : new Arg[0];
 
-        for (int i = 0; i < signature.getParameterNames().length; i++) {
+        for (int i = 0; i < signature.getParameterTypes().length; i++) {
             args[i] = new Arg(signature.getParameterTypes()[i].getSimpleName(), signature.getParameterNames()[i], objectString(pjp.getArgs()[i]));
         }
 
@@ -122,8 +123,8 @@ public class LoggedAspect {
 
     void logCall(Logger log, Level level, Data data, Logged options) {
 
-        String template;
-        data.map.put(ARGUMENTS, makePrintableArgs(data.args, options.argValues()));
+        String template = "";
+
 
         if (options.callMsg() != null && !options.callMsg().isEmpty()) {
             template = options.callMsg();
@@ -131,7 +132,25 @@ public class LoggedAspect {
         } else if (options.onCall()) {
 
             if (options.args()) {
-                template = loggedProperties.getCallMsgArgs();
+                data.map.put(ARGUMENTS, makePrintableArgs(data.args, options.argValues()));
+                if (options.argValues().equals(Logged.Values.ALL)) {
+                    template = loggedProperties.getCallMsgArgs();
+                } else if (options.argValues().equals(Logged.Values.NONE)) {
+                    template = "";
+                } else if (options.argValues().equals(Logged.Values.NULL)) {
+                    if (Arrays.stream(data.args).anyMatch(arg -> arg.value.equals(NULL))) {
+
+                        var args2 = Arrays.stream(data.args).filter(arg -> arg.value.equals(NULL)).toList();
+                        Data nulldata = new Data(data.map, args2.toArray(new Arg[]{}), data.start);
+                        template = loggedProperties.getCallMsgArgs();
+                        log.atLevel(level).log(StringInterpolator.interpolate(template, nulldata.map));
+                        return;
+
+                    } else {
+                        template = loggedProperties.getCallMsgNoArgs();
+                    }
+                }
+
             } else {
                 template = loggedProperties.getCallMsgNoArgs();
             }
@@ -154,6 +173,14 @@ public class LoggedAspect {
 
             if (options.returnValue().equals(Logged.Values.ALL)) {
                 template = loggedProperties.getExitMsgValue();
+            } else if (options.returnValue().equals(Logged.Values.NULL)) {
+                if (data.map.get(RETURN_VALUE).equals(NULL)) {
+                    template = loggedProperties.getExitMsgValue();
+                } else {
+                    template = loggedProperties.getExitMsg();
+                }
+            } else if (options.returnValue().equals(Logged.Values.NONE)) {
+                template = "";
             }
 
             if (options.time()) {
@@ -175,7 +202,6 @@ public class LoggedAspect {
             if (options.time()) {
                 template += " " + loggedProperties.getTimeTakenMsg();
             }
-            log.atLevel(getLoggingLevel(options.exceptionLevel(), Level.ERROR)).log();
             if (options.logStackTrace()) {
                 log.atLevel(getLoggingLevel(options.exceptionLevel(), Level.ERROR)).log(StringInterpolator.interpolate(template, data.map), e);
             } else {

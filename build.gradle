@@ -3,17 +3,18 @@ import org.springframework.boot.gradle.plugin.SpringBootPlugin
 plugins {
     id 'java-library'
     id 'maven-publish'
-    id 'org.springframework.boot' version '3.3.3' apply false
-    id 'io.spring.dependency-management' version '1.1.5'
+    id 'org.springframework.boot' version '3.5.4' apply false
+    id 'io.spring.dependency-management' version '1.1.7'
 }
 
 group = 'com.darkona.logged'
-version = '1.0.0'
+version = '1.1.0'
 
 repositories {
     mavenCentral()
     mavenLocal()
 }
+
 def filename = "${rootProject.name}-${this.version}.jar"
 
 java {
@@ -23,13 +24,19 @@ java {
     compileJava {
         options.encoding = 'UTF-8'
         options.compilerArgs += [
-                '-parameters'
+                "-parameters"
+        ]
+    }
+    compileTestJava{
+        options.encoding = 'UTF-8'
+        options.compilerArgs += [
+                "-parameters"
         ]
     }
     artifacts {
         archives jar
-
     }
+
     //withJavadocJar()
     withSourcesJar()
 }
@@ -42,14 +49,24 @@ jar {
 
 publishing {
     publications {
+
         mavenJava(MavenPublication) {
             from components.java
-            artifacts {
-                filename
-                sourcesJar
+
+            versionMapping {
+                usage('java-api') {
+                    fromResolutionOf('runtimeClasspath')
+                }
+                usage('java-runtime') {
+                    fromResolutionResult()
+                }
             }
 
+            //artifact(filename sourcesJar)
+            // optionally:
+            // artifact(javadocJar)
         }
+
     }
     repositories {
         mavenLocal() // Publish to local Maven repository
@@ -62,17 +79,23 @@ dependencyManagement {
     }
 }
 
-dependencies {
-    annotationProcessor 'org.springframework.boot:spring-boot-autoconfigure-processor:3.3.0'
-    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor:2.0.5.RELEASE'
 
-    api 'org.springframework.boot:spring-boot-starter-aop'
-    implementation 'org.slf4j:slf4j-api:2.0.16'
-    implementation 'org.apache.commons:commons-lang3:3.18.0'
+
+dependencies {
+    annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
+    implementation("org.springframework.boot:spring-boot-autoconfigure")
+    api ("org.springframework.boot:spring-boot-starter-aop")
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testImplementation platform('org.junit:junit-bom:5.10.0')
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testImplementation platform('org.junit:junit-bom:5.10.3')
     testImplementation 'org.junit.jupiter:junit-jupiter'
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.generatedSourceOutputDirectory.set(
+            layout.buildDirectory.dir("generated/sources/annotationProcessor/${name}")
+    )
 }
 
 test {

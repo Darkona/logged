@@ -4,142 +4,199 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
-import org.aspectj.lang.ProceedingJoinPoint;
-import org.aspectj.lang.reflect.MethodSignature;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.ApplicationContext;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.Consumer;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
+@SpringBootTest(classes = TestBootConfig.class)
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class LogbackLoggedAspectTest {
 
+    @Autowired
+    private TestObject testObject;
 
-    private LoggedAspect unit;
-    private ProceedingJoinPoint point;
-    private Logged logged;
-    private MethodSignature methodSignature;
-    private final LogDecorator logDecorator = new ColorLogDecorator();
-    private final LoggedProperties loggedProperties = new LoggedProperties();
+    private ListAppender<ILoggingEvent> listAppender;
+    private List<ILoggingEvent> logs;
 
     @BeforeEach
-    public void setup() {
-        unit = new LoggedAspect(loggedProperties, logDecorator);
-        point = mock(ProceedingJoinPoint.class);
-        logged = mock(Logged.class);
-        methodSignature = mock(MethodSignature.class);
+    void setup() {
+        Logger logger = (Logger) LoggerFactory.getLogger(TestObject.class);
+        listAppender = new ListAppender<>();
+        listAppender.start();
+        logger.addAppender(listAppender);
+    }
+
+    @AfterEach
+    void tearDown() {
+        listAppender.stop();
+        logs = listAppender.list;
+    }
+
+    @Autowired
+    private ApplicationContext context;
+
+    @Test
+    void shouldSeeLoggedAspectInContext() {
+        String matchedBean = Arrays.stream(context.getBeanDefinitionNames())
+                                   .filter(name -> name.toLowerCase().contains("loggedaspect"))
+                                   .findFirst()
+                                   .orElse(null);
+
+        assertNotNull(matchedBean, "LoggedAspect bean should be present in the application context");
+
+        System.out.println("Found LoggedAspect bean: " + matchedBean);
+    }
+
+    @Test
+    void shouldBeProxied() {
+        System.out.println("TestObject class: " + testObject.getClass());
+    }
+
+    private void callAndAssert(String methodName, Runnable methodCall, Consumer<List<ILoggingEvent>> assertions) {
+        methodCall.run();
+        logs = listAppender.list;
+        assertFalse(logs.isEmpty(), methodName + ": logs should not be empty");
+        assertions.accept(logs);
+    }
+
+    private boolean logsContain(String expected) {
+
+        return logs.stream().anyMatch(e -> {
+
+            if (e.getFormattedMessage()!=null) {
+                System.out.println("log message=" + e.getFormattedMessage());
+                return e.getFormattedMessage().contains(expected);
+            }
+            else return e.getLevel() == Level.ERROR;
+        });
+    }
+
+    private void assertMessageContains(String expected) {
+        assertTrue(logsContain(expected), "Expected log message to contain: " + expected);
+    }
 
 
-        when(logged.args()).thenReturn(true);
-        when(logged.argValues()).thenReturn(Logged.Values.ALL);
-        when(logged.onCall()).thenReturn(true);
-        when(logged.onException()).thenReturn(true);
-        when(logged.onReturn()).thenReturn(true);
-        when(logged.returnValue()).thenReturn(Logged.Values.ALL);
-        when(logged.time()).thenReturn(true);
-        when(logged.level()).thenReturn("INFO");
-        when(logged.callMsg()).thenReturn("");
-        when(logged.returnMsg()).thenReturn("");
-        when(logged.exceptionMsg()).thenReturn("");
+
+    @Test
+    void callWithArgs() {
+        callAndAssert("callWithArgs", () -> testObject.methodWithArgs("hello", 42), logs -> {
+            assertMessageContains("hello");
+            assertMessageContains("42");
+        });
+    }
+
+    @Test
+    void callWithoutArgs() {
+        callAndAssert("callWithoutArgs", testObject::methodWithoutArgs, logs -> {
+            assertFalse(logsContain("argValues"), "Args should not be present in log");
+        });
+    }
+
+    @Test
+    void callWithExecutionTime() {
+        callAndAssert("callWithExecutionTime", testObject::methodWithTime, logs -> {
+            assertMessageContains("Time taken");
+        });
+    }
+
+    @Test
+    void callWithoutExecutionTime() {
+        callAndAssert("callWithoutExecutionTime", testObject::methodWithoutTime, logs -> {
+            assertFalse(logsContain("Time taken"), "Execution time should not be logged");
+        });
+    }
+
+    @Test
+    void callWithNullReturnValue() {
+        callAndAssert("callWithNullReturnValue", testObject::methodReturnsNull, logs -> {
+            assertMessageContains("returned with value: null");
+        });
+    }
+
+    @Test
+    void callWithoutReturnValue() {
+        callAndAssert("callWithoutReturnValue", testObject::methodWithoutReturnLogging, logs -> {
+            assertFalse(logsContain("returned with value"), "Return value should not be logged");
+        });
+    }
+
+    @Test
+    void callWithReturnValueNullOnly() {
+        callAndAssert("callWithReturnValueNullOnly", testObject::methodReturnsNullOnlyWhenNull, logs -> {
+            assertMessageContains("returned with value: null");
+        });
 
     }
 
     @Test
-    void testLoggingPrintsMethodLogs() throws Throwable{
-
-        var methodName = "doSomething";
-
-        ListAppender<ILoggingEvent> loggedAppender = new ListAppender<>();
-        Logger logger = (Logger) LoggerFactory.getLogger(this.getClass());
-        loggedAppender.start();
-        logger.addAppender(loggedAppender);
-
-        when(methodSignature.getName()).thenReturn(methodName);
-        when(methodSignature.getMethod()).thenReturn(TestObject.class.getMethod(methodName, String.class, String.class, String.class));
-        when(methodSignature.getParameterNames()).thenReturn(new String[]{"a", "b", "c"});
-        when(methodSignature.getParameterTypes()).thenReturn(new Class<?>[]{String.class, String.class, String.class});
-        when(methodSignature.getExceptionTypes()).thenReturn(new Class<?>[]{IllegalArgumentException.class});
-
-        when(methodSignature.getDeclaringType()).thenReturn(this.getClass());
-
-
-        when (point.getArgs()).thenReturn(new Object[]{"Hello ", "World", "!"});
-
-        when(point.getSignature()).thenReturn(methodSignature);
-
-        unit.logMethod(point, logged);
-
-        assertTrue(loggedAppender.list.stream().anyMatch(event -> event.getFormattedMessage().contains(methodName)));
-        assertTrue(loggedAppender.list.stream().anyMatch(event -> event.getLevel() == Level.INFO));
-        assertTrue(loggedAppender.list.stream().anyMatch(event -> !event.getMessage().isEmpty()));
-
-
-        loggedAppender.stop();
-        logger.detachAppender(loggedAppender);
-    }
-
-
-    @Test
-    void shouldLogExceptionsIfTheyAreRaised()
-    throws Throwable {
-
-        var methodName = "doSomething";
-
-        ListAppender<ILoggingEvent> loggedAppender = new ListAppender<>();
-        Logger logger = (Logger) LoggerFactory.getLogger(this.getClass());
-        loggedAppender.start();
-        logger.addAppender(loggedAppender);
-
-        when(methodSignature.getName()).thenReturn(methodName);
-        when(methodSignature.getMethod()).thenReturn(TestObject.class.getMethod(methodName, String.class, String.class, String.class));
-        when(methodSignature.getParameterNames()).thenReturn(new String[]{"a", "b", "c"});
-        when(methodSignature.getParameterTypes()).thenReturn(new Class<?>[]{String.class, String.class, String.class});
-        when(methodSignature.getExceptionTypes()).thenReturn(new Class<?>[]{IllegalArgumentException.class});
-
-        when(methodSignature.getDeclaringType()).thenReturn(this.getClass());
-
-
-        when (point.getArgs()).thenReturn(new Object[]{"Hello ", "World", "!"});
-
-        when(point.getSignature()).thenReturn(methodSignature);
-
-        doThrow(new NullPointerException()).when(point).proceed();
-
-
-
-
-        assertThrows(NullPointerException.class, () -> unit.logMethod(point, logged));
-
-        assertTrue(loggedAppender.list.stream().anyMatch(event -> event.getFormattedMessage().contains(methodName)));
-        assertTrue(loggedAppender.list.stream().anyMatch(event -> event.getLevel() == Level.ERROR));
-
-        loggedAppender.stop();
-        logger.detachAppender(loggedAppender);
-
-    }
-
-
-    @Test
-    void shouldLogReturnValuesIfTheyAreReturned(){
-
-
-
+    void callWithReturnValueNullOnlyNonNull() {
+        callAndAssert("callWithReturnValueNullOnlyNonNull", testObject::methodReturnsNonNullSuppressed, logs -> {
+            assertFalse(logsContain("with value:"), "Return value should not be logged when non-null and returnValue = NULL");
+        });
     }
 
     @Test
-    void shouldLogTimeTakenIfTimeIsEnabled(){
-
+    void callWithArgValuesNullOnly() {
+        callAndAssert("callWithArgValuesNullOnly", () -> testObject.methodWithNullArgValues("test", null), logs -> {
+            assertFalse(logsContain("test"), "Non-null argument should not be logged");
+            assertTrue(logsContain("null"), "Null argument should be logged");
+        });
     }
 
     @Test
-    void shouldLogArgumentsIfEnabled(){
-
+    void callWithException() {
+        Exception ex = assertThrows(RuntimeException.class, testObject::methodThatThrows);
+        assertEquals("kaboom", ex.getMessage());
+        logs = listAppender.list;
+        assertMessageContains("threw an");
     }
 
     @Test
-    void shouldLogCustomMessageIfEnabled(){}
+    void callWithExceptionAndStacktrace() {
+        Exception ex = assertThrows(RuntimeException.class, testObject::methodThatThrowsWithStacktrace);
+        assertEquals("boom", ex.getMessage());
+        logs = listAppender.list;
+        assertMessageContains("threw a");
+        assertTrue(logs.stream().anyMatch(e -> e.getFormattedMessage().contains("at")), "Expected stack trace in logs");
+    }
 
+    @Test
+    void callWithExceptionWithoutLogging() {
+        Exception ex = assertThrows(RuntimeException.class, testObject::methodThatThrowsNoLogging);
+        assertEquals("silent fail", ex.getMessage());
+        logs = listAppender.list;
+        assertFalse(logsContain("threw a"), "Exception should not be logged");
+    }
 
+    @Test
+    void callWithCustomMessages() {
+        callAndAssert("callWithCustomMessages", testObject::methodWithCustomMessages, logs -> {
+            assertMessageContains("🧪 calling method");
+            assertMessageContains("✅ method done");
+        });
+    }
 
+    @Test
+    void callWithArgValuesNone() {
+        callAndAssert("callWithArgValuesNone", () -> testObject.methodWithArgValuesNone("something"), logs -> {
+            assertFalse(logsContain("something"), "Argument value should not be present");
+        });
+    }
+
+    @Test
+    void callWithDefaults() {
+        callAndAssert("callWithDefaults", testObject::methodWithDefaults, logs -> {
+            assertMessageContains("called with args");
+            assertMessageContains("returned with value");
+            assertMessageContains("Time taken");
+        });
+    }
 }
