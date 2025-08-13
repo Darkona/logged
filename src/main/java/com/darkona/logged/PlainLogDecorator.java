@@ -1,5 +1,7 @@
 package com.darkona.logged;
 
+import com.darkona.logged.strings.Bannerizer;
+import com.darkona.logged.strings.Transformer;
 import jakarta.annotation.Nullable;
 
 public class PlainLogDecorator implements LogDecorator {
@@ -7,17 +9,17 @@ public class PlainLogDecorator implements LogDecorator {
 
     @Override
     public String ornament(int width) {
-        return LogStrings.ornament(width);
+        return Bannerizer.ornament(width);
     }
 
     @Override
     public String center(String s, int width) {
-        return LogStrings.center(s, width);
+        return Bannerizer.center(s, width);
     }
 
     @Override
     public String fill(String s, int length) {
-        return LogStrings.fill(s, length);
+        return Transformer.fill(s, length);
     }
 
     @Override
@@ -92,32 +94,32 @@ public class PlainLogDecorator implements LogDecorator {
 
     @Override
     public String mask(String s, @Nullable Integer unmasked, @Nullable Character mask) {
-        return LogStrings.mask(s, unmasked, mask);
+        return Transformer.mask(s, unmasked, mask);
     }
 
     @Override
     public String mask(char[] bytes, @Nullable Integer unmasked, @Nullable Character mask) {
-        return LogStrings.mask(bytes, unmasked, mask);
+        return Transformer.mask(bytes, unmasked, mask);
     }
 
     @Override
     public String daySuffix(int day) {
-        return LogStrings.daySuffix(day);
+        return Transformer.daySuffix(day);
     }
 
     @Override
     public String capitalize(String s) {
-        return LogStrings.capitalize(s);
+        return Transformer.capitalize(s);
     }
 
     @Override
     public String bannerize(String color, String s, int width) {
-        return LogStrings.bannerize(s, width);
+        return Bannerizer.bannerize(s, width);
     }
 
     @Override
     public String bannerize(String s, int width) {
-        return LogStrings.bannerize(s, width);
+        return Bannerizer.bannerize(s, width);
     }
 
     @Override
