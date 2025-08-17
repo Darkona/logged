@@ -22,11 +22,9 @@ public enum White implements ColorEnum {
     LAVENDER_BLUSH((short) 255, (short) 240, (short) 245),
     MISTY_ROSE((short) 255, (short) 228, (short) 225);
 
-
     private final short r;
     private final short g;
     private final short b;
-
 
     White(short r, short g, short b) {
 
@@ -38,5 +36,20 @@ public enum White implements ColorEnum {
     @Override
     public String toString() {
         return assemble(r, g, b);
+    }
+
+    @Override
+    public Short red() {
+        return r;
+    }
+
+    @Override
+    public Short green() {
+        return g;
+    }
+
+    @Override
+    public Short blue() {
+        return b;
     }
 }

@@ -33,6 +33,21 @@ public enum AnsiColor implements ColorEnum {
         return "\u001B[0;" + ansi + "m";
     }
 
+    @Override
+    public Short red() {
+        return 0;
+    }
+
+    @Override
+    public Short green() {
+        return 0;
+    }
+
+    @Override
+    public Short blue() {
+        return 0;
+    }
+
     public String apply(String text) {
         return "\u001B[0;" + ansi + "m" + text + "\u001B[0m";
     }

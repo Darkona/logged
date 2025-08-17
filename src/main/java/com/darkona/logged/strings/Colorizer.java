@@ -294,6 +294,9 @@ public class Colorizer {
         return custom(c.getRed(), c.getGreen(), c.getBlue(), s);
     }
 
+    public static String custom(ColorEnum color, String s) {
+        return custom(color.red(), color.green(), color.blue(), s);
+    }
     public static String custom(int r, int g, int b, String s) {
         return "\u001B[38;2;" + r + ";" + g + ";" + b + "m" + s + reset();
     }

@@ -8,6 +8,13 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "logged")
 public class LoggedProperties {
 
+
+
+    /**
+     * Enable Logged
+     */
+    private Boolean enabled = true;
+
     /**
      * Use color in Logged logs.
      */
@@ -85,6 +92,21 @@ public class LoggedProperties {
      * <p>Example: {@code ↑xMyClass::myMethod threw a NullPointerException: boom at MyClass.otherMethod (MyClass.java:42)}</p>
      */
     private String throwMsg = "{tI}{c}::{m} threw a {ex}: {eM} \n\tat {ec}.{em} ({f}:{L})";
+
+    /**
+     * Use MDC context to obtain trace id and span id and add it to logs.
+     */
+    private Boolean useMdc = false;
+
+    /**
+     * Character to use as mask when using redact.
+     */
+    private Character redactMask = '█';
+
+    /**
+     * Length of the redacted string that appears instead of the actual value.
+     */
+    private Integer redactLenght = 5;
 
 
     public Boolean getUseUtf8() {
@@ -181,5 +203,37 @@ public class LoggedProperties {
 
     public void setThrowMsg(String throwMsg) {
         this.throwMsg = throwMsg;
+    }
+
+    public void setUseMdc(Boolean useMdc) {
+        this.useMdc = useMdc;
+    }
+
+    public Boolean getUseMdc(){
+        return useMdc;
+    }
+
+    public Boolean getEnabled() {
+        return enabled;
+    }
+
+    public void setEnabled(Boolean enabled) {
+        this.enabled = enabled;
+    }
+
+    public Character getRedactMask() {
+        return redactMask;
+    }
+
+    public  void setRedactMask(Character redactMask) {
+        this.redactMask = redactMask;
+    }
+
+    public Integer getRedactLenght(){
+        return redactLenght;
+    }
+
+    public void setRedactLenght(Integer redactLenght){
+        this.redactLenght = redactLenght;
     }
 }

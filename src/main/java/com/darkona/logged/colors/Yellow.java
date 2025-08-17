@@ -25,9 +25,23 @@ public enum Yellow implements ColorEnum {
         this.b = b;
     }
 
-
     @Override
     public String toString() {
         return assemble(r, g, b);
+    }
+
+    @Override
+    public Short red() {
+        return r;
+    }
+
+    @Override
+    public Short green() {
+        return g;
+    }
+
+    @Override
+    public Short blue() {
+        return b;
     }
 }

@@ -1,14 +1,19 @@
 package com.darkona.logged.internals;
 
+import com.darkona.logged.LoggedProperties;
 import org.slf4j.MDC;
 
 import java.util.Map;
 
+
 public class MdcContext {
+
+    private LoggedProperties props;
 
     private MdcContext() {}
 
     public static String asPrefix() {
+
         Map<String, String> ctx = MDC.getCopyOfContextMap();
         if (ctx == null || ctx.isEmpty()) return "";
         String trace = ctx.getOrDefault("traceId", ctx.getOrDefault("trace_id", ""));

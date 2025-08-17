@@ -62,9 +62,6 @@ publishing {
                 }
             }
 
-            //artifact(filename sourcesJar)
-            // optionally:
-            // artifact(javadocJar)
         }
 
     }

@@ -21,11 +21,9 @@ public enum Brown implements ColorEnum {
     BROWN((short) 165, (short) 42, (short) 42),
     MAROON((short) 128, (short) 0, (short) 0);
 
-
     private final short r;
     private final short g;
     private final short b;
-
 
     Brown(short r, short g, short b) {
 
@@ -37,5 +35,20 @@ public enum Brown implements ColorEnum {
     @Override
     public String toString() {
         return assemble(r, g, b);
+    }
+
+    @Override
+    public Short red() {
+        return r;
+    }
+
+    @Override
+    public Short green() {
+        return g;
+    }
+
+    @Override
+    public Short blue() {
+        return b;
     }
 }

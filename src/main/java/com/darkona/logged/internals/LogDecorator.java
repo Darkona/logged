@@ -1,5 +1,6 @@
 package com.darkona.logged.internals;
 
+import com.darkona.logged.colors.ColorEnum;
 import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
 
@@ -37,6 +38,8 @@ public interface LogDecorator {
     String darkGray(String s);
 
     String custom(int red, int green, int blue, String s);
+
+    String custom(ColorEnum color, String s);
 
     String reset();
 

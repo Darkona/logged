@@ -43,4 +43,18 @@ public enum Green implements ColorEnum {
         return assemble(r, g, b);
     }
 
+    @Override
+    public Short red() {
+        return r;
+    }
+
+    @Override
+    public Short green() {
+        return g;
+    }
+
+    @Override
+    public Short blue() {
+        return b;
+    }
 }

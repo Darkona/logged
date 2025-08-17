@@ -13,7 +13,6 @@ public enum Red implements ColorEnum {
     FIRE_BRICK((short) 178, (short) 34, (short) 34),
     DARK_RED((short) 139, (short) 0, (short) 0);
 
-
     private final short r;
     private final short g;
     private final short b;
@@ -24,9 +23,23 @@ public enum Red implements ColorEnum {
         this.b = b;
     }
 
-
     @Override
     public String toString() {
         return assemble(r, g, b);
+    }
+
+    @Override
+    public Short red() {
+        return r;
+    }
+
+    @Override
+    public Short green() {
+        return g;
+    }
+
+    @Override
+    public Short blue() {
+        return b;
     }
 }

@@ -1,5 +1,6 @@
 package com.darkona.logged.internals;
 
+import com.darkona.logged.colors.ColorEnum;
 import com.darkona.logged.strings.Bannerizer;
 import com.darkona.logged.strings.Transformer;
 import jakarta.annotation.Nullable;
@@ -84,6 +85,11 @@ public class PlainLogDecorator implements LogDecorator {
 
     @Override
     public String custom(int red, int green, int blue, String s) {
+        return s;
+    }
+
+    @Override
+    public String custom(ColorEnum color, String s) {
         return s;
     }
 
