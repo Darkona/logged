@@ -8,9 +8,6 @@ import jakarta.annotation.Nullable;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
-
-@Component
-@Profile({"local", "dev", "default"})
 public class ColorLogDecorator implements LogDecorator {
 
     @Override

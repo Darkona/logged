@@ -1,8 +1,5 @@
 package com.darkona.logged;
 
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.stereotype.Component;
 
 @SuppressWarnings("UnusedReturnValue")
@@ -83,8 +80,8 @@ public class TestObject {
     }
 
     @Logged(argValues = Logged.Values.NONE)
-    public void methodWithArgValuesNone(String something) {
-        System.out.println("Arg value is ignored: " + something);
+    public void methodWithArgValuesNone(String stringArgument) {
+        System.out.println("Arg value is ignored: " + stringArgument);
     }
 
     @Logged

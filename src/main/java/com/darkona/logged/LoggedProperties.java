@@ -8,8 +8,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "logged")
 public class LoggedProperties {
 
-
-
     /**
      * Enable Logged
      */
@@ -70,6 +68,13 @@ public class LoggedProperties {
     private String exitMsg = "{xI}{c}::{m} returned.";
 
     /**
+     * Template for arguments or parameters of the method.
+     * The only tokens for substitution that work here are {c} for class name, {k} for the parameter name and {v} for the value.
+     * <p>Default: {@code "({c}) {k}={v}"}</p>
+     * <p>Meaning: Logs argument type, name and value</p>
+     */
+    private String argsTemplate = "({c}) {k}={v}";
+    /**
      * Template for method exit with a return value.
      * <p>Default: {@code "{xI}{c}::{m} returned with value: {rV}"}</p>
      * <p>Meaning: Logs that the method returned and shows the return value.</p>
@@ -94,11 +99,6 @@ public class LoggedProperties {
     private String throwMsg = "{tI}{c}::{m} threw a {ex}: {eM} \n\tat {ec}.{em} ({f}:{L})";
 
     /**
-     * Use MDC context to obtain trace id and span id and add it to logs.
-     */
-    private Boolean useMdc = false;
-
-    /**
      * Character to use as mask when using redact.
      */
     private Character redactMask = '█';
@@ -106,8 +106,12 @@ public class LoggedProperties {
     /**
      * Length of the redacted string that appears instead of the actual value.
      */
-    private Integer redactLenght = 5;
+    private Integer redactLength = 5;
 
+    /**
+     * Inject data from Logged into OpenTelemetry spans.
+     */
+    private Boolean useOTel = true;
 
     public Boolean getUseUtf8() {
         return useUtf8;
@@ -205,14 +209,6 @@ public class LoggedProperties {
         this.throwMsg = throwMsg;
     }
 
-    public void setUseMdc(Boolean useMdc) {
-        this.useMdc = useMdc;
-    }
-
-    public Boolean getUseMdc(){
-        return useMdc;
-    }
-
     public Boolean getEnabled() {
         return enabled;
     }
@@ -229,11 +225,19 @@ public class LoggedProperties {
         this.redactMask = redactMask;
     }
 
-    public Integer getRedactLenght(){
-        return redactLenght;
+    public Integer getRedactLength(){
+        return redactLength;
     }
 
-    public void setRedactLenght(Integer redactLenght){
-        this.redactLenght = redactLenght;
+    public void setRedactLength(Integer redactLength){
+        this.redactLength = redactLength;
+    }
+
+    public String getArgsTemplate() {
+        return argsTemplate;
+    }
+
+    public void setArgsTemplate(String argsTemplate) {
+        this.argsTemplate = argsTemplate;
     }
 }

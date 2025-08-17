@@ -7,7 +7,6 @@ import jakarta.annotation.Nullable;
 
 public class PlainLogDecorator implements LogDecorator {
 
-
     @Override
     public String ornament(int width) {
         return Bannerizer.ornament(width);

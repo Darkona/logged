@@ -32,6 +32,15 @@ public class Transformer {
     private Transformer() {}
 
 
+    public static String objectString(Object o) {
+        try {
+            return o == null ? "null" : o.toString();
+        } catch (Throwable t) {
+            return "toString Error: " + o.getClass().getSimpleName();
+        }
+    }
+
+
     /**
      * Creates a string by repeating the given input string until the specified amount is reached.
      * <p>

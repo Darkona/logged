@@ -24,20 +24,25 @@
 
 Add the library to your Spring Boot project (e.g., via internal Maven repository or direct source inclusion).
 
+Maven:
 ```xml
-<!-- Example: Replace with your own coordinates -->
 <dependency>
-    <groupId>com.example</groupId>
+    <groupId>com.darkona</groupId>
     <artifactId>logged</artifactId>
-    <version>1.0.0</version>
+    <version>1.1.0</version>
 </dependency>
 ```
-
+Gradle:
+```groovy
+dependencies {
+   implementation "com.darkona:logged:1.1.0" 
+}
+```
 No manual configuration is needed. Spring Boot will detect and wire all components automatically.
 
 ## Usage
 
-Annotate any method with `@Logged`:
+Annotate any public method with `@Logged`:
 
 ```java
 @Logged
@@ -54,8 +59,6 @@ public void compute() {
     // your code
 }
 ```
-
-> The library uses compile-time constants from `LogStrings` for consistent message formatting.
 
 ## 🧩 Message Formatting with Tokens
 
