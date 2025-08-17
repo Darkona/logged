@@ -10,11 +10,9 @@ public enum Pink implements ColorEnum {
     PALE_VIOLET_RED((short) 219, (short) 112, (short) 147),
     MEDIUM_VIOLET_RED((short) 199, (short) 21, (short) 133);
 
-
     private final short r;
     private final short g;
     private final short b;
-
 
     Pink(short r, short g, short b) {
 
@@ -28,5 +26,18 @@ public enum Pink implements ColorEnum {
         return assemble(r, g, b);
     }
 
+    @Override
+    public Short red() {
+        return r;
+    }
 
+    @Override
+    public Short green() {
+        return g;
+    }
+
+    @Override
+    public Short blue() {
+        return b;
+    }
 }

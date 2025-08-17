@@ -14,7 +14,6 @@ public enum Orange implements ColorEnum {
     private final short g;
     private final short b;
 
-
     Orange(short r, short g, short b) {
 
         this.r = r;
@@ -27,5 +26,18 @@ public enum Orange implements ColorEnum {
         return assemble(r, g, b);
     }
 
+    @Override
+    public Short red() {
+        return r;
+    }
 
+    @Override
+    public Short green() {
+        return g;
+    }
+
+    @Override
+    public Short blue() {
+        return b;
+    }
 }

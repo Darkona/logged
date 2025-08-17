@@ -142,8 +142,9 @@ Icons ({eI}, {xI}, {tI}) come from logging.decorated.icons in your config.
 * No runtime reflection required outside of Spring proxy context
 
 ## License
-
-This project is licensed under the MIT License.
+Logged is licensed under the GNU Lesser General Public License v3.0 (LGPL-3.0).  
+You may use it freely in commercial or open-source projects.  
+If you modify the library itself and distribute those changes, you must publish them under the same license so the community benefits.
 
 ## Contributing
 

@@ -12,4 +12,10 @@ public interface ColorEnum {
     default String assemble(short r, short g, short b) {
         return "\u001B[38;2;" + r + ";" + g + ";" + b + "m";
     }
+
+    Short red();
+
+    Short green();
+
+    Short blue();
 }

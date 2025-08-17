@@ -34,4 +34,18 @@ public enum LogColor implements ColorEnum {
         return "\u001B[38;2;" + r + ";" + g + ";" + b + "m";
     }
 
+    @Override
+    public Short red() {
+        return r;
+    }
+
+    @Override
+    public Short green() {
+        return g;
+    }
+
+    @Override
+    public Short blue() {
+        return b;
+    }
 }

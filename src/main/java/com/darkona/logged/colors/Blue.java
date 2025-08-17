@@ -33,7 +33,6 @@ public enum Blue implements ColorEnum {
     private final short g;
     private final short b;
 
-
     Blue(short r, short g, short b) {
 
         this.r = r;
@@ -44,5 +43,20 @@ public enum Blue implements ColorEnum {
     @Override
     public String toString() {
         return assemble(r, g, b);
+    }
+
+    @Override
+    public Short red() {
+        return r;
+    }
+
+    @Override
+    public Short green() {
+        return g;
+    }
+
+    @Override
+    public Short blue() {
+        return b;
     }
 }

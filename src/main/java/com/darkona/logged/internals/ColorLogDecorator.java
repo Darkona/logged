@@ -1,5 +1,6 @@
 package com.darkona.logged.internals;
 
+import com.darkona.logged.colors.ColorEnum;
 import com.darkona.logged.strings.Bannerizer;
 import com.darkona.logged.strings.Colorizer;
 import com.darkona.logged.strings.Transformer;
@@ -91,6 +92,11 @@ public class ColorLogDecorator implements LogDecorator {
     public String custom(int red, int green, int blue, String s) {
         return Colorizer.custom(red, green, blue, s);
     }
+
+    @Override
+    public String custom(ColorEnum color, String s){
+        return Colorizer.custom(color, s);
+    };
 
     @Override
     public String reset() {
