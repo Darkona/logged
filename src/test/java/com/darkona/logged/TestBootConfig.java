@@ -11,10 +11,4 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy;
 @ComponentScan(basePackages = "com.darkona.logged")
 public class TestBootConfig {
 
-
-    @Bean
-    public LoggedAspect loggedAspect(LogDecorator decorator) {
-        return new LoggedAspect(new LoggedProperties(), decorator);
-    }
-
 }
