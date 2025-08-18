@@ -6,6 +6,7 @@ import java.nio.charset.StandardCharsets;
  * Utility class for creating styled console banners, ornaments, and centered text output.
  * <p>
  * The {@code Bannerizer} provides helper methods to:
+ * </p>
  * <ul>
  *   <li>Create visually styled banners using box-drawing or ASCII characters</li>
  *   <li>Center strings, including those containing ANSI formatting codes</li>
@@ -13,6 +14,7 @@ import java.nio.charset.StandardCharsets;
  *
  *   <li>Strip ANSI color codes from strings</li>
  * </ul>
+ * <p>
  * These methods are intended for use in CLI applications, log outputs, or development tools where readable,
  * decorated output improves UX or traceability.
  * </p>

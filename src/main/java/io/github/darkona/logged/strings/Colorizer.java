@@ -14,7 +14,7 @@ import java.util.List;
  * and dynamically cycling colors across characters or lines.
  * </p>
  *
- * <h3>Key features include:</h3>
+ * Key features include:
  * <ul>
  *   <li>Colorizing text in standard terminal colors</li>
  *   <li>Resetting terminal color state</li>
@@ -23,7 +23,7 @@ import java.util.List;
  *   <li>Composing custom color sequences for creative output</li>
  * </ul>
  *
- * <h3>Example usages:</h3>
+ * Example usages:
  * <pre>{@code
  * Colorizer.red("ERROR: Something went wrong");
  * Colorizer.colorizeChars("Hello", List.of(LogColor.RED, LogColor.GREEN));
@@ -45,6 +45,7 @@ public class Colorizer {
      * Returns a color code from a fixed rainbow palette, based on the given index.
      * <p>
      * The rainbow palette includes the following colors in order:
+     * </p>
      * <ul>
      *     <li>0 — Red</li>
      *     <li>1 — Orange</li>
@@ -54,6 +55,7 @@ public class Colorizer {
      *     <li>5 — Cyan</li>
      *     <li>6 — Magenta</li>
      * </ul>
+     * <p>
      * If the index is out of bounds (i.e., not in [0, 6]), an empty string is returned.
      * This is useful for generating colorized output or styling logs with a rainbow gradient.
      * </p>
