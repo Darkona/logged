@@ -13,7 +13,7 @@ import java.util.List;
  * in specific colors (e.g., red, blue, green), applying custom colors, removing color codes,
  * and dynamically cycling colors across characters or lines.
  * </p>
- *
+ * <p>
  * Key features include:
  * <ul>
  *   <li>Colorizing text in standard terminal colors</li>
@@ -22,7 +22,7 @@ import java.util.List;
  *   <li>Stripping ANSI escape codes from formatted strings</li>
  *   <li>Composing custom color sequences for creative output</li>
  * </ul>
- *
+ * <p>
  * Example usages:
  * <pre>{@code
  * Colorizer.red("ERROR: Something went wrong");
@@ -299,6 +299,7 @@ public class Colorizer {
     public static String custom(ColorEnum color, String s) {
         return custom(color.red(), color.green(), color.blue(), s);
     }
+
     public static String custom(int r, int g, int b, String s) {
         return "\u001B[38;2;" + r + ";" + g + ";" + b + "m" + s + reset();
     }

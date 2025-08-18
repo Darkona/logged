@@ -1,7 +1,5 @@
 import com.vanniktech.maven.publish.SonatypeHost
 import org.springframework.boot.gradle.plugin.SpringBootPlugin
-import com.vanniktech.maven.publish.JavaLibrary
-import com.vanniktech.maven.publish.JavadocJar
 
 plugins {
     id 'java-library'
@@ -63,7 +61,7 @@ mavenPublishing {
         url = "https://github.com/Darkona/logged"
         licenses {
             license {
-                name = "GNU LESSER GENERAL PUBLIC LICENSE VERSION 3"
+                name = "LGPL-3.0"
                 url = "https://www.gnu.org/licenses/lgpl-3.0.txt"
                 distribution = "https://www.gnu.org/licenses/lgpl-3.0.en.html"
             }

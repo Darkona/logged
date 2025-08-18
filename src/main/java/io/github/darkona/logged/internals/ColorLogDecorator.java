@@ -89,9 +89,11 @@ public class ColorLogDecorator implements LogDecorator {
     }
 
     @Override
-    public String custom(ColorEnum color, String s){
+    public String custom(ColorEnum color, String s) {
         return Colorizer.custom(color, s);
-    };
+    }
+
+    ;
 
     @Override
     public String reset() {

@@ -47,6 +47,16 @@ public class LoggedAspect {
         data.addToken(LogToken.FILENAME, origin.getFileName());
     }
 
+    private static Logged getLoggedOptions(ProceedingJoinPoint pjp) {
+        MethodSignature signature = (MethodSignature) pjp.getSignature();
+        Method method = signature.getMethod();
+        var ops = method.getAnnotation(Logged.class);
+        if (ops == null) {
+            ops = pjp.getTarget().getClass().getAnnotation(Logged.class);
+        }
+        return ops;
+    }
+
     @PostConstruct
     void init() {
         LoggerFactory.getLogger(LoggedAspect.class)
@@ -75,16 +85,6 @@ public class LoggedAspect {
         }
     }
 
-    private static Logged getLoggedOptions(ProceedingJoinPoint pjp) {
-        MethodSignature signature = (MethodSignature) pjp.getSignature();
-        Method method = signature.getMethod();
-        var ops = method.getAnnotation(Logged.class);
-        if (ops == null) {
-            ops = pjp.getTarget().getClass().getAnnotation(Logged.class);
-        }
-        return ops;
-    }
-
     private Data assembleCallData(ProceedingJoinPoint pjp, Logged options) {
 
         var start = System.currentTimeMillis();
@@ -94,6 +94,7 @@ public class LoggedAspect {
         map.put(LogToken.EXIT_ICON, props.getIcons() ? deco.green(props.getExitIcon()) + " " : "");
         map.put(LogToken.THROW_ICON, props.getIcons() ? deco.red(props.getThrowIcon()) + " " : "");
         map.put(LogToken.CLASS_NAME, pjp.getSignature().getDeclaringType().getSimpleName());
+        map.put(LogToken.CLASS_LONG, pjp.getSignature().getDeclaringType().getName());
         map.put(LogToken.METHOD_NAME, pjp.getSignature().getName());
         map.put(LogToken.METHOD_TYPE, pjp.getSignature().toLongString());
 

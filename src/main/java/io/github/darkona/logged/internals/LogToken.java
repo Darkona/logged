@@ -8,6 +8,7 @@ public enum LogToken {
     METHOD_NAME("m"),
     METHOD_TYPE("t"),
     CLASS_NAME("c"),
+    CLASS_LONG("C"),
     RETURN_VALUE("rV"),
     DURATION("d"),
     EXCEPTION_CLASS("ex"),
@@ -25,19 +26,19 @@ public enum LogToken {
 
 
     private final String token;
-    
+
     LogToken(String token) {
         this.token = token;
-    }
-
-    public String token() {
-        return token;
     }
 
     public static Optional<LogToken> fromToken(String token) {
         return Arrays.stream(values())
                      .filter(v -> v.token.equals(token))
                      .findFirst();
+    }
+
+    public String token() {
+        return token;
     }
 }
 

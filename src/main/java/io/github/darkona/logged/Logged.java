@@ -79,6 +79,16 @@ public @interface Logged {
     boolean logStackTrace() default false;
 
     /**
+     * Redact parameter value by name of parameter
+     */
+    String[] redactArgValues() default {};
+
+    /**
+     * Redact parameter value by position of parameter (0 is first parameter)
+     */
+    int[] redactAtPos() default {};
+
+    /**
      * NONE = No values are printed.
      * ALL= All the values are printed.
      * NULL= Only print if the value is null (helps identify values incorrectly set as null, without printing the non-null values).
@@ -87,11 +97,4 @@ public @interface Logged {
         NONE, ALL, NULL
     }
 
-    /** Redact parameter value by name of parameter */
-    String[] redactArgValues() default {};
-
-    /** Redact parameter value by position of parameter (0 is first parameter) */
-    int[] redactAtPos() default {};
-
-    boolean withMDC() default true;
 }
