@@ -1,5 +1,7 @@
 import com.vanniktech.maven.publish.SonatypeHost
 import org.springframework.boot.gradle.plugin.SpringBootPlugin
+import com.vanniktech.maven.publish.JavaLibrary
+import com.vanniktech.maven.publish.JavadocJar
 
 plugins {
     id 'java-library'
@@ -56,6 +58,8 @@ mavenPublishing {
     signAllPublications()
 
     coordinates(group.toString(), rootProject.name, version.toString())
+
+    configure(new JavaLibrary(new JavadocJar.Javadoc(), true))
 
     pom {
         name = "Logged"
