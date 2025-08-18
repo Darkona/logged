@@ -221,15 +221,15 @@ public class LoggedProperties {
         return redactMask;
     }
 
-    public  void setRedactMask(Character redactMask) {
+    public void setRedactMask(Character redactMask) {
         this.redactMask = redactMask;
     }
 
-    public Integer getRedactLength(){
+    public Integer getRedactLength() {
         return redactLength;
     }
 
-    public void setRedactLength(Integer redactLength){
+    public void setRedactLength(Integer redactLength) {
         this.redactLength = redactLength;
     }
 
