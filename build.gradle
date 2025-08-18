@@ -59,8 +59,6 @@ mavenPublishing {
 
     coordinates(group.toString(), rootProject.name, version.toString())
 
-    configure(new JavaLibrary(new JavadocJar.Javadoc(), true))
-
     pom {
         name = "Logged"
         description = "Spring-Boot Aspect-Based Logging helper that allows annotating methods so they are logged on entry, on return and on exception."
