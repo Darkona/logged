@@ -1,3 +1,4 @@
+import com.vanniktech.maven.publish.SonatypeHost
 import org.springframework.boot.gradle.plugin.SpringBootPlugin
 
 plugins {
@@ -5,6 +6,7 @@ plugins {
     id 'maven-publish'
     id 'org.springframework.boot' version '3.5.4' apply false
     id 'io.spring.dependency-management' version '1.1.7'
+    id 'com.vanniktech.maven.publish' version '0.30.0'
 }
 
 group = 'io.github.darkona'
@@ -37,7 +39,7 @@ java {
         archives jar
     }
 
-    //withJavadocJar()
+    withJavadocJar()
     withSourcesJar()
 }
 
@@ -47,30 +49,40 @@ jar {
     archiveClassifier = ''
 }
 
-publishing {
-    publications {
+mavenPublishing {
 
-        mavenJava(MavenPublication) {
+    publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
 
-            from components.java
+    signAllPublications()
 
+    coordinates(group.toString(), rootProject.name, version.toString())
 
-
-            versionMapping {
-                usage('java-api') {
-                    fromResolutionOf('runtimeClasspath')
-                }
-                usage('java-runtime') {
-                    fromResolutionResult()
-                }
+    pom {
+        name = "Logged"
+        description = "Spring-Boot Aspect-Based Logging helper that allows annotating methods so they are logged on entry, on return and on exception."
+        inceptionYear = "2025"
+        url = "https://github.com/Darkona/logged"
+        licenses {
+            license {
+                name = "GNU LESSER GENERAL PUBLIC LICENSE VERSION 3"
+                url = "https://www.gnu.org/licenses/lgpl-3.0.txt"
+                distribution = "https://www.gnu.org/licenses/lgpl-3.0.en.html"
             }
-
         }
+        developers {
+            developer {
+                id = "Darkona"
+                name = "Javier Letterer"
+                url = "https://github.com/Darkona"
+            }
+        }
+        scm {
+            url = "https://github.com/Darkona/logged"
+            connection = "scm:git:git://github.com/Darkona/logged.git"
+            developerConnection = "scm:git:ssh://git@github.com/Darkona/logged.git"
+        }
+    }
 
-    }
-    repositories {
-        mavenLocal() // Publish to local Maven repository
-    }
 }
 
 dependencyManagement {
