@@ -90,13 +90,10 @@ mavenPublishing {
 }
 
 publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            from components.java
-            versionMapping {
-                usage('java-api')     { fromResolutionResult() }
-                usage('java-runtime') { fromResolutionResult() }
-            }
+    publications.withType(MavenPublication).configureEach {
+        versionMapping {
+            usage('java-api')     { fromResolutionResult() }
+            usage('java-runtime') { fromResolutionResult() }
         }
     }
 }
