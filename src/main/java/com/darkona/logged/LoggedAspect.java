@@ -6,16 +6,13 @@ import com.darkona.logged.internals.LogDecorator;
 import com.darkona.logged.internals.LogToken;
 import com.darkona.logged.internals.ParameterNames;
 import com.darkona.logged.plugins.LoggedPlugin;
-import com.darkona.logged.strings.StringInterpolator;
 import com.darkona.logged.strings.Transformer;
 import jakarta.annotation.PostConstruct;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.event.Level;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
@@ -24,7 +21,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 
 @Aspect
@@ -35,7 +31,7 @@ public class LoggedAspect {
     private final LogDecorator deco;
     private final List<LoggedPlugin> plugins;
 
-    public LoggedAspect(LoggedProperties props, LogDecorator deco,  List<LoggedPlugin> plugins) {
+    public LoggedAspect(LoggedProperties props, LogDecorator deco, List<LoggedPlugin> plugins) {
         this.props = props;
         this.deco = deco;
         this.plugins = plugins;
@@ -57,33 +53,35 @@ public class LoggedAspect {
                      .info(deco.custom(Yellow.GOLD, "@Logged initialized."));
     }
 
-    @Around(value = "@annotation(com.darkona.logged.Logged)")
+    @Around(value = "@annotation(com.darkona.logged.Logged) ||  @within(com.darkona.logged.Logged)")
     public Object logMethod(ProceedingJoinPoint pjp)
     throws Throwable {
-        MethodSignature signature = (MethodSignature) pjp.getSignature();
-        Method method = signature.getMethod();
-        Logged options = method.getAnnotation(Logged.class);
+        Logged options = getLoggedOptions(pjp);
         Data data = assembleCallData(pjp, options);
-
         plugins.forEach(plugin -> plugin.onCall(pjp, data, options));
 
         try {
             var o = pjp.proceed();
             assembleReturnData(data, o);
-
             plugins.forEach(plugin -> plugin.onReturn(pjp, data, options));
-
             return o;
+
         } catch (Throwable e) {
-
             data.addToken(LogToken.DURATION, String.valueOf(System.currentTimeMillis() - data.start()));
-            var origin = e.getStackTrace()[0];
-            assembleExceptionData(e, data, origin);
-
+            assembleExceptionData(e, data, e.getStackTrace()[0]);
             plugins.forEach(plugin -> plugin.onException(pjp, data, options, e));
-
             throw e;
         }
+    }
+
+    private static Logged getLoggedOptions(ProceedingJoinPoint pjp) {
+        MethodSignature signature = (MethodSignature) pjp.getSignature();
+        Method method = signature.getMethod();
+        var ops = method.getAnnotation(Logged.class);
+        if (ops == null) {
+            ops = pjp.getTarget().getClass().getAnnotation(Logged.class);
+        }
+        return ops;
     }
 
     private Data assembleCallData(ProceedingJoinPoint pjp, Logged options) {
