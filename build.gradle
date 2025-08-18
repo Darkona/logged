@@ -40,9 +40,6 @@ java {
     artifacts {
         archives jar
     }
-
-    withJavadocJar()
-    withSourcesJar()
 }
 
 jar {
