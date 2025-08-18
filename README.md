@@ -529,6 +529,7 @@ Each template supports a specific set of tokens. These tokens will be dynamicall
 
 These customizations work both for the default messages via configuration in your application.properties or application.yaml, and for custom messages for 
 different methods via the options in the annotation.
+
 ---
 
 ### ✍️ Syntax
