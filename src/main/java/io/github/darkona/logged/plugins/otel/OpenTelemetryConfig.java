@@ -1,6 +1,6 @@
 package io.github.darkona.logged.plugins.otel;
 
-import io.github.darkona.logged.internals.LogDecorator;
+import io.github.darkona.logged.api.LogDecorator;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;

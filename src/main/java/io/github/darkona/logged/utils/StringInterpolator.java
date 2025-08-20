@@ -1,4 +1,4 @@
-package io.github.darkona.logged.strings;
+package io.github.darkona.logged.utils;
 
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -22,6 +22,7 @@ import java.util.regex.Pattern;
  * This class is thread-safe as it maintains no mutable state.
  * </p>
  */
+@SuppressWarnings("unused")
 public class StringInterpolator {
 
     private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\{([^}]+)}");

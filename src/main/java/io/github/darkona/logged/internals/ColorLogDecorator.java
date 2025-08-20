@@ -1,9 +1,10 @@
 package io.github.darkona.logged.internals;
 
+import io.github.darkona.logged.api.LogDecorator;
 import io.github.darkona.logged.colors.ColorEnum;
-import io.github.darkona.logged.strings.Bannerizer;
-import io.github.darkona.logged.strings.Colorizer;
-import io.github.darkona.logged.strings.Transformer;
+import io.github.darkona.logged.utils.Bannerizer;
+import io.github.darkona.logged.utils.Colorizer;
+import io.github.darkona.logged.utils.Transformer;
 import jakarta.annotation.Nullable;
 
 public class ColorLogDecorator implements LogDecorator {
@@ -79,6 +80,10 @@ public class ColorLogDecorator implements LogDecorator {
     }
 
     @Override
+    public String purple(String e){
+        return Colorizer.purple(e);
+    }
+    @Override
     public String darkGray(String s) {
         return Colorizer.darkGray(s);
     }
@@ -92,8 +97,6 @@ public class ColorLogDecorator implements LogDecorator {
     public String custom(ColorEnum color, String s) {
         return Colorizer.custom(color, s);
     }
-
-    ;
 
     @Override
     public String reset() {

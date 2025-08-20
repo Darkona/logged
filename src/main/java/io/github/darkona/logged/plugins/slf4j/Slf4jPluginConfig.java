@@ -1,7 +1,7 @@
 package io.github.darkona.logged.plugins.slf4j;
 
 import io.github.darkona.logged.LoggedProperties;
-import io.github.darkona.logged.internals.LogDecorator;
+import io.github.darkona.logged.api.LogDecorator;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProperty;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;

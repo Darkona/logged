@@ -1,4 +1,4 @@
-package io.github.darkona.logged.internals;
+package io.github.darkona.logged.api;
 
 import io.github.darkona.logged.colors.ColorEnum;
 import jakarta.annotation.Nullable;
@@ -98,6 +98,8 @@ public interface LogDecorator {
      * @return the input string decorated in white.
      */
     String white(String s);
+
+    String purple(String e);
 
     /**
      * @return the input string decorated in dark gray.
