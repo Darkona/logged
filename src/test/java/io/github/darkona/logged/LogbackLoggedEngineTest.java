@@ -9,6 +9,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
@@ -46,14 +47,21 @@ class LogbackLoggedEngineTest {
     @Autowired
     private ApplicationContext context;
 
+    private boolean foundBean(String name) {
+        try { //noinspection ConstantValue
+            return context.getBean(name) != null;
+        } catch (NoSuchBeanDefinitionException ex) {return false;}
+    }
+
     @Test
     void shouldSeeLoggedAspectInContext() {
         String matchedBean = Arrays.stream(context.getBeanDefinitionNames())
-                                   .filter(name -> name.toLowerCase().contains("loggedaspect"))
+                                   .filter(name -> name.toLowerCase().contains("loggedengine"))
                                    .findFirst()
                                    .orElse(null);
-
-        assertNotNull(matchedBean, "LoggedAspect bean should be present in the application context");
+        assertNotNull(matchedBean);
+        assertTrue(foundBean("loggedEngine"));
+        assertTrue(foundBean("springAspect"));
 
         System.out.println("Found LoggedAspect bean: " + matchedBean);
     }
