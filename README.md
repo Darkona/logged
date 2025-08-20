@@ -29,13 +29,13 @@ Maven:
 <dependency>
     <groupId>io.github.darkona</groupId>
     <artifactId>logged</artifactId>
-    <version>1.0.1</version>
+    <version>1.1.0</version>
 </dependency>
 ```
 Gradle:
 ```groovy
 dependencies {
-   implementation "io.github.darkona:logged:1.0.1" 
+   implementation "io.github.darkona:logged:1.1.0" 
 }
 ```
 No manual configuration is needed. Spring Boot will detect and wire all components automatically.
