@@ -1,6 +1,4 @@
-package io.github.darkona.logged;
-
-import io.github.darkona.logged.internals.LogToken;
+package io.github.darkona.logged.api;
 
 import java.util.HashMap;
 import java.util.Map;

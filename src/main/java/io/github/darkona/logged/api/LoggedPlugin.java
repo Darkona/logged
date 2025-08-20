@@ -1,6 +1,5 @@
-package io.github.darkona.logged.plugins;
+package io.github.darkona.logged.api;
 
-import io.github.darkona.logged.Data;
 import io.github.darkona.logged.Logged;
 import org.aspectj.lang.ProceedingJoinPoint;
 

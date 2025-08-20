@@ -9,6 +9,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
@@ -21,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(classes = TestBootConfig.class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class LogbackLoggedAspectTest {
+class LogbackLoggedEngineTest {
 
     @Autowired
     private TestObject testObject;
@@ -46,14 +47,21 @@ class LogbackLoggedAspectTest {
     @Autowired
     private ApplicationContext context;
 
+    private boolean foundBean(String name) {
+        try { //noinspection ConstantValue
+            return context.getBean(name) != null;
+        } catch (NoSuchBeanDefinitionException ex) {return false;}
+    }
+
     @Test
     void shouldSeeLoggedAspectInContext() {
         String matchedBean = Arrays.stream(context.getBeanDefinitionNames())
-                                   .filter(name -> name.toLowerCase().contains("loggedaspect"))
+                                   .filter(name -> name.toLowerCase().contains("loggedengine"))
                                    .findFirst()
                                    .orElse(null);
-
-        assertNotNull(matchedBean, "LoggedAspect bean should be present in the application context");
+        assertNotNull(matchedBean);
+        assertTrue(foundBean("loggedEngine"));
+        assertTrue(foundBean("springAspect"));
 
         System.out.println("Found LoggedAspect bean: " + matchedBean);
     }
@@ -190,16 +198,12 @@ class LogbackLoggedAspectTest {
 
     @Test
     void callWithCustomCallMsg() {
-        callAndAssert("customOnCall", testObject::customOnCall, logs -> {
-            assertMessageContains("Entering customOnCall");
-        });
+        callAndAssert("customOnCall", testObject::customOnCall, logs -> assertMessageContains("Entering customOnCall"));
     }
 
     @Test
     void callWithCustomReturnMsg() {
-        callAndAssert("customOnReturn", testObject::customOnReturn, logs -> {
-            assertMessageContains("Returned from method customOnReturn");
-        });
+        callAndAssert("customOnReturn", testObject::customOnReturn, logs -> assertMessageContains("Returned from method customOnReturn"));
     }
 
     @Test
@@ -214,11 +218,8 @@ class LogbackLoggedAspectTest {
     void callWithRedactedArgs() {
         callAndAssert("methodWithRedactedArgs",
                 () -> testObject.methodWithRedactedArgs("Important Name", "Chicken", "Credit Card Number"),
-                logs -> {
-                assertMessageContains("[(String) arg1=█████,(String) arg2=Chicken,(String) arg3=█████]");
-                });
+                logs -> assertMessageContains("[(String) arg1=█████,(String) arg2=Chicken,(String) arg3=█████]"));
     }
-
 
 
 }

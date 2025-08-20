@@ -1,4 +1,4 @@
-package io.github.darkona.logged.strings;
+package io.github.darkona.logged.utils;
 
 import io.github.darkona.logged.colors.ColorEnum;
 import io.github.darkona.logged.colors.LogColor;
@@ -35,7 +35,7 @@ import java.util.List;
  * banners, or any context where colored output improves readability or style.
  * </p>
  */
-
+@SuppressWarnings("unused")
 public class Colorizer {
 
 
