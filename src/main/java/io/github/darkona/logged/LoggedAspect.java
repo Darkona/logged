@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.Set;
 
 
-@Aspect
+//@Aspect
 public class LoggedAspect {
 
     public static final String NULL = "null";
@@ -63,7 +63,7 @@ public class LoggedAspect {
                      .info(deco.custom(Yellow.GOLD, "@Logged initialized."));
     }
 
-    @Around(value = "@annotation(io.github.darkona.logged.Logged) ||  @within(io.github.darkona.logged.Logged)")
+    //@Around(value = "@annotation(io.github.darkona.logged.Logged) ||  @within(io.github.darkona.logged.Logged)")
     public Object logMethod(ProceedingJoinPoint pjp)
     throws Throwable {
         Logged options = getLoggedOptions(pjp);

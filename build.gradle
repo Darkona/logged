@@ -10,7 +10,7 @@ plugins {
 }
 
 group = 'io.github.darkona'
-version = '1.0.1'
+version = '1.1.0'
 
 repositories {
     mavenCentral()
@@ -43,14 +43,13 @@ java {
 jar {
     enabled = true
     archiveFileName = filename
-    archiveClassifier = ''
 }
 
 mavenPublishing {
 
     publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
 
-    signAllPublications()
+    //signAllPublications()
 
     coordinates(group.toString(), rootProject.name, version.toString())
 
