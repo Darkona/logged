@@ -680,76 +680,20 @@ There are two supported approaches:
 
 ---
 
-## Option A — Load‑Time Weaving (LTW) with AspectJ Agent
+## Load‑Time Weaving (LTW) with AspectJ Agent
 
 ### 1) Add dependencies
 
-**Gradle**
-
-```gradle
-dependencies {
-  implementation("org.springframework.boot:spring-boot-starter-aop")
-  // Optional but useful for LTW in some environments
-  runtimeOnly("org.aspectj:aspectjweaver")
-}
-```
-
-**Maven**
-
-```xml
-<dependencies>
-  <dependency>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-starter-aop</artifactId>
-  </dependency>
-  <dependency>
-    <groupId>org.aspectj</groupId>
-    <artifactId>aspectjweaver</artifactId>
-    <scope>runtime</scope>
-  </dependency>
-</dependencies>
-```
-
 > The `spring-boot-starter-aop` brings Spring AOP support; `aspectjweaver` provides the runtime weaver used by the Java agent.
+> These are already present since Logged includes them as transitive dependencies.
 
-### 2) Enable load‑time weaving in Spring
+### 1) Enable load‑time weaving in Spring
 
-Add one of the following to your configuration:
-
-**Java config**
-
-```java
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.EnableLoadTimeWeaving;
-import static org.springframework.context.annotation.EnableLoadTimeWeaving.AspectJWeaving;
-
-@Configuration
-@EnableLoadTimeWeaving(aspectjWeaving = AspectJWeaving.ENABLED)
-class AspectJWeavingConfig { }
-```
-
-**or** register a `LoadTimeWeaver` bean explicitly:
-
-```java
-import org.springframework.context.annotation.Bean;
-import org.springframework.instrument.classloading.InstrumentationLoadTimeWeaver;
-
-@Bean
-public InstrumentationLoadTimeWeaver loadTimeWeaver() {
-    return new InstrumentationLoadTimeWeaver();
-}
-```
-
-### 3) Run the app with the AspectJ agent
+### 2) Run the app with the AspectJ agent
 
 You must attach the **AspectJ Java agent** at JVM startup so bytecode can be woven as classes load.
 
 ```bash
-# 1) Obtain the agent (version example)
-curl -L -o aspectjweaver.jar \
-  https://repo1.maven.org/maven2/org/aspectj/aspectjweaver/1.9.22.1/aspectjweaver-1.9.22.1.jar
-
-# 2) Launch your Spring Boot app with the agent
 java -javaagent:./aspectjweaver.jar -jar app.jar
 ```
 
@@ -760,16 +704,49 @@ ADD https://repo1.maven.org/maven2/org/aspectj/aspectjweaver/1.9.22.1/aspectjwea
 ENTRYPOINT ["java","-javaagent:/opt/aspectjweaver.jar","-jar","/app/app.jar"]
 ```
 
-**Tests (Surefire/Gradle)**
-
-```bash
-# Maven Surefire
-mvn -DargLine="-javaagent:${user.home}/.m2/repository/org/aspectj/aspectjweaver/1.9.22.1/aspectjweaver-1.9.22.1.jar" test
-
-# Gradle (example)
-./gradlew test \
-  -Dorg.gradle.jvmargs="-javaagent=$HOME/.m2/repository/org/aspectj/aspectjweaver/1.9.22.1/aspectjweaver-1.9.22.1.jar"
+If you are using Gradle you can do something like:
+```groovy
+//This task copies aspectJWeaver from your classpath to your build directory.
+//This enables you to copy it together with your application jar into a container.
+tasks.register("copyAgents", Copy) {
+    from configurations.runtimeClasspath.filter {
+        it.name.startsWith("aspectjweaver")
+    }
+    into project.layout.buildDirectory.dir("libs")
+    rename { "aspectjweaver.jar" }
+}
+//When running the app use aspectjweaver as an agent.
+bootRun {
+    def aj = configurations.runtimeClasspath
+            .filter { it.name.startsWith("aspectjweaver") }
+            .singleFile
+    println aj
+    jvmArgs "-javaagent:${aj.absolutePath}"
+}
 ```
+
+### 3) Use selective weaving:
+
+Add aop.xml to resources/META-INF with specific weaving like so:
+```xml
+<!DOCTYPE aspectj PUBLIC "-//AspectJ//DTD//EN" "https://www.eclipse.org/aspectj/dtd/aspectj.dtd">
+<aspectj>
+
+    <weaver>
+        <!-- only weave classes in our application-specific packages and sub-packages -->
+        <include within="com.your.package..*"/>
+        <!-- add this second line if you have issues with classpath. Usually happens when running locally. -->
+        <include within="io.github.darkona.logged..*"/>
+    </weaver>
+
+    <aspects>
+        <!-- Weave the specialized Aspect -->
+        <aspect name="io.github.darkona.logged.weaving.WeavedAspect"/>
+    </aspects>
+
+</aspectj>
+```
+> **IMPORTANT** Logged is configured to only work with LTW if aop.xml exists and is specifically weaving the WeavedAspect class.
 
 ### 4) Results with LTW
 
@@ -851,7 +828,6 @@ plugins {
 
 * **Proxy vs Weaving**: Spring proxy AOP is great for most cases but cannot see private methods or self‑invocation. AspectJ weaving modifies the bytecode to apply advices directly at join points.
 * **Performance**: The overhead of weaving is at class‑load time (LTW) or build time (CTW). Runtime overhead is typically comparable or lower than proxy interception for dense call graphs.
-* **Selective Weaving**: If you need to restrict weaving, configure `aop.xml` with the exact aspects and packages to weave.
 * **Mixing**: It’s safe to keep Spring AOP enabled. LTW/CTW augments it so your `@Logged` aspect applies everywhere you expect.
 
 ---
@@ -859,7 +835,7 @@ plugins {
 ## Quick Checklist
 
 * [ ] Added `spring-boot-starter-aop` and `aspectjweaver`.
-* [ ] Enabled LTW with `@EnableLoadTimeWeaving(ENABLED)` **or** configured CTW.
+* [ ] Added `aop.xml` and it is weaving the `WeavedAspect` class specifically.
 * [ ] Start JVM with `-javaagent:/path/to/aspectjweaver.jar` (for LTW).
 * [ ] Verified that **private** and **self‑invoked** methods now produce `@Logged` entries.
 
@@ -867,7 +843,6 @@ plugins {
 ## Architecture
 
 * Uses Spring AOP (`@Aspect`) to intercept methods annotated with `@Logged`
-* Internally, delegates log construction to a reusable `LogStrings` utility
 * No runtime reflection required outside of Spring proxy context
 
 ## License
