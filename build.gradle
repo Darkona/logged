@@ -49,7 +49,7 @@ mavenPublishing {
 
     publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
 
-    //signAllPublications()
+    signAllPublications()
 
     coordinates(group.toString(), rootProject.name, version.toString())
 
@@ -68,7 +68,7 @@ mavenPublishing {
         developers {
             developer {
                 id = "Darkona"
-                name = "Javier Letterer"
+                name = "Javier Darkona"
                 url = "https://github.com/Darkona"
             }
         }
