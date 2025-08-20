@@ -22,6 +22,7 @@ import java.util.regex.Pattern;
  * This class is thread-safe as it maintains no mutable state.
  * </p>
  */
+@SuppressWarnings("unused")
 public class StringInterpolator {
 
     private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\{([^}]+)}");

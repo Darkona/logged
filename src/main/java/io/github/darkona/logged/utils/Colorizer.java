@@ -35,7 +35,7 @@ import java.util.List;
  * banners, or any context where colored output improves readability or style.
  * </p>
  */
-
+@SuppressWarnings("unused")
 public class Colorizer {
 
 

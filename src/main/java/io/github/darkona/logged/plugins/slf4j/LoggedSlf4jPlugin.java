@@ -49,7 +49,7 @@ public class LoggedSlf4jPlugin implements LoggedPlugin {
 
     void logCall(Logger log, Level level, Data data, Logged options) {
 
-        String template = "";
+        String template;
         if (options.callMsg() != null && !options.callMsg().isEmpty()) {
             template = options.callMsg();
             log.atLevel(level).log(StringInterpolator.interpolate(template, data.tok()));
@@ -130,14 +130,6 @@ public class LoggedSlf4jPlugin implements LoggedPlugin {
             } else {
                 log.atLevel(options.exceptionLevel()).log(message);
             }
-        }
-    }
-
-    private String objectString(Object o) {
-        try {
-            return o == null ? "null" : o.toString();
-        } catch (Throwable t) {
-            return "toString Error: " + o.getClass().getSimpleName();
         }
     }
 

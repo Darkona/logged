@@ -9,7 +9,7 @@ import java.lang.management.ManagementFactory;
 
 public class Conditions {
 
-    public static boolean weavingEnabled(ConditionContext context, AnnotatedTypeMetadata metadata) {
+    public static boolean weavingEnabled(ConditionContext context) {
         var args = ManagementFactory.getRuntimeMXBean().getInputArguments();
 
         boolean hasWeaving = args.stream()
@@ -28,14 +28,14 @@ public class Conditions {
     public static class OnAspectJWeaving implements Condition {
         @Override
         public boolean matches(@Nonnull ConditionContext context, @Nonnull AnnotatedTypeMetadata metadata) {
-            return weavingEnabled(context, metadata);
+            return weavingEnabled(context);
         }
     }
 
     public static class OnNoAspectJWeaving implements Condition {
         @Override
         public boolean matches(@Nonnull ConditionContext context, @Nonnull AnnotatedTypeMetadata metadata) {
-            return !weavingEnabled(context, metadata);
+            return !weavingEnabled(context);
         }
     }
 }

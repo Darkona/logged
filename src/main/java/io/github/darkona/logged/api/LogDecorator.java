@@ -99,6 +99,8 @@ public interface LogDecorator {
      */
     String white(String s);
 
+    String purple(String e);
+
     /**
      * @return the input string decorated in dark gray.
      */

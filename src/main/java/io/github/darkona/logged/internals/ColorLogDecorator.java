@@ -80,6 +80,10 @@ public class ColorLogDecorator implements LogDecorator {
     }
 
     @Override
+    public String purple(String e){
+        return Colorizer.purple(e);
+    }
+    @Override
     public String darkGray(String s) {
         return Colorizer.darkGray(s);
     }
@@ -93,8 +97,6 @@ public class ColorLogDecorator implements LogDecorator {
     public String custom(ColorEnum color, String s) {
         return Colorizer.custom(color, s);
     }
-
-    ;
 
     @Override
     public String reset() {

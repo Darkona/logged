@@ -31,6 +31,7 @@ public enum LogToken {
         this.token = token;
     }
 
+    @SuppressWarnings("unused")
     public static Optional<LogToken> fromToken(String token) {
         return Arrays.stream(values())
                      .filter(v -> v.token.equals(token))

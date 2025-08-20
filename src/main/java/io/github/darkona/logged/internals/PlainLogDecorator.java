@@ -79,6 +79,11 @@ public class PlainLogDecorator implements LogDecorator {
     }
 
     @Override
+    public String purple(String e) {
+        return e;
+    }
+
+    @Override
     public String darkGray(String s) {
         return s;
     }

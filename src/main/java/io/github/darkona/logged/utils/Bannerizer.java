@@ -28,6 +28,7 @@ import java.nio.charset.StandardCharsets;
  *
  * <p>This class is stateless and all methods are static.</p>
  */
+@SuppressWarnings("unused")
 public class Bannerizer {
 
     private static final String u_d_top_l = "╔";

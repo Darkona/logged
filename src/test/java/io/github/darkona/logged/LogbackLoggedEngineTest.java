@@ -190,16 +190,12 @@ class LogbackLoggedEngineTest {
 
     @Test
     void callWithCustomCallMsg() {
-        callAndAssert("customOnCall", testObject::customOnCall, logs -> {
-            assertMessageContains("Entering customOnCall");
-        });
+        callAndAssert("customOnCall", testObject::customOnCall, logs -> assertMessageContains("Entering customOnCall"));
     }
 
     @Test
     void callWithCustomReturnMsg() {
-        callAndAssert("customOnReturn", testObject::customOnReturn, logs -> {
-            assertMessageContains("Returned from method customOnReturn");
-        });
+        callAndAssert("customOnReturn", testObject::customOnReturn, logs -> assertMessageContains("Returned from method customOnReturn"));
     }
 
     @Test
@@ -214,11 +210,8 @@ class LogbackLoggedEngineTest {
     void callWithRedactedArgs() {
         callAndAssert("methodWithRedactedArgs",
                 () -> testObject.methodWithRedactedArgs("Important Name", "Chicken", "Credit Card Number"),
-                logs -> {
-                assertMessageContains("[(String) arg1=█████,(String) arg2=Chicken,(String) arg3=█████]");
-                });
+                logs -> assertMessageContains("[(String) arg1=█████,(String) arg2=Chicken,(String) arg3=█████]"));
     }
-
 
 
 }
