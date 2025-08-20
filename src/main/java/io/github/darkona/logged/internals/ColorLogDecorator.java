@@ -1,9 +1,10 @@
 package io.github.darkona.logged.internals;
 
+import io.github.darkona.logged.api.LogDecorator;
 import io.github.darkona.logged.colors.ColorEnum;
-import io.github.darkona.logged.strings.Bannerizer;
-import io.github.darkona.logged.strings.Colorizer;
-import io.github.darkona.logged.strings.Transformer;
+import io.github.darkona.logged.utils.Bannerizer;
+import io.github.darkona.logged.utils.Colorizer;
+import io.github.darkona.logged.utils.Transformer;
 import jakarta.annotation.Nullable;
 
 public class ColorLogDecorator implements LogDecorator {

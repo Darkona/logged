@@ -637,7 +637,7 @@ A **generic** placeholder interpolation engine. It is **not tied** to Logged’s
 
 A small **string utilities** helper used throughout the library. It provides **static**, null‑safe helpers that other components (like the aspect and decorators) rely on when shaping text.
 
-**Where it lives:** `io.github.darkona.logged.strings.Transformer`
+**Where it lives:** `io.github.darkona.logged.utils.Transformer`
 
 **Design:** stateless, thread‑safe (`public static` methods), focused on defensive string handling.
 

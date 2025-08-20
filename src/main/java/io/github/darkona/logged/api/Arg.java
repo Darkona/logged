@@ -1,7 +1,8 @@
-package io.github.darkona.logged;
+package io.github.darkona.logged.api;
 
-import io.github.darkona.logged.internals.LogToken;
-import io.github.darkona.logged.strings.StringInterpolator;
+import io.github.darkona.logged.Logged;
+import io.github.darkona.logged.internals.LoggedEngine;
+import io.github.darkona.logged.utils.StringInterpolator;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -14,7 +15,7 @@ public record Arg(String className, String name, String value) {
         if (Logged.Values.ALL.equals(values)) {
             toks.put("v", value);
         } else if (Logged.Values.NULL.equals(values) && value == null) {
-            toks.put("v", LoggedAspect.NULL);
+            toks.put("v", LoggedEngine.NULL);
         } else {
             toks.put("v", "");
         }

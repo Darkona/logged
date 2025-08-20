@@ -1,4 +1,4 @@
-package io.github.darkona.logged.internals;
+package io.github.darkona.logged.api;
 
 import io.github.darkona.logged.colors.ColorEnum;
 import jakarta.annotation.Nullable;

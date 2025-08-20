@@ -1,4 +1,4 @@
-package io.github.darkona.logged.strings;
+package io.github.darkona.logged.utils;
 
 import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;

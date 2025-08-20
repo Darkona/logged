@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(classes = TestBootConfig.class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class LogbackLoggedAspectTest {
+class LogbackLoggedEngineTest {
 
     @Autowired
     private TestObject testObject;

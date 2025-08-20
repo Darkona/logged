@@ -1,15 +1,15 @@
 package io.github.darkona.logged.plugins.slf4j;
 
-import io.github.darkona.logged.Arg;
-import io.github.darkona.logged.Data;
+import io.github.darkona.logged.api.Arg;
+import io.github.darkona.logged.api.Data;
 import io.github.darkona.logged.Logged;
-import io.github.darkona.logged.LoggedAspect;
+import io.github.darkona.logged.internals.LoggedEngine;
 import io.github.darkona.logged.LoggedProperties;
 import io.github.darkona.logged.colors.Green;
-import io.github.darkona.logged.internals.LogDecorator;
-import io.github.darkona.logged.internals.LogToken;
-import io.github.darkona.logged.plugins.LoggedPlugin;
-import io.github.darkona.logged.strings.StringInterpolator;
+import io.github.darkona.logged.api.LogDecorator;
+import io.github.darkona.logged.api.LogToken;
+import io.github.darkona.logged.api.LoggedPlugin;
+import io.github.darkona.logged.utils.StringInterpolator;
 import jakarta.annotation.PostConstruct;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.slf4j.Logger;
@@ -20,7 +20,7 @@ import org.springframework.stereotype.Component;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
-import static io.github.darkona.logged.LoggedAspect.NULL;
+import static io.github.darkona.logged.internals.LoggedEngine.NULL;
 
 @Component
 public class LoggedSlf4jPlugin implements LoggedPlugin {
@@ -35,7 +35,7 @@ public class LoggedSlf4jPlugin implements LoggedPlugin {
 
     @PostConstruct
     void init() {
-        LoggerFactory.getLogger(LoggedAspect.class)
+        LoggerFactory.getLogger(LoggedEngine.class)
                      .info(deco.custom(Green.LAWN_GREEN, "@Logged-Slf4j Plugin initialized."));
     }
 

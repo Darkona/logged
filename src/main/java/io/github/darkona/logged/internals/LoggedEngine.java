@@ -1,16 +1,17 @@
-package io.github.darkona.logged;
+package io.github.darkona.logged.internals;
 
 
+import io.github.darkona.logged.Logged;
+import io.github.darkona.logged.LoggedProperties;
+import io.github.darkona.logged.api.Arg;
+import io.github.darkona.logged.api.Data;
+import io.github.darkona.logged.api.LogDecorator;
+import io.github.darkona.logged.api.LogToken;
+import io.github.darkona.logged.api.LoggedPlugin;
 import io.github.darkona.logged.colors.Yellow;
-import io.github.darkona.logged.internals.LogDecorator;
-import io.github.darkona.logged.internals.LogToken;
-import io.github.darkona.logged.internals.ParameterNames;
-import io.github.darkona.logged.plugins.LoggedPlugin;
-import io.github.darkona.logged.strings.Transformer;
+import io.github.darkona.logged.utils.Transformer;
 import jakarta.annotation.PostConstruct;
 import org.aspectj.lang.ProceedingJoinPoint;
-import org.aspectj.lang.annotation.Around;
-import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.slf4j.LoggerFactory;
 
@@ -22,48 +23,24 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-
-//@Aspect
-public class LoggedAspect {
+public class LoggedEngine {
 
     public static final String NULL = "null";
     private final LoggedProperties props;
     private final LogDecorator deco;
     private final List<LoggedPlugin> plugins;
 
-    public LoggedAspect(LoggedProperties props, LogDecorator deco, List<LoggedPlugin> plugins) {
+    public LoggedEngine(LoggedProperties props, LogDecorator deco, List<LoggedPlugin> plugins) {
         this.props = props;
         this.deco = deco;
         this.plugins = plugins;
     }
 
-    private static void assembleExceptionData(Throwable e, Data data, StackTraceElement origin) {
-        data.addToken(LogToken.EXCEPTION_CLASS, e.getClass().getSimpleName());
-        data.addToken(LogToken.EXCEPTION_MESSAGE, e.getLocalizedMessage());
-        data.addToken(LogToken.EXCEPTION_ORIGIN_CLASS, origin.getClassName());
-        data.addToken(LogToken.EXCEPTION_ORIGIN_METHOD, origin.getMethodName());
-        data.addToken(LogToken.LINE, String.valueOf(origin.getLineNumber()));
-        data.addToken(LogToken.NULL, String.valueOf(origin.getFileName()));
-        data.addToken(LogToken.FILENAME, origin.getFileName());
-    }
-
-    private static Logged getLoggedOptions(ProceedingJoinPoint pjp) {
-        MethodSignature signature = (MethodSignature) pjp.getSignature();
-        Method method = signature.getMethod();
-        var ops = method.getAnnotation(Logged.class);
-        if (ops == null) {
-            ops = pjp.getTarget().getClass().getAnnotation(Logged.class);
-        }
-        return ops;
-    }
-
     @PostConstruct
     void init() {
-        LoggerFactory.getLogger(LoggedAspect.class)
-                     .info(deco.custom(Yellow.GOLD, "@Logged initialized."));
+        LoggerFactory.getLogger(LoggedEngine.class).info(deco.custom(Yellow.GOLD, "@Logged engine initialized."));
     }
 
-    //@Around(value = "@annotation(io.github.darkona.logged.Logged) ||  @within(io.github.darkona.logged.Logged)")
     public Object logMethod(ProceedingJoinPoint pjp)
     throws Throwable {
         Logged options = getLoggedOptions(pjp);
@@ -83,6 +60,16 @@ public class LoggedAspect {
             plugins.forEach(plugin -> plugin.onException(pjp, data, options, e));
             throw e;
         }
+    }
+
+    private static Logged getLoggedOptions(ProceedingJoinPoint pjp) {
+        MethodSignature signature = (MethodSignature) pjp.getSignature();
+        Method method = signature.getMethod();
+        var ops = method.getAnnotation(Logged.class);
+        if (ops == null) {
+            ops = pjp.getTarget().getClass().getAnnotation(Logged.class);
+        }
+        return ops;
     }
 
     private Data assembleCallData(ProceedingJoinPoint pjp, Logged options) {
@@ -132,4 +119,13 @@ public class LoggedAspect {
         data.addToken(LogToken.RETURN_VALUE, Transformer.objectString(o));
     }
 
+    private static void assembleExceptionData(Throwable e, Data data, StackTraceElement origin) {
+        data.addToken(LogToken.EXCEPTION_CLASS, e.getClass().getSimpleName());
+        data.addToken(LogToken.EXCEPTION_MESSAGE, e.getLocalizedMessage());
+        data.addToken(LogToken.EXCEPTION_ORIGIN_CLASS, origin.getClassName());
+        data.addToken(LogToken.EXCEPTION_ORIGIN_METHOD, origin.getMethodName());
+        data.addToken(LogToken.LINE, String.valueOf(origin.getLineNumber()));
+        data.addToken(LogToken.NULL, String.valueOf(origin.getFileName()));
+        data.addToken(LogToken.FILENAME, origin.getFileName());
+    }
 }

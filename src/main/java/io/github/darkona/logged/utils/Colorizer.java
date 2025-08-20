@@ -1,4 +1,4 @@
-package io.github.darkona.logged.strings;
+package io.github.darkona.logged.utils;
 
 import io.github.darkona.logged.colors.ColorEnum;
 import io.github.darkona.logged.colors.LogColor;

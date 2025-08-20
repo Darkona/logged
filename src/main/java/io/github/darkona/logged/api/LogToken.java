@@ -1,4 +1,4 @@
-package io.github.darkona.logged.internals;
+package io.github.darkona.logged.api;
 
 import java.util.Arrays;
 import java.util.Optional;

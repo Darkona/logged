@@ -1,13 +1,13 @@
 package io.github.darkona.logged.plugins.otel;
 
 
-import io.github.darkona.logged.Data;
+import io.github.darkona.logged.api.Data;
 import io.github.darkona.logged.Logged;
-import io.github.darkona.logged.LoggedAspect;
+import io.github.darkona.logged.internals.LoggedEngine;
 import io.github.darkona.logged.colors.Blue;
-import io.github.darkona.logged.internals.LogDecorator;
-import io.github.darkona.logged.internals.LogToken;
-import io.github.darkona.logged.plugins.LoggedPlugin;
+import io.github.darkona.logged.api.LogDecorator;
+import io.github.darkona.logged.api.LogToken;
+import io.github.darkona.logged.api.LoggedPlugin;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.StatusCode;
@@ -36,7 +36,7 @@ public class LoggedOpenTelemetryPlugin implements LoggedPlugin {
 
     @PostConstruct
     void init() {
-        LoggerFactory.getLogger(LoggedAspect.class)
+        LoggerFactory.getLogger(LoggedEngine.class)
                      .info(deco.custom(Blue.CORNFLOWER_BLUE, "@Logged-OpenTelemetry Plugin initialized."));
     }
 
