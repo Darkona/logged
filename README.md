@@ -65,7 +65,7 @@ The core of this library is the `@Logged` annotation. You can place it on method
 | `logStackTrace`   | `false` | Whether to print the exception stack trace.                                 |
 | `redactArgValues` | `{}`    | List of argument names to redact when logging.                              |
 | `redactAtPos`     | `{}`    | List of argument positions (0-based) to redact.                             |
-| `withMDC`         | `true`  | Include method info in the MDC for correlation IDs, tracing, etc.           |
+
 
 ### Enum: `Values`
 
