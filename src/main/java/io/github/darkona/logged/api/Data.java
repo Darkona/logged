@@ -34,10 +34,6 @@ public class Data {
         return start;
     }
 
-    public Set<Integer> redactedPos() {
-        return redactedPos;
-    }
-
     public Arg[] args() {
         return args;
     }
