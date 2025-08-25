@@ -297,7 +297,7 @@ public class Colorizer {
     }
 
     public static String custom(ColorEnum color, String s) {
-        return custom(color.red(), color.green(), color.blue(), s);
+        return color.toString() + s + reset();
     }
 
     public static String custom(int r, int g, int b, String s) {

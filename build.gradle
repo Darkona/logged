@@ -1,55 +1,81 @@
-import com.vanniktech.maven.publish.SonatypeHost
+
 import org.springframework.boot.gradle.plugin.SpringBootPlugin
 
 plugins {
     id 'java-library'
     id 'maven-publish'
-    id 'org.springframework.boot' version '3.5.4' apply false
+    id 'org.springframework.boot' version '3.5.5' apply false
     id 'io.spring.dependency-management' version '1.1.7'
-    id 'com.vanniktech.maven.publish' version '0.30.0'
+    id 'com.vanniktech.maven.publish' version '0.34.0'
 }
 
 group = 'io.github.darkona'
-version = '1.1.0'
+version = '1.2.0'
+
+
+def filename = "${rootProject.name}-${this.version}.jar"
+def isCi = providers.environmentVariable("ci").isPresent()
+def isRelease = providers.gradleProperty("release").map { it.toBoolean() }.orElse(false).get()
 
 repositories {
     mavenCentral()
-    mavenLocal()
+    if (!isCi) {
+        mavenLocal()
+    }
 }
-
-def filename = "${rootProject.name}-${this.version}.jar"
-
 java {
+
     toolchain {
         languageVersion = JavaLanguageVersion.of(21)
     }
+
     compileJava {
         options.encoding = 'UTF-8'
         options.compilerArgs += [
+                "-processor",
+                'lombok.launch.AnnotationProcessorHider$AnnotationProcessor,' +
+                        'org.springframework.boot.configurationprocessor.ConfigurationMetadataAnnotationProcessor',
                 "-parameters"
         ]
     }
-    compileTestJava{
+
+    compileTestJava {
         options.encoding = 'UTF-8'
         options.compilerArgs += [
+                "-processor",
+                'lombok.launch.AnnotationProcessorHider$AnnotationProcessor,' +
+                        'org.springframework.boot.configurationprocessor.ConfigurationMetadataAnnotationProcessor',
                 "-parameters"
         ]
     }
+
     artifacts {
         archives jar
     }
+
 }
 
 jar {
     enabled = true
     archiveFileName = filename
+    manifest {
+        attributes(
+                "Implementation-Title": rootProject.name,
+                "Implementation-Version": version,
+                "Implementation-Vendor": "Javier Darkona",
+                "Automatic-Module-Name": "io.github.darkona.logged"
+        )
+    }
 }
+
 
 mavenPublishing {
 
-    publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
+    publishToMavenCentral()
 
-    signAllPublications()
+    if (isRelease) {
+        signAllPublications()
+    }
 
     coordinates(group.toString(), rootProject.name, version.toString())
 
@@ -84,7 +110,7 @@ mavenPublishing {
 publishing {
     publications.withType(MavenPublication).configureEach {
         versionMapping {
-            usage('java-api')     { fromResolutionResult() }
+            usage('java-api') { fromResolutionResult() }
             usage('java-runtime') { fromResolutionResult() }
         }
     }
@@ -96,17 +122,28 @@ dependencyManagement {
         mavenBom("io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom:2.18.1")
     }
 }
-
+configurations.configureEach {
+    exclude group: 'org.mockito'
+}
 dependencies {
-    annotationProcessor "org.springframework.boot:spring-boot-configuration-processor"
     implementation "org.springframework.boot:spring-boot-autoconfigure"
+    compileOnly 'org.projectlombok:lombok'
+    compileOnly "io.opentelemetry.instrumentation:opentelemetry-spring-boot-starter"
+    annotationProcessor 'org.projectlombok:lombok'
+    annotationProcessor "org.springframework.boot:spring-boot-configuration-processor"
+
     api "org.springframework.boot:spring-boot-starter-aop"
-    compileOnly("io.opentelemetry.instrumentation:opentelemetry-spring-boot-starter")
+
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testCompileOnly 'org.projectlombok:lombok'
+    testImplementation "io.opentelemetry.instrumentation:opentelemetry-spring-boot-starter"
+    testAnnotationProcessor 'org.projectlombok:lombok'
+    testAnnotationProcessor "org.springframework.boot:spring-boot-configuration-processor"
+    testImplementation "org.springframework.boot:spring-boot-autoconfigure"
     testImplementation platform('org.junit:junit-bom:5.10.3')
     testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 tasks.withType(JavaCompile).configureEach {

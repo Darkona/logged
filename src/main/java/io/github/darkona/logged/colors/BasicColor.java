@@ -1,7 +1,7 @@
 package io.github.darkona.logged.colors;
 
 
-public enum AnsiColor implements ColorEnum {
+public enum BasicColor implements ColorEnum {
 
     BLACK((short) 30),
     RED((short) 31),
@@ -24,7 +24,7 @@ public enum AnsiColor implements ColorEnum {
 
     private final short ansi;
 
-    AnsiColor(short ansi) {
+    BasicColor(short ansi) {
         this.ansi = ansi;
     }
 
@@ -48,7 +48,4 @@ public enum AnsiColor implements ColorEnum {
         return 0;
     }
 
-    public String apply(String text) {
-        return "\u001B[0;" + ansi + "m" + text + "\u001B[0m";
-    }
 }
