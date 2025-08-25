@@ -9,7 +9,6 @@ import io.github.darkona.logged.api.LoggedPlugin;
 import io.github.darkona.logged.utils.Transformer;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.slf4j.MDC;
-import org.slf4j.spi.MDCAdapter;
 
 import java.util.Arrays;
 import java.util.List;
@@ -111,7 +110,6 @@ public class LoggedMdcPlugin implements LoggedPlugin {
 
     private final LogDecorator deco;
     private final LoggedMdcProperties props;
-    private MDCAdapter mm;
 
     public LoggedMdcPlugin(LogDecorator deco, LoggedMdcProperties props) {
         this.deco = deco;
