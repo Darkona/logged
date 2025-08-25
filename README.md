@@ -102,145 +102,6 @@ The core of this library is the `@Logged` annotation. You can place it on method
 
 ---
 
-## ✨ Examples
-
-### Default usage
-
-```java
-@Logged
-public String salute() {
-    return "Hello World!";
-}
-```
-
-**Output:**
-
-```
-INFO : ↓○ DemoService::salute called with args: []
-INFO : ↑○ DemoService::salute returned with value: Hello World! Time taken: 4 ms
-```
-
-### Disable entry logging (`onCall = false`)
-
-```java
-@Logged(onCall = false)
-public String hello() {
-    return "Hi";
-}
-```
-
-```
-INFO : ↑○ DemoService::hello returned with value: Hi Time taken: 1 ms
-```
-
-### Disable argument details (`args = false`)
-
-```java
-@Logged(args = false)
-public void doWork(int x, int y) { }
-```
-
-```
-INFO : ↓○ DemoService::doWork called
-```
-
-### Log only null arguments (`argValues = NULL`)
-
-```java
-@Logged(argValues = Logged.Values.NULL)
-public void process(String input) { }
-```
-
-```
-INFO : ↓○ DemoService::process called with args: [(String) input=null]
-```
-
-### Disable return logging (`onReturn = false`)
-
-```java
-@Logged(onReturn = false)
-public int compute() { return 42; }
-```
-
-```
-INFO : ↓○ DemoService::compute called with args: []
-```
-
-### Hide return values (`returnValue = NONE`)
-
-```java
-@Logged(returnValue = Logged.Values.NONE)
-public String hiddenReturn() { return "secret"; }
-```
-
-```
-INFO : ↑○ DemoService::hiddenReturn returned. Time taken: 1 ms
-```
-
-### Custom messages (`callMsg`, `returnMsg`, `exceptionMsg`)
-
-```java
-@Logged(
-  callMsg = "Starting calculation...",
-  returnMsg = "Calculation finished with {rV}",
-  exceptionMsg = "Calculation failed: {eM}"
-)
-public int calc(int a, int b) {
-    return a / b;
-}
-```
-
-```
-INFO : Starting calculation...
-INFO : Calculation finished with 5
-```
-
-### Change log levels (`level`, `exceptionLevel`)
-
-```java
-@Logged(level = Level.DEBUG, exceptionLevel = Level.WARN)
-public void riskyOp() { throw new RuntimeException("oops"); }
-```
-
-```
-DEBUG : ↓○ DemoService::riskyOp called with args: []
-WARN  : ↑x DemoService::riskyOp threw a RuntimeException: oops
-```
-
-### Print stack traces (`logStackTrace = true`)
-
-```java
-@Logged(logStackTrace = true)
-public void explode() { throw new RuntimeException("boom"); }
-```
-
-```
-ERROR : ↑x DemoService::explode threw a RuntimeException: boom
-    at com.example.DemoService.explode(DemoService.java:42)
-```
-
-### Redact arguments by name or position
-
-```java
-@Logged(redactArgValues = {"password"}, redactAtPos = {1})
-public void login(String username, String password) { }
-```
-
-```
-INFO : ↓○ DemoService::login called with args: [(String) username=john,(String) password=█████]
-```
-
-### Disable exception logging (`onException = false`)
-
-```java
-@Logged(onException = false)
-public void quietFail() { throw new RuntimeException("fail"); }
-```
-
-```
-INFO : ↓○ DemoService::quietFail called with args: []
-```
-
 ---
 
 ## 📚 Notes
@@ -252,222 +113,6 @@ INFO : ↓○ DemoService::quietFail called with args: []
 
 ---
 
-## 🧪 Option‑by‑Option Examples
-
-Below are focused examples showing how each option changes the output. Replace `DemoService` with your class.
-
-> Log lines are abbreviated to the message part for brevity.
-
-### `onCall`
-
-```java
-@Logged(onCall = false)
-public String hello(String name) { return "Hi " + name; }
-```
-
-**Output:**
-
-```
-↑○ DemoService::hello returned with value: Hi Ana Time taken: 0 ms
-```
-
-### `args`
-
-```java
-@Logged(args = false)
-public void save(int id, String note) { }
-```
-
-**Output:**
-
-```
-↓○ DemoService::save called.
-↑○ DemoService::save returned.
-```
-
-### `argValues = NONE | NULL | ALL`
-
-```java
-@Logged(argValues = Logged.Values.NONE)
-public void update(String nonSensitive, String secret) { }
-```
-
-```
-↓○ DemoService::update called with args: [(String) nonSensitive=•, (String) secret=•]
-```
-
-```java
-@Logged(argValues = Logged.Values.NULL)
-public void maybeNull(String x) { }
-```
-
-```
-↓○ DemoService::maybeNull called with args: [(String) x=null]
-```
-
-```java
-@Logged(argValues = Logged.Values.ALL) // default
-public void show(String x) { }
-```
-
-```
-↓○ DemoService::show called with args: [(String) x="abc"]
-```
-
-### `onReturn`
-
-```java
-@Logged(onReturn = false)
-public int sum(int a, int b) { return a + b; }
-```
-
-**Output:**
-
-```
-↓○ DemoService::sum called with args: [(int) a=2,(int) b=3]
-```
-
-### `returnValue = NONE | NULL | ALL`
-
-```java
-@Logged(returnValue = Logged.Values.NONE)
-public String token() { return "XYZ"; }
-```
-
-```
-↑○ DemoService::token returned.
-```
-
-```java
-@Logged(returnValue = Logged.Values.NULL)
-public String maybe() { return null; }
-```
-
-```
-↑○ DemoService::maybe returned with value: null
-```
-
-```java
-@Logged(returnValue = Logged.Values.ALL) // default
-public String ping() { return "pong"; }
-```
-
-```
-↑○ DemoService::ping returned with value: pong
-```
-
-### `onException`
-
-```java
-@Logged(onException = false)
-public void fail() { throw new IllegalStateException("nope"); }
-```
-
-**Output:** *No exception log emitted by @Logged (your logger may still print uncaught exceptions).*
-
-### `time`
-
-```java
-@Logged(time = false)
-public void slow() throws InterruptedException { Thread.sleep(100); }
-```
-
-**Output:**
-
-```
-↓○ DemoService::slow called with args: []
-↑○ DemoService::slow returned.
-```
-
-### `callMsg`, `returnMsg`, `exceptionMsg`
-
-You can override global templates per method. All tokens from the Tokens Reference are valid.
-
-```java
-@Logged(callMsg = "{eI}{c}.{m} → args={a}",
-        returnMsg = "{xI}{c}.{m} ⇒ {rV} ({d}ms)",
-        exceptionMsg = "{tI}{c}.{m} !! {ex}: {eM} at {ec}.{em} ({f}:{L})")
-public String greet(String name) { return "Hello, " + name; }
-```
-
-**Output:**
-
-```
-↓○ DemoService.greet → args=[(String) name="Ana"]
-↑○ DemoService.greet ⇒ Hello, Ana (1ms)
-```
-
-### `level` (normal logs)
-
-```java
-@Logged(level = org.slf4j.event.Level.DEBUG)
-public void verbose() { }
-```
-
-**Output level:** DEBUG (messages appear only when DEBUG is enabled).
-
-### `exceptionLevel`
-
-```java
-@Logged(exceptionLevel = org.slf4j.event.Level.WARN)
-public void warnOnly() { throw new RuntimeException("boom"); }
-```
-
-**Output level:** WARN for the exception line.
-
-### `logStackTrace`
-
-```java
-@Logged(logStackTrace = true)
-public void oops() { throw new RuntimeException("boom"); }
-```
-
-**Output (tail):**
-
-```
-…
-	at com.example.DemoService.oops(DemoService.java:42)
-```
-
-### `redactArgValues` (by name)
-
-```java
-@Logged(redactArgValues = {"password", "token"})
-public void login(String user, String password, String token) { }
-```
-
-**Output:**
-
-```
-↓○ DemoService::login called with args: [(String) user="ana",(String) password=█████,(String) token=█████]
-```
-
-### `redactAtPos` (by index)
-
-```java
-@Logged(redactAtPos = {1}) // redact second parameter only
-public void pay(String cardHolder, String cardNumber) { }
-```
-
-**Output:**
-
-```
-↓○ DemoService::pay called with args: [(String) cardHolder="ana",(String) cardNumber=█████]
-```
-
-**Effect:** Puts method info (e.g., class, method, trace id if present) into MDC during the call, so your log pattern can include it, e.g.: `%X{class} %X{method}`.
-
-### Class‑level usage
-
-Apply to all **public** methods in a class (private/self calls require AspectJ weaving):
-
-```java
-@Logged(level = org.slf4j.event.Level.DEBUG, returnValue = Logged.Values.NONE)
-class DemoService {
-  public String a() { return "ok"; }
-  public void b() { }
-}
-```
 ## ⚙️ Configuration Properties
 
 `Logged` can be customized through Spring Boot configuration (`application.yml` or `application.properties`).  
@@ -845,6 +490,361 @@ plugins {
 
 ---
 
+## ✨ Examples
+
+### Default usage
+
+```java
+@Logged
+public String salute() {
+    return "Hello World!";
+}
+```
+
+**Output:**
+
+```
+INFO : ↓○ DemoService::salute called with args: []
+INFO : ↑○ DemoService::salute returned with value: Hello World! Time taken: 4 ms
+```
+
+### Disable entry logging (`onCall = false`)
+
+```java
+@Logged(onCall = false)
+public String hello() {
+    return "Hi";
+}
+```
+
+```
+INFO : ↑○ DemoService::hello returned with value: Hi Time taken: 1 ms
+```
+
+### Disable argument details (`args = false`)
+
+```java
+@Logged(args = false)
+public void doWork(int x, int y) { }
+```
+
+```
+INFO : ↓○ DemoService::doWork called
+```
+
+### Log only null arguments (`argValues = NULL`)
+
+```java
+@Logged(argValues = Logged.Values.NULL)
+public void process(String input) { }
+```
+
+```
+INFO : ↓○ DemoService::process called with args: [(String) input=null]
+```
+
+### Disable return logging (`onReturn = false`)
+
+```java
+@Logged(onReturn = false)
+public int compute() { return 42; }
+```
+
+```
+INFO : ↓○ DemoService::compute called with args: []
+```
+
+### Hide return values (`returnValue = NONE`)
+
+```java
+@Logged(returnValue = Logged.Values.NONE)
+public String hiddenReturn() { return "secret"; }
+```
+
+```
+INFO : ↑○ DemoService::hiddenReturn returned. Time taken: 1 ms
+```
+
+### Custom messages (`callMsg`, `returnMsg`, `exceptionMsg`)
+
+```java
+@Logged(
+  callMsg = "Starting calculation...",
+  returnMsg = "Calculation finished with {rV}",
+  exceptionMsg = "Calculation failed: {eM}"
+)
+public int calc(int a, int b) {
+    return a / b;
+}
+```
+
+```
+INFO : Starting calculation...
+INFO : Calculation finished with 5
+```
+
+### Change log levels (`level`, `exceptionLevel`)
+
+```java
+@Logged(level = Level.DEBUG, exceptionLevel = Level.WARN)
+public void riskyOp() { throw new RuntimeException("oops"); }
+```
+
+```
+DEBUG : ↓○ DemoService::riskyOp called with args: []
+WARN  : ↑x DemoService::riskyOp threw a RuntimeException: oops
+```
+
+### Print stack traces (`logStackTrace = true`)
+
+```java
+@Logged(logStackTrace = true)
+public void explode() { throw new RuntimeException("boom"); }
+```
+
+```
+ERROR : ↑x DemoService::explode threw a RuntimeException: boom
+    at com.example.DemoService.explode(DemoService.java:42)
+```
+
+### Redact arguments by name or position
+
+```java
+@Logged(redactArgValues = {"password"}, redactAtPos = {1})
+public void login(String username, String password) { }
+```
+
+```
+INFO : ↓○ DemoService::login called with args: [(String) username=john,(String) password=█████]
+```
+
+### Disable exception logging (`onException = false`)
+
+```java
+@Logged(onException = false)
+public void quietFail() { throw new RuntimeException("fail"); }
+```
+
+```
+INFO : ↓○ DemoService::quietFail called with args: []
+```
+
+## 🧪 Option‑by‑Option Examples
+
+Below are focused examples showing how each option changes the output. Replace `DemoService` with your class.
+
+> Log lines are abbreviated to the message part for brevity.
+
+### `onCall`
+
+```java
+@Logged(onCall = false)
+public String hello(String name) { return "Hi " + name; }
+```
+
+**Output:**
+
+```
+↑○ DemoService::hello returned with value: Hi Ana Time taken: 0 ms
+```
+
+### `args`
+
+```java
+@Logged(args = false)
+public void save(int id, String note) { }
+```
+
+**Output:**
+
+```
+↓○ DemoService::save called.
+↑○ DemoService::save returned.
+```
+
+### `argValues = NONE | NULL | ALL`
+
+```java
+@Logged(argValues = Logged.Values.NONE)
+public void update(String nonSensitive, String secret) { }
+```
+
+```
+↓○ DemoService::update called with args: [(String) nonSensitive=•, (String) secret=•]
+```
+
+```java
+@Logged(argValues = Logged.Values.NULL)
+public void maybeNull(String x) { }
+```
+
+```
+↓○ DemoService::maybeNull called with args: [(String) x=null]
+```
+
+```java
+@Logged(argValues = Logged.Values.ALL) // default
+public void show(String x) { }
+```
+
+```
+↓○ DemoService::show called with args: [(String) x="abc"]
+```
+
+### `onReturn`
+
+```java
+@Logged(onReturn = false)
+public int sum(int a, int b) { return a + b; }
+```
+
+**Output:**
+
+```
+↓○ DemoService::sum called with args: [(int) a=2,(int) b=3]
+```
+
+### `returnValue = NONE | NULL | ALL`
+
+```java
+@Logged(returnValue = Logged.Values.NONE)
+public String token() { return "XYZ"; }
+```
+
+```
+↑○ DemoService::token returned.
+```
+
+```java
+@Logged(returnValue = Logged.Values.NULL)
+public String maybe() { return null; }
+```
+
+```
+↑○ DemoService::maybe returned with value: null
+```
+
+```java
+@Logged(returnValue = Logged.Values.ALL) // default
+public String ping() { return "pong"; }
+```
+
+```
+↑○ DemoService::ping returned with value: pong
+```
+
+### `onException`
+
+```java
+@Logged(onException = false)
+public void fail() { throw new IllegalStateException("nope"); }
+```
+
+**Output:** *No exception log emitted by @Logged (your logger may still print uncaught exceptions).*
+
+### `time`
+
+```java
+@Logged(time = false)
+public void slow() throws InterruptedException { Thread.sleep(100); }
+```
+
+**Output:**
+
+```
+↓○ DemoService::slow called with args: []
+↑○ DemoService::slow returned.
+```
+
+### `callMsg`, `returnMsg`, `exceptionMsg`
+
+You can override global templates per method. All tokens from the Tokens Reference are valid.
+
+```java
+@Logged(callMsg = "{eI}{c}.{m} → args={a}",
+        returnMsg = "{xI}{c}.{m} ⇒ {rV} ({d}ms)",
+        exceptionMsg = "{tI}{c}.{m} !! {ex}: {eM} at {ec}.{em} ({f}:{L})")
+public String greet(String name) { return "Hello, " + name; }
+```
+
+**Output:**
+
+```
+↓○ DemoService.greet → args=[(String) name="Ana"]
+↑○ DemoService.greet ⇒ Hello, Ana (1ms)
+```
+
+### `level` (normal logs)
+
+```java
+@Logged(level = org.slf4j.event.Level.DEBUG)
+public void verbose() { }
+```
+
+**Output level:** DEBUG (messages appear only when DEBUG is enabled).
+
+### `exceptionLevel`
+
+```java
+@Logged(exceptionLevel = org.slf4j.event.Level.WARN)
+public void warnOnly() { throw new RuntimeException("boom"); }
+```
+
+**Output level:** WARN for the exception line.
+
+### `logStackTrace`
+
+```java
+@Logged(logStackTrace = true)
+public void oops() { throw new RuntimeException("boom"); }
+```
+
+**Output (tail):**
+
+```
+…
+	at com.example.DemoService.oops(DemoService.java:42)
+```
+
+### `redactArgValues` (by name)
+
+```java
+@Logged(redactArgValues = {"password", "token"})
+public void login(String user, String password, String token) { }
+```
+
+**Output:**
+
+```
+↓○ DemoService::login called with args: [(String) user="ana",(String) password=█████,(String) token=█████]
+```
+
+### `redactAtPos` (by index)
+
+```java
+@Logged(redactAtPos = {1}) // redact second parameter only
+public void pay(String cardHolder, String cardNumber) { }
+```
+
+**Output:**
+
+```
+↓○ DemoService::pay called with args: [(String) cardHolder="ana",(String) cardNumber=█████]
+```
+
+**Effect:** Puts method info (e.g., class, method, trace id if present) into MDC during the call, so your log pattern can include it, e.g.: `%X{class} %X{method}`.
+
+### Class‑level usage
+
+Apply to all **public** methods in a class (private/self calls require AspectJ weaving):
+
+```java
+@Logged(level = org.slf4j.event.Level.DEBUG, returnValue = Logged.Values.NONE)
+class DemoService {
+  public String a() { return "ok"; }
+  public void b() { }
+}
+```
 ## Quick Checklist
 
 * [ ] Added `spring-boot-starter-aop` and `aspectjweaver`.
