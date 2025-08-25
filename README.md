@@ -102,8 +102,6 @@ The core of this library is the `@Logged` annotation. You can place it on method
 
 ---
 
----
-
 ## 📚 Notes
 
 * Place `@Logged` at class level to log **all methods**.
@@ -143,7 +141,9 @@ All properties are prefixed with `logged.`.
 |`logged.mdc.classKey`|`class`|MDC key for class name.|
 |`logged.mdc.methodKey`|`method`|MDC key for method name.|
 |`logged.mdc.traceKey`|_(none)_|MDC key for trace ID if present.|
+super
 
+**Effect:** Puts method info (e.g., class, method, trace id if present) into MDC during the call, so your log pattern can include it, e.g.: `%X{class} %X{method}`.
 ### 📡 OpenTelemetry Integration
 
 |Property|Default|Description|
@@ -192,13 +192,14 @@ logged:
   callMsgArgs: "{eI}{c}.{m} args=[{a}]"
   exitMsgValue: "{xI}{c}.{m} → {rV} ({d}ms)"
 ```
+
+---
 ## 🧩 Message Formatting with Tokens
 
 You can customize how your log messages look for method entry, exit, and exception cases using configurable templates.
 
 Each template supports a specific set of tokens. These tokens will be dynamically replaced at runtime depending on the log context.
 
----
 
 ### 📥 Entry Message Tokens (`format.entry`)
 
@@ -831,8 +832,6 @@ public void pay(String cardHolder, String cardNumber) { }
 ```
 ↓○ DemoService::pay called with args: [(String) cardHolder="ana",(String) cardNumber=█████]
 ```
-
-**Effect:** Puts method info (e.g., class, method, trace id if present) into MDC during the call, so your log pattern can include it, e.g.: `%X{class} %X{method}`.
 
 ### Class‑level usage
 
