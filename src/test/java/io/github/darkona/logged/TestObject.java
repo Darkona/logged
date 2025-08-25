@@ -1,19 +1,24 @@
 package io.github.darkona.logged;
 
+import io.github.darkona.logged.api.LogDecorator;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @SuppressWarnings("UnusedReturnValue")
 @Component
 public class TestObject {
 
+    @Autowired
+    LogDecorator deco;
+
     @Logged
     public void methodWithArgs(String str, int num) {
-        System.out.println("Processing string: " + str + ", number: " + num);
+        System.out.println(deco.bannerize("Processing string: " + str + ", number: " + num, 50));
     }
 
     @Logged(args = false)
     public void methodWithoutArgs() {
-        System.out.println("Running method without args");
+        System.out.println(deco.bannerize("Running method without args", 50));
     }
 
     @Logged(time = true)
@@ -39,7 +44,7 @@ public class TestObject {
 
     @Logged(returnValue = Logged.Values.NONE)
     public String methodWithoutReturnLogging() {
-        return "This value should be hidden in logs";
+        return deco.bannerize("This value should be hidden in logs", 50);
     }
 
     @Logged(returnValue = Logged.Values.NULL)
@@ -49,13 +54,13 @@ public class TestObject {
 
     @Logged(returnValue = Logged.Values.NULL)
     public String methodReturnsNonNullSuppressed() {
-        return "You shouldn't see this";
+        return deco.bannerize("You shouldn't see this", 50);
     }
 
     @Logged(argValues = Logged.Values.NULL)
     public void methodWithNullArgValues(String nonNull, String maybeNull) {
         if (maybeNull == null) {
-            System.out.println("Received a null parameter");
+            System.out.println(deco.bannerize("Received a null parameter",50));
         }
     }
 
@@ -81,7 +86,7 @@ public class TestObject {
 
     @Logged(argValues = Logged.Values.NONE)
     public void methodWithArgValuesNone(String stringArgument) {
-        System.out.println("Arg value is ignored: " + stringArgument);
+        System.out.println(deco.bannerize("Arg value is ignored: " + stringArgument,50));
     }
 
     @Logged
@@ -91,7 +96,7 @@ public class TestObject {
 
 
     @Logged(callMsg = "Entering {m} at class {c}!")
-    public String customOnCall(){
+    public String customOnCall() {
         return "custom";
     }
 
@@ -101,12 +106,12 @@ public class TestObject {
     }
 
     @Logged(exceptionMsg = "Something bad happened: {eM}")
-    public String customExceptionMsg(){
+    public String customExceptionMsg() {
         throw new RuntimeException("oh no");
     }
 
     @Logged(redactArgValues = {"arg1"}, redactAtPos = {2}, returnValue = Logged.Values.NONE)
-    public String methodWithRedactedArgs(String arg1, String arg2, String arg3){
+    public String methodWithRedactedArgs(String arg1, String arg2, String arg3) {
         return arg1 + "::" + arg2 + "::" + arg3;
     }
 }

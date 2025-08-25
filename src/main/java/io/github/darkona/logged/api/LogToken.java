@@ -22,7 +22,9 @@ public enum LogToken {
     ENTRY_ICON("eI"),
     EXIT_ICON("xI"),
     THROW_ICON("tI"),
-    NULL("null");
+    DEPTH_ICON("dI"),
+    NULL("null"),
+    DEPTH("h");
 
 
     private final String token;

@@ -8,27 +8,26 @@ import io.github.darkona.logged.api.Data;
 import io.github.darkona.logged.api.LogDecorator;
 import io.github.darkona.logged.api.LogToken;
 import io.github.darkona.logged.api.LoggedPlugin;
-import io.github.darkona.logged.colors.Yellow;
+import io.github.darkona.logged.colors.Orange;
 import io.github.darkona.logged.utils.Transformer;
 import jakarta.annotation.PostConstruct;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
-import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 
+@Component
 public class LoggedEngine {
 
     public static final String NULL = "null";
+    private static final ThreadLocal<Deque<Data>> STACK = ThreadLocal.withInitial(ArrayDeque::new);
     private final LoggedProperties props;
     private final LogDecorator deco;
     private final List<LoggedPlugin> plugins;
+
 
     public LoggedEngine(LoggedProperties props, LogDecorator deco, List<LoggedPlugin> plugins) {
         this.props = props;
@@ -36,81 +35,112 @@ public class LoggedEngine {
         this.plugins = plugins;
     }
 
+    private static void pop() {
+        Deque<Data> s = STACK.get();
+        if (!s.isEmpty()) s.pop();
+        if (s.isEmpty()) STACK.remove();
+    }
+
     @PostConstruct
     void init() {
-        LoggerFactory.getLogger(LoggedEngine.class).info(deco.custom(Yellow.GOLD, "@Logged engine initialized."));
+        var log = LoggerFactory.getLogger(LoggedEngine.class);
+        if (props.isUseUtf8() && System.out.charset() != StandardCharsets.UTF_8) {
+            Utf8Installer.install();
+            log.info(deco.custom(Orange.DARK_ORANGE, "@Logged engine initialized with output UTF-8 enabled."));
+        } else {
+            log.info(deco.custom(Orange.DARK_ORANGE, "@Logged engine initialized."));
+        }
+        plugins.forEach(loggedPlugin -> log.info(loggedPlugin.announceLoad()));
     }
 
     public Object logMethod(ProceedingJoinPoint pjp)
     throws Throwable {
-        Logged options = getLoggedOptions(pjp);
-        Data data = assembleCallData(pjp, options);
-        plugins.forEach(plugin -> plugin.onCall(pjp, data, options));
+        final var options = getLoggedOptions(pjp);
+        final var data = assembleCallData(pjp, options);
+
+        STACK.get().push(data);
+        plugins.forEach(p -> p.onCall(pjp, data, options));
 
         try {
-            var o = pjp.proceed();
-            data.addToken(LogToken.DURATION, String.valueOf(System.currentTimeMillis() - data.start()));
-            assembleReturnData(data, o);
-            plugins.forEach(plugin -> plugin.onReturn(pjp, data, options));
-            return o;
-
-        } catch (Throwable e) {
-            data.addToken(LogToken.DURATION, String.valueOf(System.currentTimeMillis() - data.start()));
-            assembleExceptionData(e, data, e.getStackTrace()[0]);
-            plugins.forEach(plugin -> plugin.onException(pjp, data, options, e));
-            throw e;
+            final var result = pjp.proceed();
+            afterSuccess(pjp, data, options, result);
+            return result;
+        } catch (Throwable ex) {
+            afterFailure(pjp, data, options, ex);
+            throw ex;
+        } finally {
+            pop();
         }
     }
 
-    private static Logged getLoggedOptions(ProceedingJoinPoint pjp) {
-        MethodSignature signature = (MethodSignature) pjp.getSignature();
-        Method method = signature.getMethod();
-        var ops = method.getAnnotation(Logged.class);
-        if (ops == null) {
-            ops = pjp.getTarget().getClass().getAnnotation(Logged.class);
-        }
-        return ops;
+    private void afterSuccess(ProceedingJoinPoint pjp, Data data, Logged options, Object result) {
+        putDuration(data);
+        assembleReturnData(data, result);
+        plugins.forEach(p -> p.onReturn(pjp, data, options));
+    }
+
+    private void afterFailure(ProceedingJoinPoint pjp, Data data, Logged options, Throwable ex) {
+        putDuration(data);
+        assembleExceptionData(ex, data);
+        plugins.forEach(p -> p.onException(pjp, data, options, ex));
+    }
+
+    private void putDuration(Data data) {
+        data.addToken(LogToken.DURATION, Long.toString(System.currentTimeMillis() - data.start()));
+    }
+
+    private StackTraceElement firstRelevantFrame(Throwable e) {
+        return (e.getStackTrace() != null && e.getStackTrace().length > 0) ? e.getStackTrace()[0] :
+               new StackTraceElement("unknown", "unknown", "unknown", -1);
+    }
+
+    private Logged getLoggedOptions(ProceedingJoinPoint pjp) {
+        return ((MethodSignature) pjp.getSignature()).getMethod().getAnnotation(Logged.class) == null ?
+               pjp.getTarget().getClass().getAnnotation(Logged.class) :
+               ((MethodSignature) pjp.getSignature()).getMethod().getAnnotation(Logged.class);
     }
 
     private Data assembleCallData(ProceedingJoinPoint pjp, Logged options) {
 
         var start = System.currentTimeMillis();
-
+        var depth = STACK.get().size();
         Map<LogToken, String> map = new HashMap<>();
-        map.put(LogToken.ENTRY_ICON, props.getIcons() ? deco.blue(props.getEntryIcon()) + " " : "");
-        map.put(LogToken.EXIT_ICON, props.getIcons() ? deco.green(props.getExitIcon()) + " " : "");
-        map.put(LogToken.THROW_ICON, props.getIcons() ? deco.red(props.getThrowIcon()) + " " : "");
+        map.put(LogToken.ENTRY_ICON, props.getEntryIcon());
+        map.put(LogToken.THROW_ICON, props.getThrowIcon());
+        map.put(LogToken.EXIT_ICON, props.getExitIcon());
+        map.put(LogToken.DEPTH_ICON, props.getDepthIcon());
         map.put(LogToken.CLASS_NAME, pjp.getSignature().getDeclaringType().getSimpleName());
         map.put(LogToken.CLASS_LONG, pjp.getSignature().getDeclaringType().getName());
         map.put(LogToken.METHOD_NAME, pjp.getSignature().getName());
         map.put(LogToken.METHOD_TYPE, pjp.getSignature().toLongString());
 
-        if (options.args()) {
-            var signature = (MethodSignature) pjp.getSignature();
+        if (!options.args()) return new Data(map, new Arg[]{}, start, depth, Collections.emptySet());
 
-            Arg[] args = signature.getParameterTypes() != null ? new Arg[signature.getParameterTypes().length] : new Arg[0];
-            var names = ParameterNames.resolve(pjp);
+        var signature = (MethodSignature) pjp.getSignature();
 
-            Set<String> redacts = new HashSet<>();
-            Set<Integer> redactIndexes = new HashSet<>();
+        Arg[] args = signature.getParameterTypes() != null ? new Arg[signature.getParameterTypes().length] : new Arg[0];
 
-            if (options.redactArgValues().length > 0) {
-                redacts.addAll(Arrays.asList(options.redactArgValues()));
-            }
-            if (options.redactAtPos().length > 0) {
-                Arrays.stream(options.redactAtPos()).forEach(redactIndexes::add);
-            }
-            for (int i = 0; i < signature.getParameterTypes().length; i++) {
-                var value = Transformer.objectString(pjp.getArgs()[i]);
+        var names = ParameterNames.resolve(pjp);
 
-                if (redacts.contains(names[i]) || redactIndexes.contains(i)) {
-                    value = Transformer.mask(value, 0, props.getRedactMask()).substring(0, props.getRedactLength());
-                }
-                args[i] = new Arg(signature.getParameterTypes()[i].getSimpleName(), names[i], value);
-            }
-            return new Data(map, args, start);
+        Set<String> redacts = new HashSet<>();
+        Set<Integer> redactIndexes = new HashSet<>();
+
+        if (options.redactArgValues().length > 0) {
+            redacts.addAll(Arrays.asList(options.redactArgValues()));
         }
-        return new Data(map, new Arg[]{}, start);
+        if (options.redactAtPos().length > 0) {
+            Arrays.stream(options.redactAtPos()).forEach(redactIndexes::add);
+        }
+
+        for (int i = 0; i < signature.getParameterTypes().length; i++) {
+            var value = Transformer.objectString(pjp.getArgs()[i]);
+
+            if (redacts.contains(names[i]) || redactIndexes.contains(i)) {
+                value = Transformer.truncate(Transformer.fill(props.getRedactMask(), props.getRedactLength()), props.getRedactLength());
+            }
+            args[i] = new Arg(signature.getParameterTypes()[i].getSimpleName(), names[i], value);
+        }
+        return new Data(map, args, start, depth, redactIndexes);
     }
 
     private void assembleReturnData(Data data, Object o) {
@@ -119,7 +149,8 @@ public class LoggedEngine {
         data.addToken(LogToken.RETURN_VALUE, Transformer.objectString(o));
     }
 
-    private static void assembleExceptionData(Throwable e, Data data, StackTraceElement origin) {
+    private void assembleExceptionData(Throwable e, Data data) {
+        var origin = firstRelevantFrame(e);
         data.addToken(LogToken.EXCEPTION_CLASS, e.getClass().getSimpleName());
         data.addToken(LogToken.EXCEPTION_MESSAGE, e.getLocalizedMessage());
         data.addToken(LogToken.EXCEPTION_ORIGIN_CLASS, origin.getClassName());

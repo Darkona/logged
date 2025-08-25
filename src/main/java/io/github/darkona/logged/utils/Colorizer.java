@@ -1,5 +1,6 @@
 package io.github.darkona.logged.utils;
 
+import io.github.darkona.logged.colors.BasicColor;
 import io.github.darkona.logged.colors.ColorEnum;
 import io.github.darkona.logged.colors.LogColor;
 
@@ -297,7 +298,7 @@ public class Colorizer {
     }
 
     public static String custom(ColorEnum color, String s) {
-        return custom(color.red(), color.green(), color.blue(), s);
+        return color.toString() + s + reset();
     }
 
     public static String custom(int r, int g, int b, String s) {

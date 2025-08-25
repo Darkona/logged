@@ -10,4 +10,6 @@ public interface LoggedPlugin {
     void onReturn(ProceedingJoinPoint pjp, Data data, Logged options);
 
     void onException(ProceedingJoinPoint pjp, Data data, Logged options, Throwable exception);
+
+    String announceLoad();
 }

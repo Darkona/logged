@@ -198,4 +198,9 @@ public class Transformer {
         return s.substring(0, 1).toUpperCase() + s.substring(1);
     }
 
+
+    public static String truncate(String s, int max) {
+        if (s == null) return null;
+        return (max > 0 && s.length() > max) ? s.substring(0, max) + "…" : s;
+    }
 }

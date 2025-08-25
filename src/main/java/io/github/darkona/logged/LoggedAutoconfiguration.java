@@ -1,14 +1,13 @@
 package io.github.darkona.logged;
 
 import io.github.darkona.logged.api.LogDecorator;
-import io.github.darkona.logged.internals.ColorLogDecorator;
-import io.github.darkona.logged.internals.LoggedEngine;
-import io.github.darkona.logged.internals.LoggedAspect;
-import io.github.darkona.logged.internals.PlainLogDecorator;
 import io.github.darkona.logged.api.LoggedPlugin;
+import io.github.darkona.logged.internals.ColorLogDecorator;
+import io.github.darkona.logged.internals.LoggedAspect;
+import io.github.darkona.logged.internals.LoggedEngine;
+import io.github.darkona.logged.internals.PlainLogDecorator;
 import io.github.darkona.logged.weaving.BridgeInstaller;
 import io.github.darkona.logged.weaving.Conditions;
-import org.slf4j.Logger;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProperty;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -23,15 +22,16 @@ import org.springframework.context.annotation.Primary;
 import java.util.List;
 
 @AutoConfiguration
-@ConditionalOnClass({LoggedEngine.class, Logged.class, Logger.class, LogDecorator.class, LoggedProperties.class})
-@EnableConfigurationProperties({LoggedProperties.class})
-@EnableAspectJAutoProxy(proxyTargetClass = true)
+@ConditionalOnClass(name = {"org.slf4j.Logger", "org.slf4j.LoggerFactory"})
+@EnableConfigurationProperties(LoggedProperties.class)
+@EnableAspectJAutoProxy
 @ComponentScan("io.github.darkona.logged")
 public class LoggedAutoconfiguration {
 
+
     @Bean
     @Primary
-    @ConditionalOnBooleanProperty(value = "logged.color", matchIfMissing = true)
+    @ConditionalOnBooleanProperty(value = "logged.color")
     public LogDecorator colorLogDecorator() {
         return new ColorLogDecorator();
     }
@@ -60,5 +60,6 @@ public class LoggedAutoconfiguration {
     public BridgeInstaller bridgeInstaller(LoggedEngine loggedEngine) {
         return new BridgeInstaller(loggedEngine);
     }
+
 
 }
