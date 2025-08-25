@@ -6,7 +6,7 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy;
 
 @Configuration
 @EnableAspectJAutoProxy()
-@ComponentScan(basePackages = "io.github.darkona.logged")
+@ComponentScan(basePackages = {"io.github.darkona.logged"})
 public class TestBootConfig {
 
 }

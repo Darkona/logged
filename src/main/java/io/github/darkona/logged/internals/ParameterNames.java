@@ -15,7 +15,9 @@ class ParameterNames {
     private ParameterNames() {}
 
     public static String[] resolve(ProceedingJoinPoint pjp) {
+
         Signature sig = pjp.getSignature();
+
         if (sig instanceof CodeSignature cs) {
             String[] names = cs.getParameterNames();
             if (names != null && names.length == pjp.getArgs().length) {
@@ -33,7 +35,7 @@ class ParameterNames {
 
         int n = pjp.getArgs() == null ? 0 : pjp.getArgs().length;
         String[] positional = new String[n];
-        for (int i = 0; i < n; i++) positional[i] = "arg" + i;
+        for (int i = 0; i < n; i++) positional[i] = "arg[" + i + "]";
         return positional;
     }
 

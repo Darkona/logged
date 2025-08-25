@@ -1,0 +1,11 @@
+spring:
+  output:
+    ansi:
+      enabled: always
+logged:
+  color: true
+  slf4j:
+    color: true
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %highlight(%-5level) %msg%n"

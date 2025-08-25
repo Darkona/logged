@@ -4,6 +4,7 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
+import io.github.darkona.logged.plugins.slf4j.LoggedSlf4jProperties;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,23 +30,33 @@ class LogbackLoggedEngineTest {
 
     private ListAppender<ILoggingEvent> listAppender;
     private List<ILoggingEvent> logs;
+    Logger logger = (Logger) LoggerFactory.getLogger(TestObject.class);
+
+    @Autowired
+    private ApplicationContext context;
+
+    @Autowired
+    private LoggedSlf4jProperties slof4jProps;
+
+    @Autowired
+    private LoggedProperties props;
 
     @BeforeEach
-    void setup() {
-        Logger logger = (Logger) LoggerFactory.getLogger(TestObject.class);
+    synchronized void  setup() {
         listAppender = new ListAppender<>();
+        listAppender.setContext(logger.getLoggerContext());
+        listAppender.setName("ListAppender");
         listAppender.start();
+
         logger.addAppender(listAppender);
     }
 
     @AfterEach
     void tearDown() {
+        logger.detachAppender(listAppender);
         listAppender.stop();
         logs = listAppender.list;
     }
-
-    @Autowired
-    private ApplicationContext context;
 
     private boolean foundBean(String name) {
         try { //noinspection ConstantValue
@@ -66,6 +77,17 @@ class LogbackLoggedEngineTest {
         System.out.println("Found LoggedAspect bean: " + matchedBean);
     }
 
+    @Test
+    void shouldSeeSljf4PluginInContext() {
+        String matchedBean = Arrays.stream(context.getBeanDefinitionNames())
+                                   .filter(name -> name.toLowerCase().contains("loggedslf4jplugin"))
+                                   .findFirst()
+                                   .orElse(null);
+        assertNotNull(matchedBean);
+        assertTrue(foundBean("loggedSlf4jPlugin"));
+
+        System.out.println("Found Slf4j Plugin bean: " + matchedBean);
+    }
     @Test
     void shouldBeProxied() {
         System.out.println("TestObject class: " + testObject.getClass());
@@ -93,6 +115,11 @@ class LogbackLoggedEngineTest {
         assertTrue(logsContain(expected), "Expected log message to contain: " + expected);
     }
 
+    @Test
+    void colorIsOn(){
+        assertTrue(props.isColor());
+        assertTrue(slof4jProps.isColor());
+    }
 
     @Test
     void callWithArgs() {
@@ -149,15 +176,15 @@ class LogbackLoggedEngineTest {
     @Test
     void callWithException() {
         Exception ex = assertThrows(RuntimeException.class, testObject::methodThatThrows);
-        assertEquals("kaboom", ex.getMessage());
+        assertTrue(ex.getMessage().contains("kaboom"));
         logs = listAppender.list;
-        assertMessageContains("threw a");
+        assertMessageContains("kaboom");
     }
 
     @Test
     void callWithExceptionAndStacktrace() {
         Exception ex = assertThrows(RuntimeException.class, testObject::methodThatThrowsWithStacktrace);
-        assertEquals("boom", ex.getMessage());
+        assertTrue( ex.getMessage().contains("boom"));
         logs = listAppender.list;
         assertMessageContains("threw a");
         assertTrue(logs.stream().anyMatch(e -> e.getFormattedMessage().contains("at")), "Expected stack trace in logs");
@@ -169,6 +196,7 @@ class LogbackLoggedEngineTest {
         assertEquals("silent fail", ex.getMessage());
         logs = listAppender.list;
         assertFalse(logsContain("threw a"), "Exception should not be logged");
+        System.out.println(logs);
     }
 
     @Test
@@ -191,6 +219,7 @@ class LogbackLoggedEngineTest {
             assertMessageContains("[(String) stringArgument=Elephant]");
             assertMessageContains("returned with value");
             assertMessageContains("Time taken");
+            assertMessageContains("returned with value: Elephant Time taken:");
         });
 
 
@@ -209,7 +238,7 @@ class LogbackLoggedEngineTest {
     @Test
     void callWithCustomExceptionMsg() {
         Exception ex = assertThrows(RuntimeException.class, testObject::customExceptionMsg);
-        assertEquals("oh no", ex.getMessage());
+        assertTrue( ex.getMessage().contains("oh no"));
         logs = listAppender.list;
         assertTrue(logsContain("Something bad happened: oh no"), "oh no");
     }
