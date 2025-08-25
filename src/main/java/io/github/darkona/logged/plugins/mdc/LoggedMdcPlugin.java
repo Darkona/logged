@@ -8,6 +8,8 @@ import io.github.darkona.logged.api.LogToken;
 import io.github.darkona.logged.api.LoggedPlugin;
 import io.github.darkona.logged.utils.Transformer;
 import org.aspectj.lang.ProceedingJoinPoint;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 import java.util.Arrays;
@@ -107,6 +109,7 @@ public class LoggedMdcPlugin implements LoggedPlugin {
     private static final String LATENCY_MS = "latency_ms";
 
     private static final List<String> ALL = Arrays.asList(CLASS, METHOD, ARGS, RESULT, OUTCOME, EXCEPTION, EXCEPTION_MSG, LATENCY_MS);
+    private static final Logger log = LoggerFactory.getLogger(LoggedMdcPlugin.class);
 
     private final LogDecorator deco;
     private final LoggedMdcProperties props;
@@ -119,7 +122,7 @@ public class LoggedMdcPlugin implements LoggedPlugin {
     @Override
     public void onCall(ProceedingJoinPoint pjp, Data data, Logged options) {
         if (!props.isEnabled()) return;
-        System.out.println(deco.orange("MDC Plugin called"));
+        log.debug(deco.orange("MDC Plugin called"));
         loadCallData(data, options);
     }
 

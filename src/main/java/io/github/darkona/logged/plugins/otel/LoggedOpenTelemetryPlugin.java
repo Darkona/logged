@@ -16,6 +16,8 @@ import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import org.aspectj.lang.ProceedingJoinPoint;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.slf4j.spi.MDCAdapter;
 
@@ -118,6 +120,7 @@ public class LoggedOpenTelemetryPlugin implements LoggedPlugin {
     private final LogDecorator deco;
     private final Tracer tracer;
     private final LoggedOpenTelemetryProperties props;
+    private static final Logger log = LoggerFactory.getLogger(LoggedOpenTelemetryPlugin.class);
 
     private final ThreadLocal<Deque<Span>> spanStack = ThreadLocal.withInitial(ArrayDeque::new);
 
@@ -147,7 +150,7 @@ public class LoggedOpenTelemetryPlugin implements LoggedPlugin {
     @Override
     public void onCall(ProceedingJoinPoint pjp, Data data, Logged options) {
         if (!props.isEnabled()) return;
-        System.out.println(deco.red("Otel Plugin called"));
+        log.debug(deco.red("Otel Plugin called"));
         String spanName = StringInterpolator.interpolate(props.getSpanIdTemplate(), data.tok());
         MDCAdapter mdc = MDC.getMDCAdapter();
 

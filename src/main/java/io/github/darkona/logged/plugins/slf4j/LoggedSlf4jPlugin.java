@@ -103,6 +103,7 @@ public class LoggedSlf4jPlugin implements LoggedPlugin {
 
     private final LoggedSlf4jProperties props;
     private final LogDecorator deco;
+    private static final Logger log = LoggerFactory.getLogger(LoggedSlf4jPlugin.class);
 
     public LoggedSlf4jPlugin(LogDecorator deco, LoggedSlf4jProperties props) {
         this.props = props;
@@ -126,7 +127,7 @@ public class LoggedSlf4jPlugin implements LoggedPlugin {
 
     @Override
     public void onCall(ProceedingJoinPoint pjp, Data data, Logged options) {
-        System.out.println(deco.green("SLF4j Plugin called"));
+        log.debug(deco.green("SLF4j Plugin called"));
         if (!props.isEnabled()) return;
 
         captureMdc(data);
