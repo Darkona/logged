@@ -104,6 +104,7 @@ public class LoggedMdcPlugin implements LoggedPlugin {
     private static final List<String> ALL = Arrays.asList(CLASS, METHOD, ARGS, RESULT, OUTCOME, EXCEPTION, EXCEPTION_MSG, LATENCY_MS);
 
     private final LogDecorator deco;
+
     private final LoggedMdcProperties props;
 
     public LoggedMdcPlugin(LogDecorator deco, LoggedMdcProperties props) {
@@ -113,7 +114,7 @@ public class LoggedMdcPlugin implements LoggedPlugin {
 
     @Override
     public void onCall(ProceedingJoinPoint pjp, Data data, Logged options) {
-
+        if(!props.isEnabled()) return;
         if (options.onCall()) {
             MDC.put(CLASS, data.get(LogToken.CLASS_NAME));
             MDC.put(METHOD, data.get(LogToken.METHOD_NAME));
@@ -125,6 +126,7 @@ public class LoggedMdcPlugin implements LoggedPlugin {
 
     @Override
     public void onReturn(ProceedingJoinPoint pjp, Data data, Logged options) {
+        if(!props.isEnabled()) return;
         MDC.put(OUTCOME, "ok");
         if (options.onReturn()) {
             MDC.put(RESULT, Transformer.truncate(data.get(LogToken.RETURN_VALUE), 2048));
@@ -137,6 +139,7 @@ public class LoggedMdcPlugin implements LoggedPlugin {
 
     @Override
     public void onException(ProceedingJoinPoint pjp, Data data, Logged options, Throwable exception) {
+        if(!props.isEnabled()) return;
         MDC.put(OUTCOME, "error");
         MDC.put(EXCEPTION, data.get(LogToken.EXCEPTION_CLASS));
         if (options.onException()) {

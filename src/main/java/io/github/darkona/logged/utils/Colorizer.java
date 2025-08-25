@@ -1,6 +1,5 @@
 package io.github.darkona.logged.utils;
 
-import io.github.darkona.logged.colors.BasicColor;
 import io.github.darkona.logged.colors.ColorEnum;
 import io.github.darkona.logged.colors.LogColor;
 

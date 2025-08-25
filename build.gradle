@@ -14,7 +14,7 @@ version = '1.2.0'
 
 
 def filename = "${rootProject.name}-${this.version}.jar"
-def isCi = providers.environmentVariable("ci").isPresent();
+def isCi = providers.environmentVariable("ci").isPresent()
 def isRelease = providers.gradleProperty("release").map { it.toBoolean() }.orElse(false).get()
 
 repositories {

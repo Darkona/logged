@@ -219,6 +219,7 @@ class LogbackLoggedEngineTest {
             assertMessageContains("[(String) stringArgument=Elephant]");
             assertMessageContains("returned with value");
             assertMessageContains("Time taken");
+            assertMessageContains("returned with value: Elephant Time taken:");
         });
 
 

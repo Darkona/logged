@@ -21,7 +21,7 @@ public class TestObject {
         System.out.println(deco.bannerize("Running method without args", 50));
     }
 
-    @Logged(time = true)
+    @Logged()
     public void methodWithTime() {
         try {
             Thread.sleep(50);
@@ -33,6 +33,7 @@ public class TestObject {
     @Logged(time = false)
     public void methodWithoutTime() {
         for (int i = 0; i < 1000; i++) {
+            //noinspection ResultOfMethodCallIgnored
             Math.sqrt(i);
         }
     }
@@ -60,7 +61,7 @@ public class TestObject {
     @Logged(argValues = Logged.Values.NULL)
     public void methodWithNullArgValues(String nonNull, String maybeNull) {
         if (maybeNull == null) {
-            System.out.println(deco.bannerize("Received a null parameter",50));
+            System.out.println(deco.bannerize("Received a null parameter" + nonNull,50));
         }
     }
 
@@ -91,7 +92,7 @@ public class TestObject {
 
     @Logged
     public String methodWithDefaults(String stringArgument) {
-        return "default";
+        return stringArgument;
     }
 
 

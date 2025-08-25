@@ -115,7 +115,7 @@ public class LoggedSlf4jPlugin implements LoggedPlugin {
 
     @Override
     public void onCall(ProceedingJoinPoint pjp, Data data, Logged options) {
-
+        if(!props.isEnabled()) return;
         Logger log = LoggerFactory.getLogger(pjp.getSignature().getDeclaringType());
 
         if (isEnabled(log, options.level())) {
@@ -138,7 +138,6 @@ public class LoggedSlf4jPlugin implements LoggedPlugin {
     }
 
     void logCall(Logger log, Level level, Data data, Logged options) {
-
         if (options.callMsg() != null && !options.callMsg().isEmpty()) {
 
             sendToLog(log, level, options.callMsg(), data.tok());
@@ -158,7 +157,7 @@ public class LoggedSlf4jPlugin implements LoggedPlugin {
 
     @Override
     public void onReturn(ProceedingJoinPoint pjp, Data data, Logged options) {
-
+        if(!props.isEnabled()) return;
         Logger log = LoggerFactory.getLogger(pjp.getSignature().getDeclaringType());
         if (isEnabled(log, options.level())) {
             logReturn(log, options.level(), data, options);
@@ -182,7 +181,7 @@ public class LoggedSlf4jPlugin implements LoggedPlugin {
 
     @Override
     public void onException(ProceedingJoinPoint pjp, Data data, Logged options, Throwable exception) {
-
+        if(!props.isEnabled()) return;
         Logger log = LoggerFactory.getLogger(pjp.getSignature().getDeclaringType());
 
         if (isEnabled(log, options.exceptionLevel())) {
