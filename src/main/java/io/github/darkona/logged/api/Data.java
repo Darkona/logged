@@ -1,5 +1,7 @@
 package io.github.darkona.logged.api;
 
+import lombok.Getter;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -14,6 +16,7 @@ public class Data {
     private final Arg[] args;
     private final long start;
     private final int depth;
+    @Getter
     private final Set<Integer> redactedPos;
     private final Map<String, String> stokens;
 
