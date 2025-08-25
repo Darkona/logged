@@ -1,16 +1,38 @@
 # Logged
 
-**Logged** is a lightweight Spring Boot library for method-level logging using Aspect-Oriented Programming (AOP). It provides an annotation-based mechanism to log method entry, return values, and exceptions using `@Logged`.
+**Logged** is a lightweight Spring Boot library for method-level logging using Aspect-Oriented Programming (AOP). It provides an annotation-based mechanism to log method entry, return values, and exceptions using @Logged. The library now also supports MDC integration, OpenTelemetry span enrichment, and flexible decoration utilities.
 
 ## Features
 
-* Annotate methods with `@Logged` to automatically log:
-
-    * Method entry with argument names and values (names might need a compiler option)
-    * Method return values
-    * Exceptions thrown
-* Supports customization of log levels per operation (entry, return, exception)
-* Designed to integrate seamlessly with Spring Boot projects via auto-configuration
+- Annotate methods with `@Logged` to automatically log:
+    
+    - Method entry with argument names and values (names might need a compiler option)
+        
+    - Method return values
+        
+    - Exceptions thrown
+        
+    - Execution time
+        
+- Supports customization of log levels per operation (entry, return, exception)
+    
+- Class-level annotation support (logs all public methods of a class)
+    
+- Redaction of sensitive arguments by name or position
+    
+- Configurable message templates with token interpolation
+    
+- Global configuration via Spring Boot properties (`application.yml` / `application.properties`)
+    
+- MDC integration: injects method and trace context into the logging MDC
+    
+- OpenTelemetry integration: enriches active spans with method metadata
+    
+- Colorized and icon-decorated output (ANSI)
+    
+- Utility modules for banners, string interpolation, text transformation, and log decoration
+    
+- AspectJ weaving support for private and self-invoked method logging
 
 ## Technologies
 
@@ -22,23 +44,28 @@
 
 ## Installation
 
-Add the library to your Spring Boot project (e.g., via internal Maven repository or direct source inclusion).
+Add the library to your Spring Boot project:
 
 Maven:
+
 ```xml
 <dependency>
     <groupId>io.github.darkona</groupId>
     <artifactId>logged</artifactId>
-    <version>1.1.0</version>
+    <version>1.2.0</version>
 </dependency>
 ```
+
 Gradle:
+
 ```groovy
 dependencies {
-   implementation "io.github.darkona:logged:1.1.0" 
+   implementation "io.github.darkona:logged:1.2.0"
 }
 ```
+
 No manual configuration is needed. Spring Boot will detect and wire all components automatically.
+
 
 # `@Logged` Annotation Reference
 
@@ -48,23 +75,23 @@ The core of this library is the `@Logged` annotation. You can place it on method
 
 ## 🔧 Options
 
-| Attribute         | Default | Description                                                                 |
-| ----------------- | ------- | --------------------------------------------------------------------------- |
-| `onCall`          | `true`  | Log a message when the method is called.                                    |
-| `args`            | `true`  | Log argument names and types.                                               |
-| `argValues`       | `ALL`   | Controls whether argument values are logged. Values: `ALL`, `NONE`, `NULL`. |
-| `onReturn`        | `true`  | Log when the method returns.                                                |
-| `returnValue`     | `ALL`   | Controls whether return values are logged (`ALL`, `NONE`, `NULL`).          |
-| `onException`     | `true`  | Log when the method throws an exception.                                    |
-| `time`            | `true`  | Log execution time in ms.                                                   |
-| `callMsg`         | `""`    | Custom template for call messages (overrides global template).              |
-| `returnMsg`       | `""`    | Custom template for return messages.                                        |
-| `exceptionMsg`    | `""`    | Custom template for exception messages.                                     |
-| `level`           | `INFO`  | Log level for normal messages.                                              |
-| `exceptionLevel`  | `ERROR` | Log level for exceptions.                                                   |
-| `logStackTrace`   | `false` | Whether to print the exception stack trace.                                 |
-| `redactArgValues` | `{}`    | List of argument names to redact when logging.                              |
-| `redactAtPos`     | `{}`    | List of argument positions (0-based) to redact.                             |
+|Attribute|Default|Description|
+|---|---|---|
+|`onCall`|`true`|Log a message when the method is called.|
+|`args`|`true`|Log argument names and types.|
+|`argValues`|`ALL`|Controls whether argument values are logged. Values: `ALL`, `NONE`, `NULL`.|
+|`onReturn`|`true`|Log when the method returns.|
+|`returnValue`|`ALL`|Controls whether return values are logged (`ALL`, `NONE`, `NULL`).|
+|`onException`|`true`|Log when the method throws an exception.|
+|`time`|`true`|Log execution time in ms.|
+|`callMsg`|`""`|Custom template for call messages (overrides global template).|
+|`returnMsg`|`""`|Custom template for return messages.|
+|`exceptionMsg`|`""`|Custom template for exception messages.|
+|`level`|`INFO`|Log level for normal messages.|
+|`exceptionLevel`|`ERROR`|Log level for exceptions.|
+|`logStackTrace`|`false`|Whether to print the exception stack trace.|
+|`redactArgValues`|`{}`|List of argument names to redact when logging.|
+|`redactAtPos`|`{}`|List of argument positions (0-based) to redact.|
 
 
 ### Enum: `Values`
@@ -218,7 +245,7 @@ INFO : ↓○ DemoService::quietFail called with args: []
 
 ## 📚 Notes
 
-* Place `@Logged` at class level to log **all public methods**.
+* Place `@Logged` at class level to log **all methods**.
 * Use `callMsg`, `returnMsg`, and `exceptionMsg` for method-specific custom messages.
 * Combine with configuration properties (`application.yml`) to set global defaults.
 * With AspectJ weaving enabled, `@Logged` also works on **private** and **self-invoked** calls.
@@ -441,64 +468,64 @@ class DemoService {
   public void b() { }
 }
 ```
-
-
 ## ⚙️ Configuration Properties
 
-`Logged` can be customized through Spring Boot configuration (`application.yml` or `application.properties`).
+`Logged` can be customized through Spring Boot configuration (`application.yml` or `application.properties`).  
 All properties are prefixed with `logged.`.
 
 ### 🔑 Core Settings
 
-| Property         | Default | Description                                                   |
-| ---------------- | ------- | ------------------------------------------------------------- |
-| `logged.enabled` | `true`  | Enable/disable the logging aspect globally.                   |
-| `logged.color`   | `true`  | Apply ANSI colors to log messages.                            |
-| `logged.icons`   | `true`  | Show icons in log messages (e.g. `↓○`, `↑○`, `↑x`).           |
-| `logged.useUtf8` | `true`  | Use UTF-8 characters in console output (for icons & symbols). |
+|Property|Default|Description|
+|---|---|---|
+|`logged.enabled`|`true`|Enable/disable the logging aspect globally.|
+|`logged.color`|`true`|Apply ANSI colors to log messages.|
+|`logged.icons`|`true`|Show icons in log messages (e.g. `↓○`, `↑○`, `↑x`).|
+|`logged.useUtf8`|`true`|Use UTF-8 characters in console output (for icons & symbols).|
 
 ### 🎨 Icons
 
-| Property           | Default | Description            |
-| ------------------ | ------- | ---------------------- |
-| `logged.entryIcon` | `↓○`    | Icon for method entry. |
-| `logged.exitIcon`  | `↑○`    | Icon for method exit.  |
-| `logged.throwIcon` | `↑x`    | Icon for exceptions.   |
+|Property|Default|Description|
+|---|---|---|
+|`logged.entryIcon`|`↓○`|Icon for method entry.|
+|`logged.exitIcon`|`↑○`|Icon for method exit.|
+|`logged.throwIcon`|`↑x`|Icon for exceptions.|
+
+### 🧾 MDC Integration
+
+|Property|Default|Description|
+|---|---|---|
+|`logged.mdc.enabled`|`true`|Enable MDC context injection.|
+|`logged.mdc.classKey`|`class`|MDC key for class name.|
+|`logged.mdc.methodKey`|`method`|MDC key for method name.|
+|`logged.mdc.traceKey`|_(none)_|MDC key for trace ID if present.|
+
+### 📡 OpenTelemetry Integration
+
+|Property|Default|Description|
+|---|---|---|
+|`logged.useOTel`|`true`|If enabled, injects `@Logged` method data into active OpenTelemetry spans.|
+|`logged.otel.attributes`|_(none)_|Optional map of attribute keys to tokens for span enrichment.|
+
+### 🔒 Redaction
+
+|Property|Default|Description|
+|---|---|---|
+|`logged.redactMask`|`█`|Character used to mask sensitive values.|
+|`logged.redactLength`|`5`|Length of the redacted replacement string.|
 
 ### 📝 Message Templates
 
 Templates support **tokens** such as `{c}` (class), `{m}` (method), `{a}` (arguments), `{rV}` (return value), `{d}` (duration), etc.
-See [Message Formatting](#-message-formatting-with-tokens) for the full token reference.
 
-| Property               | Default                                                      | Example Output                                                                              |
-| ---------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------- |
-| `logged.callMsgNoArgs` | `{eI}{c}::{m} called.`                                       | `↓○MyService::ping called.`                                                                 |
-| `logged.callMsgArgs`   | `{eI}{c}::{m} called with args: [{a}]`                       | `↓○UserService::save called with args: [42, "foo"]`                                         |
-| `logged.exitMsg`       | `{xI}{c}::{m} returned.`                                     | `↑○MyService::ping returned.`                                                               |
-| `logged.exitMsgValue`  | `{xI}{c}::{m} returned with value: {rV}`                     | `↑○UserService::save returned with value: 123`                                              |
-| `logged.timeTakenMsg`  | `Time taken: {d} ms`                                         | `Time taken: 42 ms`                                                                         |
-| `logged.throwMsg`      | `{tI}{c}::{m} threw a {ex}: {eM} \n\tat {ec}.{em} ({f}:{L})` | `↑xMyService::ping threw a NullPointerException: boom at MyService.run (MyService.java:42)` |
-
-### ⚙️ Argument Logging
-
-| Property              | Default         | Description                                                                                 |
-| --------------------- | --------------- | ------------------------------------------------------------------------------------------- |
-| `logged.argsTemplate` | `({c}) {k}={v}` | Controls how each method argument is formatted (`{c}` = type, `{k}` = name, `{v}` = value). |
-
-### 🔒 Redaction
-
-| Property              | Default | Description                                |
-| --------------------- | ------- | ------------------------------------------ |
-| `logged.redactMask`   | `█`     | Character used to mask sensitive values.   |
-| `logged.redactLength` | `5`     | Length of the redacted replacement string. |
-
-### 📡 OpenTelemetry Integration
-
-| Property         | Default | Description                                                                |
-| ---------------- | ------- | -------------------------------------------------------------------------- |
-| `logged.useOTel` | `true`  | If enabled, injects `@Logged` method data into active OpenTelemetry spans. |
-
----
+|Property|Default|Example Output|
+|---|---|---|
+|`logged.callMsgNoArgs`|`{eI}{c}::{m} called.`|`↓○MyService::ping called.`|
+|`logged.callMsgArgs`|`{eI}{c}::{m} called with args: [{a}]`|`↓○UserService::save called with args: [42, "foo"]`|
+|`logged.exitMsg`|`{xI}{c}::{m} returned.`|`↑○MyService::ping returned.`|
+|`logged.exitMsgValue`|`{xI}{c}::{m} returned with value: {rV}`|`↑○UserService::save returned with value: 123`|
+|`logged.timeTakenMsg`|`Time taken: {d} ms`|`Time taken: 42 ms`|
+|`logged.throwMsg`|`{tI}{c}::{m} threw a {ex}: {eM} \n\tat {ec}.{em} ({f}:{L})`|`↑xMyService::ping threw a NullPointerException: boom at MyService.run (MyService.java:42)`|
+|`logged.argsTemplate`|`({c}) {k}={v}`|`(String) username=john`|
 
 ### Example (`application.yml`)
 
@@ -510,66 +537,51 @@ logged:
   entryIcon: ">>"
   exitIcon: "<<"
   throwIcon: "!!"
-  callMsgArgs: "{eI}{c}.{m} args=[{a}]"
-  exitMsgValue: "{xI}{c}.{m} → {rV} ({d}ms)"
+  mdc:
+    enabled: true
+    classKey: "logged.class"
+    methodKey: "logged.method"
   redactMask: "*"
   redactLength: 8
-  useOTel: false
+  useOTel: true
+  callMsgArgs: "{eI}{c}.{m} args=[{a}]"
+  exitMsgValue: "{xI}{c}.{m} → {rV} ({d}ms)"
 ```
-
-
-
-
-
 ## 🧩 Message Formatting with Tokens
 
 You can customize how your log messages look for method entry, exit, and exception cases using configurable templates.
 
 Each template supports a specific set of tokens. These tokens will be dynamically replaced at runtime depending on the log context.
 
-These customizations work both for the default messages via configuration in your application.properties or application.yaml, and for custom messages for 
-different methods via the options in the annotation.
+---
+
+### 📥 Entry Message Tokens (`format.entry`)
+
+|Token|Description|
+|---|---|
+|`{m}`|Method name|
+|`{t}`|Method type|
+|`{c}`|Class simple name|
+|`{C}`|Fully qualified class name|
+|`{a}`|Arguments passed to the method|
+|`{eI}`|Entry icon (from config)|
 
 ---
 
-### ✍️ Syntax
+### 📤 Exit Message Tokens (`format.exit`)
 
-Use `{token}` to inject a runtime value. Example:
-
-```yaml
-entry: "{eI} → Entering {m}({a})"
-exit:  "{xI} ← {m} returned {rV} in {d}ms"
-exception: "{tI} !! {m} threw {ex}: {eM}"
-```
-
----
-
-## 📥 Entry Message Tokens (`format.entry`)
-
-| Token  | Description                     |
-|--------|---------------------------------|
-| `{m}`  | Method name                     |
-| `{t}`  | Method type                     |
-| `{c}`  | Class Simple Name               |
-| `{C}`  | Class Name                      |
-| `{a}`  | Arguments passed to the method  |
-| `{eI}` | Entry icon (from config)        |
-
----
-
-## 📤 Exit Message Tokens (`format.exit`)
 The tokens from the call also work for the return message, and it adds:
 
-|Token| Description                                  |
-|---|----------------------------------------------|
-|`{rV}`| Return value (null-safe)                     |
-|`{rC}`| Return type class name                       |
-|`{d}`| Duration of method execution in milliseconds |
-|`{xI}`| Exit icon (from config)                      |
+|Token|Description|
+|---|---|
+|`{rV}`|Return value (null-safe)|
+|`{rC}`|Return type class name|
+|`{d}`|Duration of method execution in milliseconds|
+|`{xI}`|Exit icon (from config)|
 
 ---
 
-## 💥 Exception Message Tokens (`format.exception`)
+### 💥 Exception Message Tokens (`format.exception`)
 
 |Token|Description|
 |---|---|
@@ -577,20 +589,21 @@ The tokens from the call also work for the return message, and it adds:
 |`{eM}`|Exception message|
 |`{ec}`|Class where the exception originated|
 |`{em}`|Method where the exception originated|
-|`{f}`|File name (from the stack trace, if available)|
-|`{L}`|Line number (from the stack trace, if available)|
+|`{f}`|File name (from the stack trace, if present)|
+|`{L}`|Line number (from the stack trace, if avail.)|
 |`{tI}`|Throw icon (from config)|
 
-ℹ️ Notes
+---
 
-If a method has no arguments, {a} resolves to an empty string.
+ℹ️ **Notes**
 
-If a method returns void, {rV} is not evaluated.
-
-Icons ({eI}, {xI}, {tI}) come from logging.decorated.icons in your config.
-# Utility Tools in Logged
-
-Besides the `@Logged` annotation and aspect, the library also ships with several utility classes that handle text transformation and decoration. These are used internally, but are also available for advanced customization.
+- If a method has no arguments, `{a}` resolves to an empty string.
+    
+- If a method returns `void`, `{rV}` is not evaluated.
+    
+- Icons (`{eI}`, `{xI}`, `{tI}`) come from the configured icon properties.
+    
+- Tokens support **default values** using a colon syntax: `{token:default}`. If the token value is missing or empty, the default is used. For example, `{rV:N/A}` prints `N/A` if the return value is null. The default can also be left blank (`{m:}`) to suppress output when no value is present.
 
 ---
 
