@@ -160,7 +160,7 @@ public class LoggedSlf4jPlugin implements LoggedPlugin {
         data.addToken(LogToken.DEPTH, deco.custom(props.getDepthIconColor(), data.get(LogToken.DEPTH)));
     }
 
-    void logCall(Logger log, Level level, Data data, Logged options) {
+    private void logCall(Logger log, Level level, Data data, Logged options) {
         if (options.callMsg() != null && !options.callMsg().isEmpty()) {
 
             sendToLog(log, level, options.callMsg(), data.tok());
@@ -188,7 +188,7 @@ public class LoggedSlf4jPlugin implements LoggedPlugin {
         }
     }
 
-    void logReturn(Logger log, Level level, Data data, Logged options) {
+    private void logReturn(Logger log, Level level, Data data, Logged options) {
         if (options.onReturn() && options.returnMsg().isEmpty()) {
             var rv = data.tokens().get(LogToken.RETURN_VALUE);
             String template = switch (options.returnValue()) {
@@ -214,7 +214,7 @@ public class LoggedSlf4jPlugin implements LoggedPlugin {
         }
     }
 
-    void logException(Logger log, Throwable e, Data data, Logged options) {
+    private void logException(Logger log, Throwable e, Data data, Logged options) {
 
         if (!options.onException() && options.exceptionMsg().isBlank()) return;
 

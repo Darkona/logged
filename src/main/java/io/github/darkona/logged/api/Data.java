@@ -56,16 +56,26 @@ public class Data {
         stokens.put(token.token(), value);
     }
 
+    /**
+     * Add a token with a custom key, as a String
+     * @param key String key
+     * @param value String value
+     */
     public void addFlexToken(String key, String value) {
         stokens.put(key, value);
     }
 
+    /**
+     * Get a token value (by String key)
+     * @param key String key
+     * @return the token value
+     */
     public String get(String key) {
         return stokens.get(key) == null ? "" : stokens.get(key);
     }
 
     /**
-     * Get a token value (by enum key).
+     * Get a token value (by LogToken key).
      */
     public String get(LogToken token) {
         return tokens.get(token) == null ? "" : tokens.get(token);
