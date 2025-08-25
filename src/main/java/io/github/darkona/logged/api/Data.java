@@ -8,21 +8,48 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public record Data(Map<LogToken, String> tokens, Arg[] args, Long start, Integer depth, Set<Integer> redactedPos) {
+public class Data {
 
-    public Data {
-        if (tokens == null) {
-            tokens = new HashMap<>();
-        }
-        if (args == null) {
-            args = new Arg[0];
-        }
-        if (start == null) {
-            start = System.currentTimeMillis();
-        }
-        if (depth == null) {
-            depth = 0;
-        }
+    private final Map<LogToken, String> tokens;
+    private final Arg[] args;
+    private final long start;
+    private final int depth;
+    private final Set<Integer> redactedPos;
+    private final Map<String, String> stokens;
+
+    public Data(Map<LogToken, String> tokens, Arg[] args, long start, int depth, Set<Integer> redactedPos) {
+        this.tokens = tokens == null ? new HashMap<>() : new HashMap<>(tokens);
+        this.args = args == null ? new Arg[0] : args;
+        this.start = start;
+        this.depth = depth;
+        this.redactedPos = redactedPos;
+        this.stokens = syncTokens();
+    }
+
+    public int depth() {
+        return depth;
+    }
+
+    public long start() {
+        return start;
+    }
+
+    public Set<Integer> redactedPos() {
+        return redactedPos;
+    }
+
+    public Arg[] args() {
+        return args;
+    }
+
+    public Map<LogToken, String> tokens() {
+        return tokens;
+    }
+
+    private Map<String, String> syncTokens() {
+        return tokens.entrySet().stream()
+                     .collect(Collectors.toMap(e -> e.getKey().token(),
+                             Map.Entry::getValue, (a, b) -> b, () -> new HashMap<>(tokens.size())));
     }
 
     /**
@@ -30,14 +57,22 @@ public record Data(Map<LogToken, String> tokens, Arg[] args, Long start, Integer
      */
     public void addToken(LogToken token, String value) {
         tokens.put(token, value);
+        stokens.put(token.token(), value);
+    }
+
+    public void addFlexToken(String key, String value) {
+        stokens.put(key, value);
+    }
+
+    public String get(String key) {
+        return stokens.get(key) == null ? "" : stokens.get(key);
     }
 
     /**
      * Get a token value (by enum key).
      */
     public String get(LogToken token) {
-        var tok = tokens.get(token);
-        return tok == null ? "" : tok;
+        return tokens.get(token) == null ? "" : tokens.get(token);
     }
 
     /**
@@ -46,9 +81,7 @@ public record Data(Map<LogToken, String> tokens, Arg[] args, Long start, Integer
      * NOT global. The returned map is a copy.
      */
     public Map<String, String> tok() {
-        return tokens.entrySet().stream()
-                     .collect(Collectors.toMap(e -> e.getKey().token(),
-                             Map.Entry::getValue, (a, b) -> b, () -> new HashMap<>(tokens.size())));
+        return stokens;
     }
 
     public List<String> argNames() {

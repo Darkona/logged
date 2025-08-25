@@ -12,6 +12,7 @@ import io.github.darkona.logged.utils.Transformer;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.slf4j.event.Level;
 
 import java.util.Arrays;
@@ -114,8 +115,21 @@ public class LoggedSlf4jPlugin implements LoggedPlugin {
     }
 
     @Override
+    public void onLoad() {
+
+    }
+
+    @Override
+    public void afterMethod() {
+
+    }
+
+    @Override
     public void onCall(ProceedingJoinPoint pjp, Data data, Logged options) {
-        if(!props.isEnabled()) return;
+        System.out.println(deco.green("SLF4j Plugin called"));
+        if (!props.isEnabled()) return;
+
+        captureMdc(data);
         Logger log = LoggerFactory.getLogger(pjp.getSignature().getDeclaringType());
 
         if (isEnabled(log, options.level())) {
@@ -127,6 +141,14 @@ public class LoggedSlf4jPlugin implements LoggedPlugin {
             if (props.isIconColors()) setColorsToIcons(data);
 
             logCall(log, options.level(), data, options);
+        }
+    }
+
+    private void captureMdc(Data data) {
+        if (!props.getCaptureFromMdc().isEmpty()) {
+            for (var s : props.getCaptureFromMdc()) {
+                if (s != null) data.addFlexToken(LogToken.MDC.token() + s, MDC.get(s) != null ? MDC.get(s) : NULL);
+            }
         }
     }
 
@@ -157,7 +179,8 @@ public class LoggedSlf4jPlugin implements LoggedPlugin {
 
     @Override
     public void onReturn(ProceedingJoinPoint pjp, Data data, Logged options) {
-        if(!props.isEnabled()) return;
+        if (!props.isEnabled()) return;
+        captureMdc(data);
         Logger log = LoggerFactory.getLogger(pjp.getSignature().getDeclaringType());
         if (isEnabled(log, options.level())) {
             logReturn(log, options.level(), data, options);
@@ -181,7 +204,8 @@ public class LoggedSlf4jPlugin implements LoggedPlugin {
 
     @Override
     public void onException(ProceedingJoinPoint pjp, Data data, Logged options, Throwable exception) {
-        if(!props.isEnabled()) return;
+        if (!props.isEnabled()) return;
+        captureMdc(data);
         Logger log = LoggerFactory.getLogger(pjp.getSignature().getDeclaringType());
 
         if (isEnabled(log, options.exceptionLevel())) {
@@ -213,7 +237,7 @@ public class LoggedSlf4jPlugin implements LoggedPlugin {
     private String makePrintableArgs(Arg[] args, Logged.Values argValues) {
         return args.length > 0 ? Arrays.stream(args)
                                        .map(a -> a != null ? a.toString(props.getArgsTemplate(), argValues) : "")
-                                       .collect(Collectors.joining(",")) : "";
+                                       .collect(Collectors.joining(", ")) : "";
     }
 
     private boolean isEnabled(Logger log, Level lvl) {

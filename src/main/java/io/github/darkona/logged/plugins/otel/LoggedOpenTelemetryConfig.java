@@ -6,8 +6,8 @@ import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProperty;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -24,8 +24,8 @@ public class LoggedOpenTelemetryConfig {
 
     @Bean(name = "loggedTracer")
     @ConditionalOnMissingBean(name = "loggedTracer")
-    @ConditionalOnBooleanProperty(name = "logged.oTel.enabled")
-    public Tracer tracer(ObjectProvider<OpenTelemetry> otelProvider) {
+    @ConditionalOnBooleanProperty(name = "logged.otel.enabled")
+    public Tracer loggedTracer(ObjectProvider<OpenTelemetry> otelProvider) {
 
         OpenTelemetry oTel = otelProvider.getIfAvailable(GlobalOpenTelemetry::get);
         var scopeName = "io.github.darkona.logged";
@@ -35,10 +35,9 @@ public class LoggedOpenTelemetryConfig {
 
     @Bean
     @ConditionalOnClass({Span.class, Tracer.class})
-    @ConditionalOnBean(name = "loggedTracer")
-    @ConditionalOnBooleanProperty(name = "logged.oTel.enabled")
-    @Order(0)
-    public LoggedOpenTelemetryPlugin openTelemetryPlugin(LogDecorator logDecorator, LoggedOpenTelemetryProperties props, Tracer tracer) {
+    @ConditionalOnBooleanProperty(name = "logged.otel.enabled")
+    @Order(10)
+    public LoggedOpenTelemetryPlugin openTelemetryPlugin(LogDecorator logDecorator, LoggedOpenTelemetryProperties props, @Qualifier("loggedTracer") Tracer tracer) {
         return new LoggedOpenTelemetryPlugin(logDecorator, props, tracer);
     }
 

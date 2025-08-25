@@ -12,4 +12,8 @@ public interface LoggedPlugin {
     void onException(ProceedingJoinPoint pjp, Data data, Logged options, Throwable exception);
 
     String announceLoad();
+
+    void onLoad();
+
+    void afterMethod();
 }

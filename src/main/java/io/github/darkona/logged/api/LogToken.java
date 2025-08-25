@@ -24,6 +24,7 @@ public enum LogToken {
     THROW_ICON("tI"),
     DEPTH_ICON("dI"),
     NULL("null"),
+    MDC("mdc."),
     DEPTH("h");
 
 

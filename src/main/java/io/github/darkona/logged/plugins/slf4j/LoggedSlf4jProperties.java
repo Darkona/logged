@@ -8,6 +8,9 @@ import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @ConfigurationProperties(prefix = "logged.slf4j")
 public class LoggedSlf4jProperties {
 
@@ -108,6 +111,19 @@ public class LoggedSlf4jProperties {
     @Setter
     private boolean logDepth = true;
 
+    /**
+     * List of keys to try to capture from MDC to add to logs.
+     * Add the keys separated by commas, example: trace_id, span_id, call_id
+     * Use {mdc.trace_id} at a log message to print the value with a key 'trace_id'
+     */
+    @Getter
+    @Setter
+    private List<String> captureFromMdc = new ArrayList<>();
+
+
+    @Getter
+    @Setter
+    private List<String> captureFromOtel = new ArrayList<>();
     @Getter
     private ColorEnum entryIconColor = BasicColor.BLUE;
     @Getter

@@ -1,6 +1,7 @@
 package io.github.darkona.logged.plugins.mdc;
 
 import io.github.darkona.logged.Logged;
+import io.github.darkona.logged.api.Arg;
 import io.github.darkona.logged.api.Data;
 import io.github.darkona.logged.api.LogDecorator;
 import io.github.darkona.logged.api.LogToken;
@@ -8,9 +9,11 @@ import io.github.darkona.logged.api.LoggedPlugin;
 import io.github.darkona.logged.utils.Transformer;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.slf4j.MDC;
+import org.slf4j.spi.MDCAdapter;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * MDC plugin for {@code @Logged} that writes per-invocation metadata into SLF4J’s
@@ -92,10 +95,13 @@ import java.util.List;
 
 public class LoggedMdcPlugin implements LoggedPlugin {
 
+
     private static final String CLASS = "class";
     private static final String METHOD = "method";
+    private static final String METHOD_TYPE = "method_type";
     private static final String ARGS = "args";
     private static final String RESULT = "result";
+    private static final String RESULT_TYPE = "result_type";
     private static final String OUTCOME = "outcome";
     private static final String EXCEPTION = "exception";
     private static final String EXCEPTION_MSG = "exception_msg";
@@ -104,8 +110,8 @@ public class LoggedMdcPlugin implements LoggedPlugin {
     private static final List<String> ALL = Arrays.asList(CLASS, METHOD, ARGS, RESULT, OUTCOME, EXCEPTION, EXCEPTION_MSG, LATENCY_MS);
 
     private final LogDecorator deco;
-
     private final LoggedMdcProperties props;
+    private MDCAdapter mm;
 
     public LoggedMdcPlugin(LogDecorator deco, LoggedMdcProperties props) {
         this.deco = deco;
@@ -114,43 +120,67 @@ public class LoggedMdcPlugin implements LoggedPlugin {
 
     @Override
     public void onCall(ProceedingJoinPoint pjp, Data data, Logged options) {
-        if(!props.isEnabled()) return;
+        if (!props.isEnabled()) return;
+        System.out.println(deco.orange("MDC Plugin called"));
+        loadCallData(data, options);
+    }
+
+    private void loadCallData(Data data, Logged options) {
         if (options.onCall()) {
-            MDC.put(CLASS, data.get(LogToken.CLASS_NAME));
+            MDC.put(CLASS, data.get(LogToken.CLASS_LONG));
             MDC.put(METHOD, data.get(LogToken.METHOD_NAME));
+            MDC.put(METHOD_TYPE, data.get(LogToken.METHOD_TYPE));
             if (options.args()) {
+                data.addToken(LogToken.ARGUMENTS, makePrintableArgs(data.args(), options.argValues()));
                 MDC.put(ARGS, data.get(LogToken.ARGUMENTS));
             }
         }
     }
 
+    private String makePrintableArgs(Arg[] args, Logged.Values argValues) {
+        return args.length > 0 ? "[" + Arrays.stream(args)
+                                             .map(a -> a != null ? a.toString(props.getArgsTemplate(), argValues) : "")
+                                             .collect(Collectors.joining(", ")) + "]" : "[]";
+    }
+
     @Override
     public void onReturn(ProceedingJoinPoint pjp, Data data, Logged options) {
-        if(!props.isEnabled()) return;
+        if (!props.isEnabled()) return;
+        loadCallData(data, options);
         MDC.put(OUTCOME, "ok");
         if (options.onReturn()) {
             MDC.put(RESULT, Transformer.truncate(data.get(LogToken.RETURN_VALUE), 2048));
+            MDC.put(RESULT_TYPE, Transformer.truncate(data.get(LogToken.RETURN_CLASS), 2048));
         }
         if (options.time()) {
             MDC.put(LATENCY_MS, data.get(LogToken.DURATION));
         }
-        clearMDC();
     }
 
     @Override
     public void onException(ProceedingJoinPoint pjp, Data data, Logged options, Throwable exception) {
-        if(!props.isEnabled()) return;
+        if (!props.isEnabled()) return;
+        loadCallData(data, options);
         MDC.put(OUTCOME, "error");
         MDC.put(EXCEPTION, data.get(LogToken.EXCEPTION_CLASS));
         if (options.onException()) {
             MDC.put(EXCEPTION_MSG, exception.getMessage());
         }
-        clearMDC();
     }
 
     @Override
     public String announceLoad() {
         return deco.blue("@Logged-MDC Plugin initialized.");
+    }
+
+    @Override
+    public void onLoad() {
+
+    }
+
+    @Override
+    public void afterMethod() {
+        clearMDC();
     }
 
 

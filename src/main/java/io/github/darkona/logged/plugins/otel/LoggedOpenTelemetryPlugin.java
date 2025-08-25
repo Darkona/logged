@@ -8,6 +8,7 @@ import io.github.darkona.logged.api.LogDecorator;
 import io.github.darkona.logged.api.LogToken;
 import io.github.darkona.logged.api.LoggedPlugin;
 import io.github.darkona.logged.colors.Red;
+import io.github.darkona.logged.utils.StringInterpolator;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanKind;
@@ -15,6 +16,8 @@ import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import org.aspectj.lang.ProceedingJoinPoint;
+import org.slf4j.MDC;
+import org.slf4j.spi.MDCAdapter;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -130,26 +133,37 @@ public class LoggedOpenTelemetryPlugin implements LoggedPlugin {
     }
 
     @Override
+    public void onLoad() {
+
+    }
+
+    @Override
+    public void afterMethod() {
+        if (props.isAddToMdc()) {
+            MDC.remove("spanId");
+        }
+    }
+
+    @Override
     public void onCall(ProceedingJoinPoint pjp, Data data, Logged options) {
-
-        String classLong = data.get(LogToken.CLASS_LONG);
-        String method = data.get(LogToken.METHOD_NAME);
-        String spanName = (classLong.isEmpty() ? "unknown" : classLong) + "#" + (method.isEmpty() ? "?" : method);
-
+        if (!props.isEnabled()) return;
+        System.out.println(deco.red("Otel Plugin called"));
+        String spanName = StringInterpolator.interpolate(props.getSpanIdTemplate(), data.tok());
+        MDCAdapter mdc = MDC.getMDCAdapter();
 
         var builder = tracer.spanBuilder(spanName)
                             .setParent(Context.current())
                             .setSpanKind(SpanKind.INTERNAL);
 
-        if (props.getAddClass()) {
-            builder.setAttribute(CODE_NAMESPACE, classLong);
+        if (props.isAddClass()) {
+            builder.setAttribute(CODE_NAMESPACE, data.get(LogToken.CLASS_NAME));
         }
 
-        if (props.getAddMethod()) {
-            builder.setAttribute(CODE_FUNCTION, method);
+        if (props.isAddMethod()) {
+            builder.setAttribute(CODE_FUNCTION, data.get(LogToken.METHOD_NAME));
         }
 
-        if (props.getAddSourceLine()) {
+        if (props.isAddSourceLine()) {
             var loc = pjp.getSourceLocation();
             if (loc != null) {
                 var file = loc.getFileName();
@@ -159,11 +173,11 @@ public class LoggedOpenTelemetryPlugin implements LoggedPlugin {
             }
         }
 
-        if (props.getAddDepth()) {
+        if (props.isAddDepth()) {
             builder.setAttribute(LOGGED_DEPTH, data.depth());
         }
 
-        if (props.getAddArgs()) {
+        if (props.isAddArgs()) {
             Arg[] args = data.args();
             int argCount = (args == null) ? 0 : args.length;
             builder.setAttribute(LOGGED_ARGS_COUNT, (long) argCount);
@@ -171,7 +185,9 @@ public class LoggedOpenTelemetryPlugin implements LoggedPlugin {
             builder.setAttribute(LOGGED_ARGS_REDACTED, redactedArgNames(options, args));
         }
 
-
+        if (props.isAddToMdc()) {
+            mdc.put("spanId", spanName);
+        }
         Span span = builder.startSpan();
         spanStack.get().push(span);
     }
@@ -179,6 +195,7 @@ public class LoggedOpenTelemetryPlugin implements LoggedPlugin {
 
     @Override
     public void onReturn(ProceedingJoinPoint pjp, Data data, Logged options) {
+        if (!props.isEnabled()) return;
         Span span = safePeek(spanStack);
 
         if (span != null && span.getSpanContext().isValid()) {
@@ -187,7 +204,7 @@ public class LoggedOpenTelemetryPlugin implements LoggedPlugin {
                 if ("null".equalsIgnoreCase(returnType)) {
                     span.setAttribute(LOGGED_RETURN_NULL, true);
                 }
-                if (props.getAddReturnType()) {
+                if (props.isAddReturnType()) {
                     span.setAttribute(LOGGED_RETURN_TYPE, data.get(LogToken.RETURN_CLASS));
                 }
             }
@@ -199,11 +216,12 @@ public class LoggedOpenTelemetryPlugin implements LoggedPlugin {
 
     @Override
     public void onException(ProceedingJoinPoint pjp, Data data, Logged options, Throwable ex) {
+        if (!props.isEnabled()) return;
         Span span = safePeek(spanStack);
         if (span != null && span.getSpanContext().isValid()) {
             if (options.onException() && ex != null) {
                 span.recordException(ex);
-                if (props.getAddExceptionMsg()) {
+                if (props.isAddExceptionMsg()) {
                     span.setStatus(StatusCode.ERROR, ex.toString());
                 } else {
                     span.setStatus(StatusCode.ERROR);

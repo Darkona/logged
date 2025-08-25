@@ -44,13 +44,23 @@ public class LoggedEngine {
     @PostConstruct
     void init() {
         var log = LoggerFactory.getLogger(LoggedEngine.class);
+
         if (props.isUseUtf8() && System.out.charset() != StandardCharsets.UTF_8) {
             Utf8Installer.install();
             log.info(deco.custom(Orange.DARK_ORANGE, "@Logged engine initialized with output UTF-8 enabled."));
         } else {
             log.info(deco.custom(Orange.DARK_ORANGE, "@Logged engine initialized."));
         }
-        plugins.forEach(loggedPlugin -> log.info(loggedPlugin.announceLoad()));
+
+        plugins.forEach(loggedPlugin -> {
+            try {
+                loggedPlugin.onLoad();
+                if (!loggedPlugin.announceLoad().isBlank()) log.info(loggedPlugin.announceLoad());
+            } catch (Exception e) {
+                var msg = "Error loading plugin: " + loggedPlugin.getClass().getSimpleName();
+                log.error(msg, e);
+            }
+        });
     }
 
     public Object logMethod(ProceedingJoinPoint pjp)
@@ -70,6 +80,7 @@ public class LoggedEngine {
             throw ex;
         } finally {
             pop();
+            plugins.forEach(LoggedPlugin::afterMethod);
         }
     }
 
@@ -112,12 +123,12 @@ public class LoggedEngine {
         map.put(LogToken.CLASS_NAME, pjp.getSignature().getDeclaringType().getSimpleName());
         map.put(LogToken.CLASS_LONG, pjp.getSignature().getDeclaringType().getName());
         map.put(LogToken.METHOD_NAME, pjp.getSignature().getName());
-        map.put(LogToken.METHOD_TYPE, pjp.getSignature().toLongString());
+
 
         if (!options.args()) return new Data(map, new Arg[]{}, start, depth, Collections.emptySet());
 
         var signature = (MethodSignature) pjp.getSignature();
-
+        map.put(LogToken.METHOD_TYPE, signature.getReturnType().getSimpleName());
         Arg[] args = signature.getParameterTypes() != null ? new Arg[signature.getParameterTypes().length] : new Arg[0];
 
         var names = ParameterNames.resolve(pjp);
