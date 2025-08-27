@@ -13,7 +13,7 @@ public class TestObject {
 
     @Logged
     public void methodWithArgs(String str, int num) {
-        System.out.println(deco.bannerize("Processing string: " + str + ", number: " + num, 50));
+        System.out.println("Processing string: " + str + ", number: " + num);
     }
 
     @Logged(args = false)
@@ -114,5 +114,10 @@ public class TestObject {
     @Logged(redactArgValues = {"arg1"}, redactAtPos = {2}, returnValue = Logged.Values.NONE)
     public String methodWithRedactedArgs(String arg1, String arg2, String arg3) {
         return arg1 + "::" + arg2 + "::" + arg3;
+    }
+
+    @Logged(marker = "slf4j")
+    public String methodWithMarker(){
+        return "Method with marker";
     }
 }

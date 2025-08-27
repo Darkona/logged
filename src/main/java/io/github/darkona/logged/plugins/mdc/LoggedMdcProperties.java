@@ -22,7 +22,33 @@ public class LoggedMdcProperties {
      */
     @Getter
     @Setter
-    private String argsTemplate = "({c}) {k}={v}";
+    private String argsTemplate = "({c}){k}:{v}";
 
+    /**
+     * Add MDC marker to the MDC during method execution.
+     */
+    @Getter
+    @Setter
+    private boolean addMark = false;
 
+    /**
+     * The key of the MDC marker.
+     */
+    @Getter
+    @Setter
+    private String markerKey = "log_source";
+
+    /**
+     * The Value of the MDC marker.
+     */
+    @Getter
+    @Setter
+    private String markerValue = "logged";
+
+    /**
+     * Maximum amount of characters allowed when parsing values.
+     */
+    @Getter
+    @Setter
+    private int maxValueLength = 2048;
 }

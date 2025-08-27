@@ -144,7 +144,7 @@ public class LoggedEngine {
         }
 
         for (int i = 0; i < signature.getParameterTypes().length; i++) {
-            var value = Transformer.objectString(pjp.getArgs()[i]);
+            var value = Transformer.truncate(Transformer.objectString(pjp.getArgs()[i]), props.getMaxValueLength());
 
             if (redacts.contains(names[i]) || redactIndexes.contains(i)) {
                 value = Transformer.truncate(Transformer.fill(props.getRedactMask(), props.getRedactLength()), props.getRedactLength());
@@ -157,7 +157,7 @@ public class LoggedEngine {
     private void assembleReturnData(Data data, Object o) {
         data.addToken(LogToken.DURATION, String.valueOf(System.currentTimeMillis() - data.start()));
         data.addToken(LogToken.RETURN_CLASS, (o == null) ? NULL : o.getClass().getSimpleName());
-        data.addToken(LogToken.RETURN_VALUE, Transformer.objectString(o));
+        data.addToken(LogToken.RETURN_VALUE, Transformer.truncate(Transformer.objectString(o), props.getMaxValueLength()));
     }
 
     private void assembleExceptionData(Throwable e, Data data) {

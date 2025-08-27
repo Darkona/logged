@@ -1,37 +1,70 @@
 package io.github.darkona.logged.colors;
 
-
-import java.util.Arrays;
+import java.util.List;
 
 public class ColorFinder {
 
+    // Order matters: first match wins (same spirit as your original method)
+    private static final List<Class<? extends Enum<?>>> ORDER = List.of(
+            BasicColor.class,
+            Blue.class,
+            Red.class,
+            Green.class,
+            Yellow.class,
+            Orange.class,
+            Pink.class,
+            White.class,
+            Gray.class,
+            Brown.class
+    );
 
     private ColorFinder() {}
 
-    public static ColorEnum findColor(String color) {
-        if (color == null) {
-            return BasicColor.BLACK;
+    public static ColorEnum findColor(String c) {
+        if (c == null) return BasicColor.BLACK;
+
+        final String raw = c.trim();
+        if (raw.isEmpty()) return BasicColor.BLACK;
+
+        // Normalize: case-insensitive; spaces/hyphens -> underscores
+        final String normalized = raw.toUpperCase()
+                                     .replace('-', '_')
+                                     .replace(' ', '_');
+
+        // 1) Try by enum name (preferred)
+        for (Class<? extends Enum<?>> enumClass : ORDER) {
+            ColorEnum match = matchByName(enumClass, normalized);
+            if (match != null) return match;
         }
-        if (Arrays.stream(BasicColor.values()).anyMatch(colorEnum -> colorEnum.toString().equals(color)))
-            return BasicColor.valueOf(color);
-        if (Arrays.stream(Blue.values()).anyMatch(colorEnum -> colorEnum.toString().equals(color)))
-            return Blue.valueOf(color);
-        if (Arrays.stream(Red.values()).anyMatch(colorEnum -> colorEnum.toString().equals(color)))
-            return Red.valueOf(color);
-        if (Arrays.stream(Green.values()).anyMatch(colorEnum -> colorEnum.toString().equals(color)))
-            return Green.valueOf(color);
-        if (Arrays.stream(Yellow.values()).anyMatch(colorEnum -> colorEnum.toString().equals(color)))
-            return Yellow.valueOf(color);
-        if (Arrays.stream(Orange.values()).anyMatch(colorEnum -> colorEnum.toString().equals(color)))
-            return Orange.valueOf(color);
-        if (Arrays.stream(Pink.values()).anyMatch(colorEnum -> colorEnum.toString().equals(color)))
-            return Pink.valueOf(color);
-        if (Arrays.stream(White.values()).anyMatch(colorEnum -> colorEnum.toString().equals(color)))
-            return White.valueOf(color);
-        if (Arrays.stream(Gray.values()).anyMatch(colorEnum -> colorEnum.toString().equals(color)))
-            return Gray.valueOf(color);
-        if (Arrays.stream(Brown.values()).anyMatch(colorEnum -> colorEnum.toString().equals(color)))
-            return Brown.valueOf(color);
+
+        // 2) Back-compat: try by ANSI string (toString())
+        for (Class<? extends Enum<?>> enumClass : ORDER) {
+            ColorEnum match = matchByAnsi(enumClass, raw);
+            if (match != null) return match;
+        }
+
+        // 3) Default
         return BasicColor.BLACK;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static ColorEnum matchByName(Class<? extends Enum<?>> enumClass, String normalized) {
+        for (Enum<?> constant : enumClass.getEnumConstants()) {
+            if (constant.name().equals(normalized)) {
+                return (ColorEnum) constant;
+            }
+        }
+        return null;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static ColorEnum matchByAnsi(Class<? extends Enum<?>> enumClass, String raw) {
+        for (Enum<?> constant : enumClass.getEnumConstants()) {
+            ColorEnum c = (ColorEnum) constant;
+            if (c.toString().equals(raw)) {
+                return c;
+            }
+        }
+        return null;
     }
 }

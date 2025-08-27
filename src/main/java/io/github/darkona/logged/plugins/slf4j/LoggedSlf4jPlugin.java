@@ -6,13 +6,18 @@ import io.github.darkona.logged.api.Data;
 import io.github.darkona.logged.api.LogDecorator;
 import io.github.darkona.logged.api.LogToken;
 import io.github.darkona.logged.api.LoggedPlugin;
+import io.github.darkona.logged.colors.BasicColor;
+import io.github.darkona.logged.colors.ColorEnum;
+import io.github.darkona.logged.colors.ColorFinder;
 import io.github.darkona.logged.colors.Green;
+import io.github.darkona.logged.colors.Orange;
 import io.github.darkona.logged.utils.StringInterpolator;
 import io.github.darkona.logged.utils.Transformer;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
+import org.slf4j.MarkerFactory;
 import org.slf4j.event.Level;
 
 import java.util.Arrays;
@@ -38,7 +43,7 @@ import static io.github.darkona.logged.internals.LoggedEngine.NULL;
  *           {@link io.github.darkona.logged.plugins.slf4j.LoggedSlf4jProperties#getCallMsgArgs()} or
  *           {@link io.github.darkona.logged.plugins.slf4j.LoggedSlf4jProperties#getCallMsgNoArgs()} depending on
  *           {@link io.github.darkona.logged.Logged#args()} and adds an {@link io.github.darkona.logged.api.LogToken#ARGUMENTS}
- *           token built from {@link io.github.darkona.logged.api.Arg#toString(String, io.github.darkona.logged.Logged.Values)}.</li>
+ *           token built from {@link io.github.darkona.logged.api.Arg#toString(String, io.github.darkona.logged.Logged.Values, int)}.</li>
  *     </ul>
  *   </li>
  *   <li><b>onReturn</b>:
@@ -79,7 +84,7 @@ import static io.github.darkona.logged.internals.LoggedEngine.NULL;
  *   <li>{@link io.github.darkona.logged.api.LogToken#DEPTH} – a visual indentation string based on nesting depth.</li>
  *   <li>{@link io.github.darkona.logged.api.LogToken#ARGUMENTS} – a printable argument list, honoring
  *       {@link io.github.darkona.logged.Logged#argValues()} and
- *       {@link io.github.darkona.logged.plugins.slf4j.LoggedSlf4jProperties#getArgsTemplate()} via {@link io.github.darkona.logged.api.Arg#toString(String, io.github.darkona.logged.Logged.Values)}.</li>
+ *       {@link io.github.darkona.logged.plugins.slf4j.LoggedSlf4jProperties#getArgsTemplate()} via {@link io.github.darkona.logged.api.Arg#toString(String, io.github.darkona.logged.Logged.Values, int)}.</li>
  * </ul>
  * Other well-known tokens (e.g. class/method/return/time) are expected to be present in {@code Data} and are not produced here.
  *
@@ -101,13 +106,24 @@ import static io.github.darkona.logged.internals.LoggedEngine.NULL;
  */
 public class LoggedSlf4jPlugin implements LoggedPlugin {
 
+    private static final Logger log = LoggerFactory.getLogger(LoggedSlf4jPlugin.class);
     private final LoggedSlf4jProperties props;
     private final LogDecorator deco;
-    private static final Logger log = LoggerFactory.getLogger(LoggedSlf4jPlugin.class);
+    private ColorEnum entryIconColor = BasicColor.BLUE;
+    private ColorEnum exitIconColor = BasicColor.GREEN;
+    private ColorEnum throwIconColor = BasicColor.RED;
+    private ColorEnum depthIconColor = Orange.ORANGE;
 
     public LoggedSlf4jPlugin(LogDecorator deco, LoggedSlf4jProperties props) {
         this.props = props;
         this.deco = deco;
+
+        if (props.iconColors) {
+            entryIconColor = ColorFinder.findColor(props.entryIconColor);
+            exitIconColor = ColorFinder.findColor(props.exitIconColor);
+            throwIconColor = ColorFinder.findColor(props.throwIconColor);
+            depthIconColor = ColorFinder.findColor(props.depthIconColor);
+        }
     }
 
     @Override
@@ -128,25 +144,25 @@ public class LoggedSlf4jPlugin implements LoggedPlugin {
     @Override
     public void onCall(ProceedingJoinPoint pjp, Data data, Logged options) {
         log.debug(deco.green("SLF4j Plugin called"));
-        if (!props.isEnabled()) return;
+        if (!props.enabled) return;
 
         captureMdc(data);
         Logger log = LoggerFactory.getLogger(pjp.getSignature().getDeclaringType());
 
         if (isEnabled(log, options.level())) {
-            if (props.isLogDepth()) {
+            if (props.logDepth) {
                 var depthS = data.depth() > 0 ? Transformer.fill(data.get(LogToken.DEPTH_ICON), data.depth()) : "";
                 data.addToken(LogToken.DEPTH, depthS);
             }
 
-            if (props.isIconColors()) setColorsToIcons(data);
+            if (props.iconColors) setColorsToIcons(data);
 
             logCall(log, options.level(), data, options);
         }
     }
 
     private void captureMdc(Data data) {
-        if (!props.getCaptureFromMdc().isEmpty()) {
+        if (!props.captureFromMdc.isEmpty()) {
             for (var s : props.getCaptureFromMdc()) {
                 if (s != null) data.addFlexToken(LogToken.MDC.token() + s, MDC.get(s) != null ? MDC.get(s) : NULL);
             }
@@ -154,25 +170,25 @@ public class LoggedSlf4jPlugin implements LoggedPlugin {
     }
 
     private void setColorsToIcons(Data data) {
-        data.addToken(LogToken.ENTRY_ICON, deco.custom(props.getEntryIconColor(), data.get(LogToken.ENTRY_ICON)));
-        data.addToken(LogToken.EXIT_ICON, deco.custom(props.getExitIconColor(), data.get(LogToken.EXIT_ICON)));
-        data.addToken(LogToken.THROW_ICON, deco.custom(props.getThrowIconColor(), data.get(LogToken.THROW_ICON)));
-        data.addToken(LogToken.DEPTH, deco.custom(props.getDepthIconColor(), data.get(LogToken.DEPTH)));
+
+        data.addToken(LogToken.ENTRY_ICON, deco.custom(entryIconColor, data.get(LogToken.ENTRY_ICON)));
+        data.addToken(LogToken.EXIT_ICON, deco.custom(exitIconColor, data.get(LogToken.EXIT_ICON)));
+        data.addToken(LogToken.THROW_ICON, deco.custom(throwIconColor, data.get(LogToken.THROW_ICON)));
+        data.addToken(LogToken.DEPTH, deco.custom(depthIconColor, data.get(LogToken.DEPTH)));
     }
 
     private void logCall(Logger log, Level level, Data data, Logged options) {
         if (options.callMsg() != null && !options.callMsg().isEmpty()) {
 
-            sendToLog(log, level, options.callMsg(), data.tok());
+            sentToLog(log, level, options.callMsg(), data.tok(), options, null);
 
         } else if (options.onCall()) {
 
             if (options.args()) {
                 data.addToken(LogToken.ARGUMENTS, makePrintableArgs(data.args(), options.argValues()));
-
-                sendToLog(log, level, props.getCallMsgArgs(), data.tok());
+                sentToLog(log, level, props.callMsgArgs, data.tok(), options, null);
             } else {
-                sendToLog(log, level, props.getCallMsgNoArgs(), data.tok());
+                sentToLog(log, level, props.callMsgNoArgs, data.tok(), options, null);
             }
 
         }
@@ -197,9 +213,9 @@ public class LoggedSlf4jPlugin implements LoggedPlugin {
                 case NONE -> "";
             };
             if (options.time()) template += " " + props.getTimeTakenMsg();
-            sendToLog(log, level, template, data.tok());
+            sentToLog(log, level, template, data.tok(), options, null);
         } else if (!options.returnMsg().isEmpty()) {
-            sendToLog(log, level, options.returnMsg(), data.tok());
+            sentToLog(log, level, options.returnMsg(), data.tok(), options, null);
         }
     }
 
@@ -220,24 +236,33 @@ public class LoggedSlf4jPlugin implements LoggedPlugin {
 
         var level = options.exceptionLevel();
         String template = options.exceptionMsg().isBlank()
-                          ? props.getThrowMsg() + (options.time() ? " " + props.getTimeTakenMsg() : "")
+                          ? props.throwMsg + (options.time() ? " " + props.getTimeTakenMsg() : "")
                           : options.exceptionMsg();
 
         if (options.logStackTrace()) {
-            String message = StringInterpolator.interpolateWithDefaults(template, data.tok());
-            log.atLevel(level).log(message, e);
+            sentToLog(log, level, template, data.tok(), options, e);
         } else {
-            sendToLog(log, level, template, data.tok());
+            sentToLog(log, level, template, data.tok(), options, null);
         }
     }
 
-    private void sendToLog(Logger log, Level level, String template, Map<String, String> tokens) {
-        log.atLevel(level).log(StringInterpolator.interpolateWithDefaults(template, tokens));
+    private void sentToLog(Logger log, Level level, String template, Map<String, String> tokens, Logged options, Throwable ex) {
+        var builder = log.atLevel(level);
+
+//        tokens.put(LogToken.RETURN_VALUE.token(), Transformer.truncate(tokens.get(LogToken.RETURN_VALUE.token()), props.maxValueLength));
+
+        if (!options.marker().isBlank()) builder = builder.addMarker(MarkerFactory.getMarker(options.marker()));
+
+        if (!props.marker.isBlank()) builder = builder.addMarker(MarkerFactory.getMarker(props.getMarker()));
+
+        if (ex != null) builder = builder.setCause(ex);
+
+        builder.log(StringInterpolator.interpolateWithDefaults(template, tokens));
     }
 
     private String makePrintableArgs(Arg[] args, Logged.Values argValues) {
         return args.length > 0 ? Arrays.stream(args)
-                                       .map(a -> a != null ? a.toString(props.getArgsTemplate(), argValues) : "")
+                                       .map(a -> a != null ? a.toString(props.argsTemplate, argValues, props.maxValueLength) : "")
                                        .collect(Collectors.joining(", ")) : "";
     }
 

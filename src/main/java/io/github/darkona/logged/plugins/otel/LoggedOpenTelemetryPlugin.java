@@ -115,13 +115,10 @@ public class LoggedOpenTelemetryPlugin implements LoggedPlugin {
     private static final AttributeKey<List<String>> LOGGED_ARGS_REDACTED = AttributeKey.stringArrayKey("logged.args.redacted");
     private static final AttributeKey<String> LOGGED_RETURN_TYPE = AttributeKey.stringKey("logged.return.type");
     private static final AttributeKey<Boolean> LOGGED_RETURN_NULL = AttributeKey.booleanKey("logged.return.null");
-
-
+    private static final Logger log = LoggerFactory.getLogger(LoggedOpenTelemetryPlugin.class);
     private final LogDecorator deco;
     private final Tracer tracer;
     private final LoggedOpenTelemetryProperties props;
-    private static final Logger log = LoggerFactory.getLogger(LoggedOpenTelemetryPlugin.class);
-
     private final ThreadLocal<Deque<Span>> spanStack = ThreadLocal.withInitial(ArrayDeque::new);
 
     public LoggedOpenTelemetryPlugin(LogDecorator deco, LoggedOpenTelemetryProperties props, Tracer tracer) {
@@ -189,7 +186,7 @@ public class LoggedOpenTelemetryPlugin implements LoggedPlugin {
         }
 
         if (props.isAddToMdc()) {
-            mdc.put("spanId", spanName);
+            mdc.put(props.getMdcKey(), spanName);
         }
         Span span = builder.startSpan();
         spanStack.get().push(span);

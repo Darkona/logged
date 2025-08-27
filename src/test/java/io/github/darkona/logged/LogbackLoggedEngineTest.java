@@ -112,6 +112,7 @@ class LogbackLoggedEngineTest {
     }
 
     private void assertMessageContains(String expected) {
+        System.out.println("Expected: " + expected);
         assertTrue(logsContain(expected), "Expected log message to contain: " + expected);
     }
 
@@ -216,7 +217,7 @@ class LogbackLoggedEngineTest {
     void callWithDefaults() {
         callAndAssert("callWithDefaults", () -> testObject.methodWithDefaults("Elephant"), logs -> {
             assertMessageContains("called with args");
-            assertMessageContains("[(String) stringArgument=Elephant]");
+            assertMessageContains("[(String)stringArgument:Elephant]");
             assertMessageContains("returned with value");
             assertMessageContains("Time taken");
             assertMessageContains("returned with value: Elephant Time taken:");
@@ -247,8 +248,14 @@ class LogbackLoggedEngineTest {
     void callWithRedactedArgs() {
         callAndAssert("methodWithRedactedArgs",
                 () -> testObject.methodWithRedactedArgs("Important Name", "Chicken", "Credit Card Number"),
-                logs -> assertMessageContains("[(String) arg1=█████,(String) arg2=Chicken,(String) arg3=█████]"));
+                logs -> assertMessageContains("[(String)arg1:█████, (String)arg2:Chicken, (String)arg3:█████]"));
     }
 
-
+    @Test
+    void callWithMarker(){
+        testObject.methodWithMarker();
+        logs = listAppender.list;
+        assertFalse(logs.isEmpty(), "methodWithMarker: logs should not be empty");
+        assertTrue(logs.stream().anyMatch(log -> log.getMarkerList().stream().anyMatch(c -> c.contains("slf4j"))));
+    }
 }

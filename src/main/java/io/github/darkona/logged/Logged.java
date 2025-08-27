@@ -89,6 +89,11 @@ public @interface Logged {
     int[] redactAtPos() default {};
 
     /**
+     * Add a marker to the log so it can be filtered later by a logging appender
+     */
+    String marker() default "";
+
+    /**
      * NONE = No values are printed.
      * ALL= All the values are printed.
      * NULL= Only print if the value is null (helps identify values incorrectly set as null, without printing the non-null values).
