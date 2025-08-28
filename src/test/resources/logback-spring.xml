@@ -11,18 +11,8 @@
         </encoder>
     </appender>
 
-    <appender name="ASYNC_CONSOLE" class="ch.qos.logback.classic.AsyncAppender">
-        <queueSize>8192</queueSize>            <!-- ring buffer size -->
-        <discardingThreshold>0</discardingThreshold> <!-- 0 = don’t downsample INFO when queue is ~80% full -->
-        <neverBlock>true</neverBlock>          <!-- drop when full instead of blocking app thread -->
-        <includeCallerData>false</includeCallerData> <!-- true is expensive -->
-        <maxFlushTime>1000</maxFlushTime>      <!-- ms to flush on shutdown -->
-        <appender-ref ref="CONSOLE"/>
-    </appender>
-
-
     <!-- Root logger configuration -->
     <root level="INFO">
-        <appender-ref ref="ASYNC_CONSOLE"/>
+        <appender-ref ref="CONSOLE"/>
     </root>
 </configuration>

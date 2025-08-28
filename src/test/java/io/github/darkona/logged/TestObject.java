@@ -116,8 +116,13 @@ public class TestObject {
         return arg1 + "::" + arg2 + "::" + arg3;
     }
 
-    @Logged(marker = "slf4j")
+    @Logged(markers = "slf4j")
     public String methodWithMarker(){
         return "Method with marker";
+    }
+
+    @Logged(markers = "NO_CONSOLE")
+    public void methodWithMarkerNoConsole(String stringArgument, int integerArgument) {
+        System.out.println("Method that shouldn't be logged has been called with arguments " + stringArgument + " and " + integerArgument);
     }
 }

@@ -2,6 +2,7 @@ package io.github.darkona.logged.colors;
 
 import java.util.List;
 
+
 public class ColorFinder {
 
     // Order matters: first match wins (same spirit as your original method)
@@ -47,7 +48,7 @@ public class ColorFinder {
         return BasicColor.BLACK;
     }
 
-    @SuppressWarnings("unchecked")
+
     private static ColorEnum matchByName(Class<? extends Enum<?>> enumClass, String normalized) {
         for (Enum<?> constant : enumClass.getEnumConstants()) {
             if (constant.name().equals(normalized)) {
@@ -57,7 +58,6 @@ public class ColorFinder {
         return null;
     }
 
-    @SuppressWarnings("unchecked")
     private static ColorEnum matchByAnsi(Class<? extends Enum<?>> enumClass, String raw) {
         for (Enum<?> constant : enumClass.getEnumConstants()) {
             ColorEnum c = (ColorEnum) constant;

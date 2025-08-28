@@ -210,7 +210,7 @@ public class Transformer {
      * Returns a substring containing at most the first {@code maxClusters} user-perceived characters
      * (Unicode grapheme clusters) of {@code s}.
      * <p>
-     * Uses a {@link java.text.BreakIterator#CHARACTER_INSTANCE} to avoid splitting complex glyphs,
+     * Uses a CHARACTER_INSTANCE to avoid splitting complex glyphs,
      * such as emojis with modifiers or combined characters (e.g., "👨‍👩‍👧‍👦", "é").
      * If {@code s} has fewer than {@code maxClusters} clusters, the original string is returned.
      * </p>

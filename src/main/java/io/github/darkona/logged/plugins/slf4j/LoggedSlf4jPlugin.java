@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.slf4j.MarkerFactory;
 import org.slf4j.event.Level;
+import org.slf4j.spi.LoggingEventBuilder;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -109,6 +110,7 @@ public class LoggedSlf4jPlugin implements LoggedPlugin {
     private static final Logger log = LoggerFactory.getLogger(LoggedSlf4jPlugin.class);
     private final LoggedSlf4jProperties props;
     private final LogDecorator deco;
+
     private ColorEnum entryIconColor = BasicColor.BLUE;
     private ColorEnum exitIconColor = BasicColor.GREEN;
     private ColorEnum throwIconColor = BasicColor.RED;
@@ -118,17 +120,20 @@ public class LoggedSlf4jPlugin implements LoggedPlugin {
         this.props = props;
         this.deco = deco;
 
-        if (props.iconColors) {
-            entryIconColor = ColorFinder.findColor(props.entryIconColor);
-            exitIconColor = ColorFinder.findColor(props.exitIconColor);
-            throwIconColor = ColorFinder.findColor(props.throwIconColor);
-            depthIconColor = ColorFinder.findColor(props.depthIconColor);
+        if (props.isIconColors()) {
+            entryIconColor = ColorFinder.findColor(props.getEntryIconColor());
+            exitIconColor = ColorFinder.findColor(props.getExitIconColor());
+            throwIconColor = ColorFinder.findColor(props.getThrowIconColor());
+            depthIconColor = ColorFinder.findColor(props.getDepthIconColor());
         }
     }
 
     @Override
     public String announceLoad() {
-        return deco.custom(Green.DARK_SEA_GREEN, "@Logged-Slf4j Plugin initialized.");
+        var s = deco.custom(Green.DARK_SEA_GREEN, "@Logged-Slf4j Plugin initialized.");
+        if (props.isKeyValue())
+            s += "\n" + deco.custom(Green.DARK_SEA_GREEN, "@Logged-Slf4j Key-Value capability enabled.");
+        return s;
     }
 
     @Override
@@ -144,25 +149,25 @@ public class LoggedSlf4jPlugin implements LoggedPlugin {
     @Override
     public void onCall(ProceedingJoinPoint pjp, Data data, Logged options) {
         log.debug(deco.green("SLF4j Plugin called"));
-        if (!props.enabled) return;
+        if (!props.isEnabled()) return;
 
         captureMdc(data);
         Logger log = LoggerFactory.getLogger(pjp.getSignature().getDeclaringType());
 
         if (isEnabled(log, options.level())) {
-            if (props.logDepth) {
+            if (props.isLogDepth()) {
                 var depthS = data.depth() > 0 ? Transformer.fill(data.get(LogToken.DEPTH_ICON), data.depth()) : "";
                 data.addToken(LogToken.DEPTH, depthS);
             }
 
-            if (props.iconColors) setColorsToIcons(data);
+            if (props.isIconColors()) setColorsToIcons(data);
 
             logCall(log, options.level(), data, options);
         }
     }
 
     private void captureMdc(Data data) {
-        if (!props.captureFromMdc.isEmpty()) {
+        if (!props.getCaptureFromMdc().isEmpty()) {
             for (var s : props.getCaptureFromMdc()) {
                 if (s != null) data.addFlexToken(LogToken.MDC.token() + s, MDC.get(s) != null ? MDC.get(s) : NULL);
             }
@@ -178,17 +183,17 @@ public class LoggedSlf4jPlugin implements LoggedPlugin {
     }
 
     private void logCall(Logger log, Level level, Data data, Logged options) {
-        if (options.callMsg() != null && !options.callMsg().isEmpty()) {
+        if (!options.callMsg().isEmpty()) {
 
-            sentToLog(log, level, options.callMsg(), data.tok(), options, null);
+            sendToLog(log, level, options.callMsg(), data.tok(), options, null);
 
         } else if (options.onCall()) {
 
             if (options.args()) {
                 data.addToken(LogToken.ARGUMENTS, makePrintableArgs(data.args(), options.argValues()));
-                sentToLog(log, level, props.callMsgArgs, data.tok(), options, null);
+                sendToLog(log, level, props.getCallMsgArgs(), data.tok(), options, null);
             } else {
-                sentToLog(log, level, props.callMsgNoArgs, data.tok(), options, null);
+                sendToLog(log, level, props.getCallMsgNoArgs(), data.tok(), options, null);
             }
 
         }
@@ -213,9 +218,9 @@ public class LoggedSlf4jPlugin implements LoggedPlugin {
                 case NONE -> "";
             };
             if (options.time()) template += " " + props.getTimeTakenMsg();
-            sentToLog(log, level, template, data.tok(), options, null);
+            sendToLog(log, level, template, data.tok(), options, null);
         } else if (!options.returnMsg().isEmpty()) {
-            sentToLog(log, level, options.returnMsg(), data.tok(), options, null);
+            sendToLog(log, level, options.returnMsg(), data.tok(), options, null);
         }
     }
 
@@ -236,33 +241,51 @@ public class LoggedSlf4jPlugin implements LoggedPlugin {
 
         var level = options.exceptionLevel();
         String template = options.exceptionMsg().isBlank()
-                          ? props.throwMsg + (options.time() ? " " + props.getTimeTakenMsg() : "")
+                          ? props.getThrowMsg() + (options.time() ? " " + props.getTimeTakenMsg() : "")
                           : options.exceptionMsg();
 
         if (options.logStackTrace()) {
-            sentToLog(log, level, template, data.tok(), options, e);
+            sendToLog(log, level, template, data.tok(), options, e);
         } else {
-            sentToLog(log, level, template, data.tok(), options, null);
+            sendToLog(log, level, template, data.tok(), options, null);
         }
     }
 
-    private void sentToLog(Logger log, Level level, String template, Map<String, String> tokens, Logged options, Throwable ex) {
-        var builder = log.atLevel(level);
+    private void sendToLog(Logger log, Level level, String template, Map<String, String> tokens, Logged options, Throwable ex) {
+        LoggingEventBuilder builder = log.atLevel(level);
 
-//        tokens.put(LogToken.RETURN_VALUE.token(), Transformer.truncate(tokens.get(LogToken.RETURN_VALUE.token()), props.maxValueLength));
+        tokens.put(LogToken.RETURN_VALUE.token(), Transformer.truncate(tokens.get(LogToken.RETURN_VALUE.token()), props.getMaxValueLength()));
 
-        if (!options.marker().isBlank()) builder = builder.addMarker(MarkerFactory.getMarker(options.marker()));
+        builder = setKeyValuePairs(builder, tokens, options);
 
-        if (!props.marker.isBlank()) builder = builder.addMarker(MarkerFactory.getMarker(props.getMarker()));
+        //fastest copy
+        String[] markers = Arrays.copyOf(options.markers(), options.markers().length + props.getMarkers().length);
+        System.arraycopy(props.getMarkers(), 0, markers, options.markers().length, props.getMarkers().length);
+
+        for(String marker : markers) {
+            builder = builder.addMarker(MarkerFactory.getMarker(marker));
+        }
 
         if (ex != null) builder = builder.setCause(ex);
 
         builder.log(StringInterpolator.interpolateWithDefaults(template, tokens));
     }
 
+    private LoggingEventBuilder setKeyValuePairs(LoggingEventBuilder builder, Map<String, String> data, Logged options) {
+
+        if (!props.isKeyValue()) return builder;
+
+        for (LogToken tok : props.getKeyValues()) {
+            if (data.get(tok.name()) != null) {
+                builder = builder.addKeyValue(tok.name(), data.get(tok.token()));
+            }
+        }
+        return builder;
+    }
+
     private String makePrintableArgs(Arg[] args, Logged.Values argValues) {
         return args.length > 0 ? Arrays.stream(args)
-                                       .map(a -> a != null ? a.toString(props.argsTemplate, argValues, props.maxValueLength) : "")
+                                       .map(a -> a != null ? a.toString(props.getArgsTemplate(), argValues, props.getMaxValueLength()) : "")
                                        .collect(Collectors.joining(", ")) : "";
     }
 

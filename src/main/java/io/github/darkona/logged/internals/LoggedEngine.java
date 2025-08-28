@@ -55,7 +55,7 @@ public class LoggedEngine {
         plugins.forEach(loggedPlugin -> {
             try {
                 loggedPlugin.onLoad();
-                if (!loggedPlugin.announceLoad().isBlank()) log.info(loggedPlugin.announceLoad());
+                if (props.isAnnounceLoad() && !loggedPlugin.announceLoad().isBlank()) log.info(loggedPlugin.announceLoad());
             } catch (Exception e) {
                 var msg = "Error loading plugin: " + loggedPlugin.getClass().getSimpleName();
                 log.error(msg, e);

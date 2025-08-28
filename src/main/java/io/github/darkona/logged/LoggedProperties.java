@@ -19,6 +19,11 @@ public class LoggedProperties {
      * Enable Logged
      */
     private boolean enabled = true;
+
+    /**
+     * Print log statement announcing when Logged and its plugins are loaded;
+     */
+    private boolean announceLoad = true;
     /**
      * Enable color log decorator.
      */

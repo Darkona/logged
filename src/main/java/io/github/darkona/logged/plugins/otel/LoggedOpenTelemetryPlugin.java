@@ -166,10 +166,14 @@ public class LoggedOpenTelemetryPlugin implements LoggedPlugin {
         if (props.isAddSourceLine()) {
             var loc = pjp.getSourceLocation();
             if (loc != null) {
-                var file = loc.getFileName();
-                var line = loc.getLine();
-                if (file != null && !file.isBlank()) builder.setAttribute(CODE_FILEPATH, file);
-                if (line > 0) builder.setAttribute(CODE_LINENO, (long) line);
+                try {
+                    var file = loc.getFileName();
+                    var line = loc.getLine();
+                    if (file != null && !file.isBlank()) builder.setAttribute(CODE_FILEPATH, file);
+                    if (line > 0) builder.setAttribute(CODE_LINENO, (long) line);
+                }catch (UnsupportedOperationException e) {
+                    log.error("Can't obtain line number or filename from  {}", data.get(LogToken.CLASS_LONG));
+                }
             }
         }
 
