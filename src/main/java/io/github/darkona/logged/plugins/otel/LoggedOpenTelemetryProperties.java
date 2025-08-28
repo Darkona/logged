@@ -53,6 +53,10 @@ public class LoggedOpenTelemetryProperties {
     private boolean addToMdc = true;
 
     /**
+     * Key for the mdc span name
+     */
+    private String mdcKey = "span_name";
+    /**
      * The template to follow for the span name
      */
     private String spanIdTemplate = "Logged: {c}${m}()";

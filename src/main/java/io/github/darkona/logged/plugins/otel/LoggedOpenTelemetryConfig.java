@@ -37,7 +37,7 @@ public class LoggedOpenTelemetryConfig {
     @ConditionalOnClass({Span.class, Tracer.class})
     @ConditionalOnBooleanProperty(name = "logged.otel.enabled")
     @Order(10)
-    public LoggedOpenTelemetryPlugin openTelemetryPlugin(LogDecorator logDecorator, LoggedOpenTelemetryProperties props, @Qualifier("loggedTracer") Tracer tracer) {
+    public LoggedOpenTelemetryPlugin loggedOpenTelemetryPlugin(LogDecorator logDecorator, LoggedOpenTelemetryProperties props, @Qualifier("loggedTracer") Tracer tracer) {
         return new LoggedOpenTelemetryPlugin(logDecorator, props, tracer);
     }
 

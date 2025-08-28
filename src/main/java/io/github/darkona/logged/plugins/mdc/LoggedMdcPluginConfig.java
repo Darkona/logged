@@ -18,7 +18,7 @@ public class LoggedMdcPluginConfig {
     @ConditionalOnClass(MDC.class)
     @ConditionalOnBooleanProperty(name = "logged.mdc.enabled")
     @Order(100)
-    public LoggedMdcPlugin mdcPlugin(LogDecorator logDecorator, LoggedMdcProperties props) {
+    public LoggedMdcPlugin loggedMdcPlugin(LogDecorator logDecorator, LoggedMdcProperties props) {
         return new LoggedMdcPlugin(logDecorator, props);
     }
 

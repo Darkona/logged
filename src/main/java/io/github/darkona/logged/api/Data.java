@@ -61,7 +61,8 @@ public class Data {
 
     /**
      * Add a token with a custom key, as a String
-     * @param key String key
+     *
+     * @param key   String key
      * @param value String value
      */
     public void addFlexToken(String key, String value) {
@@ -70,6 +71,7 @@ public class Data {
 
     /**
      * Get a token value (by String key)
+     *
      * @param key String key
      * @return the token value
      */
