@@ -271,7 +271,9 @@ public class LoggedSlf4jPlugin implements LoggedPlugin {
         builder.log(StringInterpolator.interpolateWithDefaults(template, tokens));
     }
 
-    private LoggingEventBuilder setKeyValuePairs(LoggingEventBuilder builder, Map<String, String> data, Logged options) {
+    private LoggingEventBuilder setKeyValuePairs(LoggingEventBuilder builder, Map<String, String> data, Logged options) {return setKeyValuePairs(builder, data);}
+
+    private LoggingEventBuilder setKeyValuePairs(LoggingEventBuilder builder, Map<String, String> data) {
 
         if (!props.isKeyValue()) return builder;
 
