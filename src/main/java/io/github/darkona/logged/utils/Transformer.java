@@ -5,6 +5,8 @@ import org.springframework.stereotype.Component;
 
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
+import java.text.BreakIterator;
+import java.util.Locale;
 
 
 /**
@@ -202,5 +204,35 @@ public class Transformer {
     public static String truncate(String s, int max) {
         if (s == null) return null;
         return (max > 0 && s.length() > max) ? s.substring(0, max) + "…" : s;
+    }
+
+    /**
+     * Returns a substring containing at most the first {@code maxClusters} user-perceived characters
+     * (Unicode grapheme clusters) of {@code s}.
+     * <p>
+     * Uses a CHARACTER_INSTANCE to avoid splitting complex glyphs,
+     * such as emojis with modifiers or combined characters (e.g., "👨‍👩‍👧‍👦", "é").
+     * If {@code s} has fewer than {@code maxClusters} clusters, the original string is returned.
+     * </p>
+     *
+     * @param s           the input string (non-null)
+     * @param maxClusters the maximum number of grapheme clusters to include; must be {@code >= 0}
+     * @return a substring of {@code s} containing at most {@code maxClusters} grapheme clusters
+     * @throws IllegalArgumentException if {@code maxClusters} is negative
+     */
+    public static String truncateGraphemes(String s, int maxClusters) {
+        if (s == null) return "";
+        if (maxClusters < 0) throw new IllegalArgumentException("maxClusters cannot be a negative number");
+        if (s.length() <= maxClusters) return s;
+        BreakIterator bi = BreakIterator.getCharacterInstance(Locale.ROOT);
+        bi.setText(s);
+
+        int end = bi.first();
+        for (int i = 0; i < maxClusters; i++) {
+            int next = bi.next();
+            if (next == BreakIterator.DONE) return s;
+            end = next;
+        }
+        return s.substring(0, end);
     }
 }

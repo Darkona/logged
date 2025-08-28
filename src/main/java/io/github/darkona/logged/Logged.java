@@ -2,6 +2,7 @@ package io.github.darkona.logged;
 
 
 import org.slf4j.event.Level;
+import org.springframework.lang.NonNull;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -51,27 +52,27 @@ public @interface Logged {
     /**
      * Print a custom message on this method's call.
      */
-    String callMsg() default "";
+    @NonNull String callMsg() default "";
 
     /**
      * Print a custom message on this method's return.
      */
-    String returnMsg() default "";
+    @NonNull String returnMsg() default "";
 
     /**
      * Print a custom message if an exception occurs.
      */
-    String exceptionMsg() default "";
+    @NonNull String exceptionMsg() default "";
 
     /**
      * Log level for this method's logs.
      */
-    Level level() default Level.INFO;
+    @NonNull Level level() default Level.INFO;
 
     /**
      * Log level for exceptions
      */
-    Level exceptionLevel() default Level.ERROR;
+    @NonNull Level exceptionLevel() default Level.ERROR;
 
     /**
      * Print the stack trace when an exception occurs.
@@ -81,12 +82,17 @@ public @interface Logged {
     /**
      * Redact parameter value by name of parameter
      */
-    String[] redactArgValues() default {};
+    @NonNull String[] redactArgValues() default {};
 
     /**
      * Redact parameter value by position of parameter (0 is first parameter)
      */
     int[] redactAtPos() default {};
+
+    /**
+     * Add a marker to the log so it can be filtered later by a logging appender
+     */
+    @NonNull String[] markers() default {};
 
     /**
      * NONE = No values are printed.

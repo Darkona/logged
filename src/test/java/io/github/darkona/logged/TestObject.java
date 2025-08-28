@@ -13,7 +13,7 @@ public class TestObject {
 
     @Logged
     public void methodWithArgs(String str, int num) {
-        System.out.println(deco.bannerize("Processing string: " + str + ", number: " + num, 50));
+        System.out.println("Processing string: " + str + ", number: " + num);
     }
 
     @Logged(args = false)
@@ -114,5 +114,15 @@ public class TestObject {
     @Logged(redactArgValues = {"arg1"}, redactAtPos = {2}, returnValue = Logged.Values.NONE)
     public String methodWithRedactedArgs(String arg1, String arg2, String arg3) {
         return arg1 + "::" + arg2 + "::" + arg3;
+    }
+
+    @Logged(markers = "slf4j")
+    public String methodWithMarker(){
+        return "Method with marker";
+    }
+
+    @Logged(markers = "NO_CONSOLE")
+    public void methodWithMarkerNoConsole(String stringArgument, int integerArgument) {
+        System.out.println("Method that shouldn't be logged has been called with arguments " + stringArgument + " and " + integerArgument);
     }
 }

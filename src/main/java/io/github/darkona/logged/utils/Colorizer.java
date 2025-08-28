@@ -300,7 +300,97 @@ public class Colorizer {
         return color.toString() + s + reset();
     }
 
+    /**
+     * Applies a custom color transformation to the given string using a CSS-style
+     * hexadecimal color code.
+     * <p>
+     * The {@code hex} value must be in the form {@code #RRGGBB} or {@code RRGGBB},
+     * where {@code RR}, {@code GG}, and {@code BB} are two-digit hexadecimal values
+     * representing the red, green, and blue components respectively.
+     * <p>
+     * For example, {@code "#ff3674"} will be parsed as {@code (255, 54, 116)}.
+     *
+     * @param hex a hexadecimal color string (with or without leading {@code #}), must be 6 characters long
+     * @param s   the string to apply the color formatting to
+     * @return the result of applying {@link #custom(int, int, int, String)} with the parsed RGB values
+     * @throws IllegalArgumentException if {@code hex} is not a valid 6-digit hexadecimal color code
+     */
+    public static String colorizeHex(String hex, String s) {
+        if (hex.startsWith("#")) {
+            hex = hex.substring(1);
+        }
+        if (hex.length() != 6) {
+            throw new IllegalArgumentException("Hex color must be 6 digits, e.g. #ff3674");
+        }
+        int r = Integer.parseInt(hex.substring(0, 2), 16);
+        int g = Integer.parseInt(hex.substring(2, 4), 16);
+        int b = Integer.parseInt(hex.substring(4, 6), 16);
+        return custom(r, g, b, s);
+    }
+
+    /**
+     * Returns {@code s} wrapped with an ANSI <em>true-color</em> (24-bit) <b>foreground</b>
+     * escape sequence and a trailing {@link #reset()} to restore the terminal state.
+     * <p>
+     * The produced sequence is:
+     * <pre>
+     *   ESC[38;2;{@code r};{@code g};{@code b}m{@code s}ESC[0m
+     * </pre>
+     * where {@code ESC} is {@code \u001B}. This changes only the text color; it does not
+     * modify other attributes (bold, background, etc.).
+     * </p>
+     *
+     * <h3>Notes</h3>
+     * <ul>
+     *   <li>Valid component ranges are {@code 0..255}. This method does <b>not</b> clamp
+     *       or validate inputs; out-of-range values may yield undefined output.</li>
+     *   <li>Effect is visible only in terminals that support ANSI escape codes and
+     *       24-bit color. In unsupported environments, the raw escape codes will be printed.</li>
+     * </ul>
+     *
+     * <h3>Example</h3>
+     * <pre>{@code
+     * System.out.println(custom(255, 54, 116, "Hello, world!"));
+     * }</pre>
+     *
+     * @param r red component (0–255)
+     * @param g green component (0–255)
+     * @param b blue component (0–255)
+     * @param s the string to colorize (non-null)
+     * @return {@code s} prefixed with {@code ESC[38;2;r;g;bm} and suffixed with {@link #reset()}
+     * @see #colorizeHex(String, String)
+     * @see #reset()
+     */
     public static String custom(int r, int g, int b, String s) {
         return "\u001B[38;2;" + r + ";" + g + ";" + b + "m" + s + reset();
     }
+
+    /**
+     * Returns {@code s} wrapped with an ANSI <em>true-color</em> (24-bit) <b>background</b>
+     * escape sequence and a trailing {@link #reset()}.
+     * <p>
+     * Sequence:
+     * <pre>
+     *   ESC[48;2;{@code r};{@code g};{@code b}m{@code s}ESC[0m
+     * </pre>
+     * where {@code ESC} is {@code \u001B}.
+     * </p>
+     *
+     * <ul>
+     *   <li>Components must be in {@code 0..255}. Inputs are not clamped.</li>
+     *   <li>Requires a terminal that supports ANSI 24-bit color.</li>
+     * </ul>
+     *
+     * @param r red component (0–255)
+     * @param g green component (0–255)
+     * @param b blue component (0–255)
+     * @param s the string to colorize (non-null)
+     * @return {@code s} prefixed with {@code ESC[48;2;r;g;bm} and suffixed with {@link #reset()}
+     * @see #custom(int, int, int, String)  // foreground
+     * @see #reset()
+     */
+    public static String customBg(int r, int g, int b, String s) {
+        return "\u001B[48;2;" + r + ";" + g + ";" + b + "m" + s + reset();
+    }
+
 }

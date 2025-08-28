@@ -4,6 +4,7 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
+import io.github.darkona.logged.plugins.logback.MarkerFilter;
 import io.github.darkona.logged.plugins.slf4j.LoggedSlf4jProperties;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -19,6 +20,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 
+import static io.github.darkona.logged.plugins.logback.LoggedLogbackPlugin.findInAttachable;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(classes = TestBootConfig.class)
@@ -88,6 +90,42 @@ class LogbackLoggedEngineTest {
 
         System.out.println("Found Slf4j Plugin bean: " + matchedBean);
     }
+
+    @Test
+    void shouldSeeMDCPluginInContext() {
+        String matchedBean = Arrays.stream(context.getBeanDefinitionNames())
+                                   .filter(name -> name.toLowerCase().contains("loggedmdcplugin"))
+                                   .findFirst()
+                                   .orElse(null);
+        assertNotNull(matchedBean);
+        assertTrue(foundBean("loggedMdcPlugin"));
+
+        System.out.println("Found MDC Plugin bean: " + matchedBean);
+    }
+
+    @Test
+    void shouldSeeOtelPluginInContext() {
+        String matchedBean = Arrays.stream(context.getBeanDefinitionNames())
+                                   .filter(name -> name.toLowerCase().contains("loggedopentelemetryplugin"))
+                                   .findFirst()
+                                   .orElse(null);
+        assertNotNull(matchedBean);
+        assertTrue(foundBean("loggedOpenTelemetryPlugin"));
+
+        System.out.println("Found Slf4j Plugin bean: " + matchedBean);
+    }
+
+    @Test
+    void shouldSeeLogbackPluginInContext() {
+        String matchedBean = Arrays.stream(context.getBeanDefinitionNames())
+                                   .filter(name -> name.toLowerCase().contains("loggedlogbackplugin"))
+                                   .findFirst()
+                                   .orElse(null);
+        assertNotNull(matchedBean);
+        assertTrue(foundBean("loggedLogbackPlugin"));
+
+        System.out.println("Found Slf4j Plugin bean: " + matchedBean);
+    }
     @Test
     void shouldBeProxied() {
         System.out.println("TestObject class: " + testObject.getClass());
@@ -112,6 +150,7 @@ class LogbackLoggedEngineTest {
     }
 
     private void assertMessageContains(String expected) {
+        System.out.println("Expected: " + expected);
         assertTrue(logsContain(expected), "Expected log message to contain: " + expected);
     }
 
@@ -216,7 +255,7 @@ class LogbackLoggedEngineTest {
     void callWithDefaults() {
         callAndAssert("callWithDefaults", () -> testObject.methodWithDefaults("Elephant"), logs -> {
             assertMessageContains("called with args");
-            assertMessageContains("[(String) stringArgument=Elephant]");
+            assertMessageContains("[(String)stringArgument:Elephant]");
             assertMessageContains("returned with value");
             assertMessageContains("Time taken");
             assertMessageContains("returned with value: Elephant Time taken:");
@@ -247,7 +286,38 @@ class LogbackLoggedEngineTest {
     void callWithRedactedArgs() {
         callAndAssert("methodWithRedactedArgs",
                 () -> testObject.methodWithRedactedArgs("Important Name", "Chicken", "Credit Card Number"),
-                logs -> assertMessageContains("[(String) arg1=█████,(String) arg2=Chicken,(String) arg3=█████]"));
+                logs -> assertMessageContains("[(String)arg1:█████, (String)arg2:Chicken, (String)arg3:█████]"));
+    }
+
+    @Test
+    void callWithMarker(){
+        testObject.methodWithMarker();
+        logs = listAppender.list;
+        assertFalse(logs.isEmpty(), "methodWithMarker: logs should not be empty");
+        assertTrue(logs.stream().anyMatch(log -> log.getMarkerList().stream().anyMatch(c -> c.contains("slf4j"))));
+    }
+
+    @Test
+    void callWithMarkerNoConsole(){
+        var rootLogger = (Logger) LoggerFactory.getLogger("ROOT");
+
+
+        var console = findInAttachable(rootLogger, "CONSOLE");
+        assertNotNull(console);
+
+        testObject.methodWithMarkerNoConsole("Wombat", 13);
+        logs = listAppender.list;
+
+        assertTrue(logs.stream().anyMatch(log -> log.getMarkerList().stream().anyMatch(c -> c.contains("NO_CONSOLE"))));
+
+        var consoleFiltersList = console.getCopyOfAttachedFiltersList();
+
+
+        var mdcFilter = consoleFiltersList.stream().filter(filter -> filter instanceof MarkerFilter).findFirst();
+
+
+
+        assertTrue(mdcFilter.isPresent());
     }
 
 

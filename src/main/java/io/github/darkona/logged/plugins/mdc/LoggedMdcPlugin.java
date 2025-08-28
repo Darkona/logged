@@ -135,12 +135,15 @@ public class LoggedMdcPlugin implements LoggedPlugin {
                 data.addToken(LogToken.ARGUMENTS, makePrintableArgs(data.args(), options.argValues()));
                 MDC.put(ARGS, data.get(LogToken.ARGUMENTS));
             }
+            if (props.isAddMark()) {
+                MDC.put(props.getMarkerKey(), props.getMarkerValue());
+            }
         }
     }
 
     private String makePrintableArgs(Arg[] args, Logged.Values argValues) {
         return args.length > 0 ? "[" + Arrays.stream(args)
-                                             .map(a -> a != null ? a.toString(props.getArgsTemplate(), argValues) : "")
+                                             .map(a -> a != null ? a.toString(props.getArgsTemplate(), argValues, props.getMaxValueLength()) : "")
                                              .collect(Collectors.joining(", ")) + "]" : "[]";
     }
 
@@ -150,8 +153,8 @@ public class LoggedMdcPlugin implements LoggedPlugin {
         loadCallData(data, options);
         MDC.put(OUTCOME, "ok");
         if (options.onReturn()) {
-            MDC.put(RESULT, Transformer.truncate(data.get(LogToken.RETURN_VALUE), 2048));
-            MDC.put(RESULT_TYPE, Transformer.truncate(data.get(LogToken.RETURN_CLASS), 2048));
+            MDC.put(RESULT, Transformer.truncate(data.get(LogToken.RETURN_VALUE), props.getMaxValueLength()));
+            MDC.put(RESULT_TYPE, data.get(LogToken.RETURN_CLASS));
         }
         if (options.time()) {
             MDC.put(LATENCY_MS, data.get(LogToken.DURATION));
