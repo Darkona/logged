@@ -256,7 +256,7 @@ public class LoggedSlf4jPlugin implements LoggedPlugin {
 
         tokens.put(LogToken.RETURN_VALUE.token(), Transformer.truncate(tokens.get(LogToken.RETURN_VALUE.token()), props.getMaxValueLength()));
 
-        builder = setKeyValuePairs(builder, tokens, options);
+        builder = setKeyValuePairs(builder, tokens);
 
         //fastest copy
         String[] markers = Arrays.copyOf(options.markers(), options.markers().length + props.getMarkers().length);
@@ -271,7 +271,6 @@ public class LoggedSlf4jPlugin implements LoggedPlugin {
         builder.log(StringInterpolator.interpolateWithDefaults(template, tokens));
     }
 
-    private LoggingEventBuilder setKeyValuePairs(LoggingEventBuilder builder, Map<String, String> data, Logged options) {return setKeyValuePairs(builder, data);}
 
     private LoggingEventBuilder setKeyValuePairs(LoggingEventBuilder builder, Map<String, String> data) {
 
