@@ -100,6 +100,11 @@ public class ColorLogDecorator implements LogDecorator {
     }
 
     @Override
+    public String customBg(int red, int green, int blue, String s) {
+        return Colorizer.customBg(red, green, blue, s);
+    }
+
+    @Override
     public String reset() {
         return Colorizer.reset();
     }

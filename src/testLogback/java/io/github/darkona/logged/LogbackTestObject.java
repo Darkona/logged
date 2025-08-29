@@ -4,9 +4,11 @@ import io.github.darkona.logged.api.LogDecorator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.UUID;
+
 @SuppressWarnings("UnusedReturnValue")
 @Component
-public class TestObject {
+public class LogbackTestObject {
 
     @Autowired
     LogDecorator deco;
@@ -61,7 +63,7 @@ public class TestObject {
     @Logged(argValues = Logged.Values.NULL)
     public void methodWithNullArgValues(String nonNull, String maybeNull) {
         if (maybeNull == null) {
-            System.out.println(deco.bannerize("Received a null parameter" + nonNull,50));
+            System.out.println(deco.bannerize("Received a null parameter" + nonNull, 50));
         }
     }
 
@@ -87,7 +89,7 @@ public class TestObject {
 
     @Logged(argValues = Logged.Values.NONE)
     public void methodWithArgValuesNone(String stringArgument) {
-        System.out.println(deco.bannerize("Arg value is ignored: " + stringArgument,50));
+        System.out.println(deco.bannerize("Arg value is ignored: " + stringArgument, 50));
     }
 
     @Logged
@@ -117,12 +119,55 @@ public class TestObject {
     }
 
     @Logged(markers = "slf4j")
-    public String methodWithMarker(){
+    public String methodWithMarker() {
         return "Method with marker";
     }
 
     @Logged(markers = "NO_CONSOLE")
     public void methodWithMarkerNoConsole(String stringArgument, int integerArgument) {
         System.out.println("Method that shouldn't be logged has been called with arguments " + stringArgument + " and " + integerArgument);
+    }
+
+    @Logged(slowMarker = "SLOW")
+    public void slowWithMarker() {
+        try {
+            Thread.sleep(15);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    // --- Redaction enhancements tests ---
+
+    @Logged(redactTypes = {UUID.class})
+    public void methodWithTypeRedaction(UUID id) {
+        System.out.println("id=" + id);
+    }
+
+    @Logged(redactPatterns = {"\\d{16}"})
+    public void methodWithPatternRedaction(String creditCard) {
+        System.out.println("cc=" + creditCard);
+    }
+
+    @Logged(maskReturn = true)
+    public String methodWithMaskedReturn() {
+        return "TopSecret";
+    }
+
+    // Methods without annotation-level redaction to validate global properties
+    @Logged
+    public void plainTypeRedaction(UUID id) {
+        System.out.println("plain id=" + id);
+    }
+
+    @Logged
+    public void plainPatternRedaction(String creditCard) {
+        System.out.println("plain cc=" + creditCard);
+    }
+
+    // Multiple pattern redaction at annotation level (to validate combined patterns)
+    @Logged(redactPatterns = {"\\d{16}", "(?i)token"})
+    public void methodWithMultiplePatternRedaction(String creditCard, String token, String other) {
+        System.out.println("cc=" + creditCard + ", token=" + token + ", other=" + other);
     }
 }

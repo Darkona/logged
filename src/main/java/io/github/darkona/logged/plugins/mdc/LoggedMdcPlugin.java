@@ -16,7 +16,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
+/*
  * MDC plugin for {@code @Logged} that writes per-invocation metadata into SLF4J’s
  * {@link org.slf4j.MDC} and removes those entries when the invocation completes.
  * <p>
@@ -94,6 +94,10 @@ import java.util.stream.Collectors;
  * @see io.github.darkona.logged.plugins.otel.LoggedOpenTelemetryPlugin
  */
 
+/**
+ * MDC plugin for @Logged.
+ * Writes per-invocation metadata to SLF4J MDC and clears it on completion.
+ */
 public class LoggedMdcPlugin implements LoggedPlugin {
 
 

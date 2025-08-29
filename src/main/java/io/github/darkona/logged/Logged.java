@@ -65,6 +65,20 @@ public @interface Logged {
     @NonNull String exceptionMsg() default "";
 
     /**
+     * If >= 0, when the measured execution time (in milliseconds) exceeds this threshold
+     * the log level may be promoted (see global configuration) and an optional marker
+     * from {@link #slowMarker()} will be added to the log event.
+     * A value of -1 disables per-method threshold (falls back to global setting).
+     */
+    long warnIfOverMs() default -1L;
+
+    /**
+     * Optional marker to add to the log event when the call exceeds the configured threshold.
+     * Ignored if no threshold is active or if the call does not exceed it.
+     */
+    @NonNull String slowMarker() default "";
+
+    /**
      * Log level for this method's logs.
      */
     @NonNull Level level() default Level.INFO;
@@ -88,6 +102,24 @@ public @interface Logged {
      * Redact parameter value by position of parameter (0 is first parameter)
      */
     int[] redactAtPos() default {};
+
+    /**
+     * Redact parameter values when their runtime type matches any of these classes
+     * (or is assignable to them). Additive with name/position redaction.
+     */
+    @NonNull Class<?>[] redactTypes() default {};
+
+    /**
+     * Redact parameter values when their String representation matches any of these
+     * regular expressions. Additive with name/position redaction.
+     */
+    @NonNull String[] redactPatterns() default {};
+
+    /**
+     * If true, mask the method's return value in logs. Can also be enabled globally
+     * via properties. Type/pattern redaction also applies to return values.
+     */
+    boolean maskReturn() default false;
 
     /**
      * Add a marker to the log so it can be filtered later by a logging appender

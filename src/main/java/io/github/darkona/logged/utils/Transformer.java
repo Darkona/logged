@@ -3,138 +3,136 @@ package io.github.darkona.logged.utils;
 import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
 
-import java.io.OutputStreamWriter;
-import java.nio.charset.StandardCharsets;
 import java.text.BreakIterator;
 import java.util.Locale;
-
+import java.util.Arrays;
 
 /**
- * Utility class for formatting log messages with optional ANSI color codes
- * and fixed-width padding. Intended for use in development environments
- * to improve readability of structured logs.
- * <p>
- * This class provides helper methods for creating stylized log segments
- * (e.g., tags, labels, values) in colorized or aligned formats.
- * <p>
- * For production environments, usage of this class should be conditional
- * to avoid ANSI escape codes in centralized log systems.
+ * Utilidades de transformación y formateo de texto usadas por la librería de logging.
  *
- * @author Darkona
- * @since 1.0
+ * <p>Diseñadas para ser baratas en CPU y GC en los caminos calientes (hot path) de logging:
+ * evitan asignaciones innecesarias, usan rutas rápidas para tipos comunes y reservan
+ * operaciones más costosas (por ejemplo, manejo de grafemas) para métodos específicos
+ * que no se invocan por defecto.</p>
  */
 @SuppressWarnings("unused")
 @Component
 public class Transformer {
 
-
-    private static final String RESET = "\u001B[0m";
-    private static final OutputStreamWriter writer = new OutputStreamWriter(System.out, StandardCharsets.UTF_8);
-
     private Transformer() {}
 
-
+    /**
+     * Devuelve una representación segura en texto del objeto recibido.
+     *
+     * - Rutas rápidas sin try/catch para {@link CharSequence}, wrappers numéricos,
+     *   {@link Boolean} y {@link Character}.
+     * - Soporte para arreglos: usa {@code Arrays.toString/deepToString} según corresponda.
+     * - Fallback seguro con {@code toString()} dentro de try/catch (evita romper el logging si el toString lanza).
+     * - No trunca: la truncación se realiza en los llamadores (p. ej., LoggedEngine) para no duplicar costo.
+     *
+     * @param o objeto a representar
+     * @return texto representando al objeto; "null" si el objeto es nulo
+     */
     public static String objectString(Object o) {
+        if (o == null) return "null";
+        if (o instanceof CharSequence cs) return cs.toString();
+        if (o instanceof Number || o instanceof Boolean || o instanceof Character) return String.valueOf(o);
+        // Arrays: render contents instead of identity hash
+        Class<?> c = o.getClass();
+        if (c.isArray()) {
+            if (o instanceof Object[] arr) return Arrays.deepToString(arr);
+            if (o instanceof int[] a) return Arrays.toString(a);
+            if (o instanceof long[] a) return Arrays.toString(a);
+            if (o instanceof double[] a) return Arrays.toString(a);
+            if (o instanceof float[] a) return Arrays.toString(a);
+            if (o instanceof boolean[] a) return Arrays.toString(a);
+            if (o instanceof byte[] a) return Arrays.toString(a);
+            if (o instanceof short[] a) return Arrays.toString(a);
+            if (o instanceof char[] a) return Arrays.toString(a);
+        }
         try {
-            return o == null ? "null" : o.toString();
+            return o.toString();
         } catch (Throwable t) {
-            return "toString Error: " + o.getClass().getSimpleName();
+            return "toString Error: " + c.getSimpleName();
         }
     }
 
-
     /**
-     * Creates a string by repeating the given input string until the specified amount is reached.
-     * <p>
-     * If {@code length} is less than or equal to zero, an empty string is returned.
-     * This is typically used to generate padding or horizontal separators.
-     * </p>
+     * Repite la cadena indicada {@code amount} veces.
      *
-     * <p>Example:</p>
-     * <pre>
-     * fill("=", 5) → "====="
-     * fill("ab", 3) → "ababab"
-     * fill("*", 0) → ""
-     * </pre>
-     *
-     * @param s      the string to repeat (must not be {@code null})
-     * @param amount the number of times to repeat the string
-     * @return the resulting repeated string, or an empty string if {@code length} ≤ 0
-     * @throws NullPointerException if {@code s} is {@code null}
+     * @param s      patrón a repetir (no nulo)
+     * @param amount cantidad de repeticiones (si es ≤ 0 retorna "")
+     * @return la cadena repetida
      */
     public static String fill(String s, int amount) {
         return s.repeat(Math.max(0, amount));
     }
 
-
     /**
-     * Returns a masked version of the given string, preserving a specified number of leading characters.
-     * <p>
-     * This is a convenience overload of {@link #mask(char[], Integer, Character)} that accepts a {@link String}.
-     * Internally, it converts the input to a character array before masking.
-     * </p>
+     * Enmascara una cadena preservando opcionalmente los primeros {@code unmasked} caracteres.
+     * No crea {@code char[]} cuando enmascara todo; usa {@code repeat} para minimizar asignaciones.
      *
-     * <p>
-     * All characters beyond the {@code unmasked} count will be replaced with the {@code maskChar}.
-     * If {@code unmasked} is {@code null} or negative, all characters are masked.
-     * If {@code maskChar} is {@code null}, {@code '*'} is used by default.
-     * </p>
-     *
-     * <p>Example: {@code mask("supersecret", 3, '*')} → {@code "sup*******"}</p>
-     *
-     * @param string   the string to mask (must not be {@code null})
-     * @param unmasked the number of leading characters to leave unmasked (may be {@code null})
-     * @param maskChar the character to use for masking (may be {@code null})
-     * @return the resulting masked string
-     * @throws NullPointerException if {@code string} is {@code null}
+     * @param string   entrada (puede ser nula → retorna null)
+     * @param unmasked cantidad de caracteres iniciales sin enmascarar (nulo o &lt;0 → 0)
+     * @param maskChar carácter de máscara (nulo → '*')
+     * @return cadena enmascarada o null si {@code string} es null
      */
     public static String mask(String string, @Nullable Integer unmasked, @Nullable Character maskChar) {
-        return mask(string.toCharArray(), unmasked, maskChar);
+        if (string == null) return null;
+        int keep = (unmasked == null || unmasked < 0) ? 0 : unmasked;
+        char m = (maskChar == null) ? '*' : maskChar;
+        int len = string.length();
+        if (keep <= 0) return String.valueOf(m).repeat(len);
+        if (keep >= len) return string;
+        StringBuilder sb = new StringBuilder(len);
+        sb.append(string, 0, keep);
+        sb.append(String.valueOf(m).repeat(len - keep));
+        return sb.toString();
     }
 
     /**
-     * Returns a masked version of the given character array, preserving a specified number of leading characters.
-     * <p>
-     * All characters beyond the {@code unmasked} count will be replaced with the {@code maskChar}.
-     * If {@code unmasked} is {@code null} or negative, all characters are masked.
-     * If {@code maskChar} is {@code null}, {@code '*'} is used by default.
-     * </p>
+     * Sobrecarga sin boxing para {@link #mask(String, Integer, Character)}.
+     */
+    public static String mask(String string, int unmasked, char maskChar) {
+        return mask(string, Integer.valueOf(unmasked), Character.valueOf(maskChar));
+    }
+
+    /**
+     * Enmascara un arreglo de caracteres preservando opcionalmente los primeros {@code unmasked}.
+     * Preasigna capacidad y evita ramas por carácter cuando es posible.
      *
-     * <p>Example: {@code mask("secret".toCharArray(), 2, '*')} → {@code "se****"}</p>
-     *
-     * @param bytes    the character array to mask (must not be {@code null})
-     * @param unmasked the number of leading characters to leave unmasked (may be {@code null})
-     * @param maskChar the character to use for masking (may be {@code null})
-     * @return the resulting masked string
+     * @param bytes    caracteres de entrada (puede ser null → retorna null)
+     * @param unmasked cantidad de caracteres iniciales sin enmascarar (nulo o &lt;0 → 0)
+     * @param maskChar carácter de máscara (nulo → '*')
+     * @return cadena enmascarada, o copia de {@code bytes} si {@code unmasked ≥ length}
      */
     public static String mask(char[] bytes, @Nullable Integer unmasked, @Nullable Character maskChar) {
-        if (unmasked == null || unmasked < 0) {
-            unmasked = 0;
-        }
-        if (maskChar == null) {
-            maskChar = '*';
-        }
-        var builder = new StringBuilder();
-        for (int i = 0; i < bytes.length; i++) {
-            builder.append(i < unmasked ? bytes[i] : maskChar);
-        }
-        return builder.toString();
+        if (bytes == null) return null;
+        int keep = (unmasked == null || unmasked < 0) ? 0 : unmasked;
+        char m = (maskChar == null) ? '*' : maskChar;
+        int len = bytes.length;
+        if (keep >= len) return new String(bytes);
+        StringBuilder sb = new StringBuilder(len);
+        if (keep > 0) sb.append(bytes, 0, keep);
+        sb.append(String.valueOf(m).repeat(Math.max(0, len - keep)));
+        return sb.toString();
     }
 
     /**
-     * Returns the English ordinal suffix for a given day of the month.
-     * <p>
-     * For example: 1 → "st", 2 → "nd", 3 → "rd", 4 → "th", 11–13 → "th", etc.
-     * This method handles the special case for numbers ending in 11–13, which always use "th".
-     * </p>
+     * Sobrecarga sin boxing para {@link #mask(char[], Integer, Character)}.
+     */
+    public static String mask(char[] bytes, int unmasked, char maskChar) {
+        return mask(bytes, Integer.valueOf(unmasked), Character.valueOf(maskChar));
+    }
+
+    /**
+     * Sufijo ordinal en inglés para un día del mes (st, nd, rd, th).
      *
-     * @param day the day of the month (1–31)
-     * @return the corresponding ordinal suffix: "st", "nd", "rd", or "th"
+     * @param day día del mes
+     * @return sufijo ordinal correspondiente
      */
     public static String daySuffix(int day) {
-        if (day >= 11 && day <= 13) {
-            return "th";
-        }
+        if (day >= 11 && day <= 13) return "th";
         return switch (day % 10) {
             case 1 -> "st";
             case 2 -> "nd";
@@ -144,18 +142,8 @@ public class Transformer {
     }
 
     /**
-     * Returns a substring from the given string between the specified {@code begin} and {@code end} indexes.
-     * <p>
-     * If the input string is {@code null} or empty, an empty string is returned.
-     * If the specified indexes are invalid (i.e., {@code end} exceeds the string length,
-     * {@code begin} is greater than or equal to {@code end}, or {@code begin} is negative),
-     * the original string is returned unchanged.
-     * </p>
-     *
-     * @param str   the input string (may be {@code null})
-     * @param begin the starting index (inclusive)
-     * @param end   the ending index (exclusive)
-     * @return the substring from {@code begin} to {@code end} if valid; the original string or an empty string otherwise
+     * Subcadena entre índices {@code begin} (incluido) y {@code end} (excluido).
+     * Retorna "" si la entrada es nula o vacía; retorna la original si los índices no son válidos.
      */
     public static String getSubstring(String str, int begin, int end) {
         if (str == null || str.isEmpty()) return "";
@@ -163,62 +151,57 @@ public class Transformer {
     }
 
     /**
-     * Returns a substring of the given string, starting at the specified index and ending at the first occurrence
-     * of the given delimiter. It does not include the delimiter.
-     * <p>
-     * If the input string is {@code null} or empty, an empty string is returned.
-     * If the delimiter is not found, the trimmed input string is returned in full.
-     * </p>
-     *
-     * @param str       the original input string (may be {@code null})
-     * @param begin     the starting index for the substring (inclusive)
-     * @param delimiter the delimiter marking the end of the substring
-     * @return the substring from {@code begin} to the first occurrence of {@code delimiter}, or the trimmed input string
-     * if the delimiter is not present; never {@code null}
+     * Subcadena desde {@code begin} hasta la primera ocurrencia de {@code delimiter} (excluido).
+     * Si no existe el delimitador, retorna {@code str.trim()}.
      */
     public static String getSubstringUntil(String str, int begin, String delimiter) {
         if (str == null || str.isEmpty()) return "";
-        var trimmed = str.trim();
-        var firstSpace = str.indexOf(delimiter);
-        if (firstSpace == -1) {
-            return trimmed;
-        }
-        return str.substring(begin, firstSpace);
+        int from = Math.max(0, begin);
+        int idx = str.indexOf(delimiter, from);
+        if (idx == -1) return str.trim();
+        return (from < idx) ? str.substring(from, idx) : "";
     }
 
     /**
-     * Capitalizes the first character of the given string.
-     * <p>
-     * If the string is {@code null} or empty, it is returned as-is.
-     * </p>
-     *
-     * @param s the input string (may be {@code null})
-     * @return the string with its first character converted to uppercase; or the original string if null or empty
+     * Capitaliza el primer carácter (versión ASCII/inglés; no locale-aware).
+     * Mantiene el resto de la cadena sin copiar más de lo necesario.
      */
     public static String capitalize(String s) {
         if (s == null || s.isEmpty()) return s;
-        return s.substring(0, 1).toUpperCase() + s.substring(1);
+        char first = Character.toUpperCase(s.charAt(0));
+        if (s.length() == 1) return String.valueOf(first);
+        StringBuilder sb = new StringBuilder(s.length());
+        sb.append(first).append(s, 1, s.length());
+        return sb.toString();
     }
 
+    /** Carácter de puntos suspensivos usado por {@link #truncate(String, int)}. */
+    private static final String ELLIPSIS = "…";
 
+    /**
+     * Trunca la cadena a lo más {@code max} caracteres y agrega un {@link #ELLIPSIS} al final
+     * si hubo truncamiento (de modo que la longitud resultante sea &gt; {@code max}).
+     *
+     * @param s   entrada (puede ser null → retorna null)
+     * @param max longitud máxima previa al agregado del sufijo
+     * @return cadena truncada con sufijo o la original si no requiere truncar
+     */
     public static String truncate(String s, int max) {
         if (s == null) return null;
-        return (max > 0 && s.length() > max) ? s.substring(0, max) + "…" : s;
+        if (max <= 0) return "";
+        if (s.length() <= max) return s;
+        // Keep up to max chars, then append ellipsis so total length > max
+        return s.substring(0, max) + ELLIPSIS;
     }
 
     /**
-     * Returns a substring containing at most the first {@code maxClusters} user-perceived characters
-     * (Unicode grapheme clusters) of {@code s}.
-     * <p>
-     * Uses a CHARACTER_INSTANCE to avoid splitting complex glyphs,
-     * such as emojis with modifiers or combined characters (e.g., "👨‍👩‍👧‍👦", "é").
-     * If {@code s} has fewer than {@code maxClusters} clusters, the original string is returned.
-     * </p>
+     * Trunca por grupos de grafemas (caracteres percibidos por el usuario) usando {@link BreakIterator}.
+     * Costoso; úsalo solo cuando realmente necesites no partir emojis/combining marks.
      *
-     * @param s           the input string (non-null)
-     * @param maxClusters the maximum number of grapheme clusters to include; must be {@code >= 0}
-     * @return a substring of {@code s} containing at most {@code maxClusters} grapheme clusters
-     * @throws IllegalArgumentException if {@code maxClusters} is negative
+     * @param s           entrada (null → "")
+     * @param maxClusters máximo de grafemas
+     * @return subcadena limitada a {@code maxClusters} grafemas
+     * @throws IllegalArgumentException si {@code maxClusters} &lt; 0
      */
     public static String truncateGraphemes(String s, int maxClusters) {
         if (s == null) return "";
@@ -226,7 +209,6 @@ public class Transformer {
         if (s.length() <= maxClusters) return s;
         BreakIterator bi = BreakIterator.getCharacterInstance(Locale.ROOT);
         bi.setText(s);
-
         int end = bi.first();
         for (int i = 0; i < maxClusters; i++) {
             int next = bi.next();
