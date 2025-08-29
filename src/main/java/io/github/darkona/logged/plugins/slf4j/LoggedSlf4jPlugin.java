@@ -2,6 +2,7 @@ package io.github.darkona.logged.plugins.slf4j;
 
 import io.github.darkona.logged.Logged;
 import io.github.darkona.logged.api.Arg;
+import io.github.darkona.logged.LoggedProperties;
 import io.github.darkona.logged.api.Data;
 import io.github.darkona.logged.api.LogDecorator;
 import io.github.darkona.logged.api.LogToken;
@@ -28,7 +29,7 @@ import java.util.stream.Collectors;
 import static io.github.darkona.logged.internals.LoggedEngine.NULL;
 
 
-/**
+/*
  * SLF4J logging plugin for {@code @Logged} that formats and emits call/return/exception
  * messages using {@link org.slf4j.Logger} and the library's token interpolation.
  *
@@ -105,6 +106,13 @@ import static io.github.darkona.logged.internals.LoggedEngine.NULL;
  * @see io.github.darkona.logged.api.LogToken
  * @see org.slf4j.Logger
  */
+/**
+ * SLF4J plugin for {@code @Logged}.
+ * - Emite entrada/salida/excepción con SLF4J
+ * - Usa plantillas o sobreescrituras por anotación
+ * - Puede añadir profundidad, argumentos, duración y marcadores
+ * - Evita trabajo cuando el nivel está deshabilitado
+ */
 public class LoggedSlf4jPlugin implements LoggedPlugin {
 
     private static final Logger log = LoggerFactory.getLogger(LoggedSlf4jPlugin.class);
@@ -115,6 +123,7 @@ public class LoggedSlf4jPlugin implements LoggedPlugin {
     private ColorEnum exitIconColor = BasicColor.GREEN;
     private ColorEnum throwIconColor = BasicColor.RED;
     private ColorEnum depthIconColor = Orange.ORANGE;
+    private LoggedProperties rootProps;
 
     public LoggedSlf4jPlugin(LogDecorator deco, LoggedSlf4jProperties props) {
         this.props = props;
@@ -126,6 +135,10 @@ public class LoggedSlf4jPlugin implements LoggedPlugin {
             throwIconColor = ColorFinder.findColor(props.getThrowIconColor());
             depthIconColor = ColorFinder.findColor(props.getDepthIconColor());
         }
+    }
+
+    public void setRootProps(LoggedProperties rootProps) {
+        this.rootProps = rootProps;
     }
 
     @Override
@@ -146,15 +159,13 @@ public class LoggedSlf4jPlugin implements LoggedPlugin {
 
     }
 
+    /** Handles method entry logging if the level is enabled. */
     @Override
     public void onCall(ProceedingJoinPoint pjp, Data data, Logged options) {
-        log.debug(deco.green("SLF4j Plugin called"));
         if (!props.isEnabled()) return;
-
-        captureMdc(data);
         Logger log = LoggerFactory.getLogger(pjp.getSignature().getDeclaringType());
-
         if (isEnabled(log, options.level())) {
+            captureMdc(data);
             if (props.isLogDepth()) {
                 var depthS = data.depth() > 0 ? Transformer.fill(data.get(LogToken.DEPTH_ICON), data.depth()) : "";
                 data.addToken(LogToken.DEPTH, depthS);
@@ -199,13 +210,53 @@ public class LoggedSlf4jPlugin implements LoggedPlugin {
         }
     }
 
+    private static final String SLOW_MARKER_KEY = "__logged.slow.marker";
+
+    private Level applyThresholdIfNeeded(Data data, Logged options, Level baseLevel) {
+        try {
+            long perMethod = options.warnIfOverMs();
+            long global = (rootProps != null && rootProps.getThreshold() != null) ? rootProps.getThreshold().getWarnMs() : -1L;
+            long threshold = perMethod >= 0 ? perMethod : global;
+            if (threshold < 0) return baseLevel;
+            String d = data.get(LogToken.DURATION);
+            long duration = d != null && !d.isBlank() ? Long.parseLong(d) : -1L;
+            if (duration > threshold) {
+                if (options.slowMarker() != null && !options.slowMarker().isBlank()) {
+                    data.addFlexToken(SLOW_MARKER_KEY, options.slowMarker());
+                }
+                org.slf4j.event.Level promote = (rootProps != null && rootProps.getThreshold() != null)
+                        ? rootProps.getThreshold().getPromoteLevel() : Level.WARN;
+                return higherOf(baseLevel, promote);
+            }
+        } catch (Exception ignored) { }
+        return baseLevel;
+    }
+
+    private Level higherOf(Level a, Level b) {
+        int ia = severity(a);
+        int ib = severity(b);
+        return (ib > ia) ? b : a;
+    }
+
+    private int severity(Level l) {
+        return switch (l) {
+            case TRACE -> 0;
+            case DEBUG -> 1;
+            case INFO -> 2;
+            case WARN -> 3;
+            case ERROR -> 4;
+        };
+    }
+
     @Override
+    /** Handles method return logging if the level is enabled. */
     public void onReturn(ProceedingJoinPoint pjp, Data data, Logged options) {
         if (!props.isEnabled()) return;
-        captureMdc(data);
         Logger log = LoggerFactory.getLogger(pjp.getSignature().getDeclaringType());
-        if (isEnabled(log, options.level())) {
-            logReturn(log, options.level(), data, options);
+        Level eff = applyThresholdIfNeeded(data, options, options.level());
+        if (isEnabled(log, eff)) {
+            captureMdc(data);
+            logReturn(log, eff, data, options);
         }
     }
 
@@ -217,6 +268,7 @@ public class LoggedSlf4jPlugin implements LoggedPlugin {
                 case NULL -> rv.equals(NULL) ? props.getExitMsgValue() : props.getExitMsg();
                 case NONE -> "";
             };
+            if (template.isEmpty()) return;
             if (options.time()) template += " " + props.getTimeTakenMsg();
             sendToLog(log, level, template, data.tok(), options, null);
         } else if (!options.returnMsg().isEmpty()) {
@@ -225,21 +277,21 @@ public class LoggedSlf4jPlugin implements LoggedPlugin {
     }
 
     @Override
+    /** Handles exception logging if the level is enabled. */
     public void onException(ProceedingJoinPoint pjp, Data data, Logged options, Throwable exception) {
         if (!props.isEnabled()) return;
-        captureMdc(data);
         Logger log = LoggerFactory.getLogger(pjp.getSignature().getDeclaringType());
-
-        if (isEnabled(log, options.exceptionLevel())) {
-            logException(log, exception, data, options);
+        Level eff = applyThresholdIfNeeded(data, options, options.exceptionLevel());
+        if (isEnabled(log, eff)) {
+            captureMdc(data);
+            logException(log, exception, data, options, eff);
         }
     }
 
-    private void logException(Logger log, Throwable e, Data data, Logged options) {
+    private void logException(Logger log, Throwable e, Data data, Logged options, Level level) {
 
         if (!options.onException() && options.exceptionMsg().isBlank()) return;
 
-        var level = options.exceptionLevel();
         String template = options.exceptionMsg().isBlank()
                           ? props.getThrowMsg() + (options.time() ? " " + props.getTimeTakenMsg() : "")
                           : options.exceptionMsg();
@@ -252,18 +304,32 @@ public class LoggedSlf4jPlugin implements LoggedPlugin {
     }
 
     private void sendToLog(Logger log, Level level, String template, Map<String, String> tokens, Logged options, Throwable ex) {
+        if (template == null || template.isEmpty()) return;
         LoggingEventBuilder builder = log.atLevel(level);
 
-        tokens.put(LogToken.RETURN_VALUE.token(), Transformer.truncate(tokens.get(LogToken.RETURN_VALUE.token()), props.getMaxValueLength()));
+        String rvKey = LogToken.RETURN_VALUE.token();
+        String rv = tokens.get(rvKey);
+        if (rv != null) {
+            tokens.put(rvKey, Transformer.truncate(rv, props.getMaxValueLength()));
+        }
 
         builder = setKeyValuePairs(builder, tokens);
 
-        //fastest copy
-        String[] markers = Arrays.copyOf(options.markers(), options.markers().length + props.getMarkers().length);
-        System.arraycopy(props.getMarkers(), 0, markers, options.markers().length, props.getMarkers().length);
+        int optLen = options.markers().length;
+        int propLen = props.getMarkers().length;
+        if (optLen + propLen > 0) {
+            String[] markers = Arrays.copyOf(options.markers(), optLen + propLen);
+            if (propLen > 0) System.arraycopy(props.getMarkers(), 0, markers, optLen, propLen);
+            for (String marker : markers) {
+                if (marker != null && !marker.isBlank()) {
+                    builder = builder.addMarker(MarkerFactory.getMarker(marker));
+                }
+            }
+        }
 
-        for(String marker : markers) {
-            builder = builder.addMarker(MarkerFactory.getMarker(marker));
+        String slowMarker = tokens.remove(SLOW_MARKER_KEY);
+        if (slowMarker != null && !slowMarker.isBlank()) {
+            builder = builder.addMarker(MarkerFactory.getMarker(slowMarker));
         }
 
         if (ex != null) builder = builder.setCause(ex);
@@ -285,9 +351,14 @@ public class LoggedSlf4jPlugin implements LoggedPlugin {
     }
 
     private String makePrintableArgs(Arg[] args, Logged.Values argValues) {
-        return args.length > 0 ? Arrays.stream(args)
-                                       .map(a -> a != null ? a.toString(props.getArgsTemplate(), argValues, props.getMaxValueLength()) : "")
-                                       .collect(Collectors.joining(", ")) : "";
+        if (args.length == 0) return "";
+        StringBuilder sb = new StringBuilder(args.length * 16);
+        for (int i = 0; i < args.length; i++) {
+            Arg a = args[i];
+            if (a != null) sb.append(a.toString(props.getArgsTemplate(), argValues, props.getMaxValueLength()));
+            if (i < args.length - 1) sb.append(", ");
+        }
+        return sb.toString();
     }
 
     private boolean isEnabled(Logger log, Level lvl) {

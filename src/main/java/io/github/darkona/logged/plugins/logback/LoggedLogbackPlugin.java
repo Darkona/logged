@@ -16,6 +16,9 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Iterator;
 
+/**
+ * Logback integration plugin for @Logged. Wires marker-based filters on startup.
+ */
 public class LoggedLogbackPlugin implements LoggedPlugin {
 
     private final LoggedLogbackProperties props;
@@ -27,19 +30,13 @@ public class LoggedLogbackPlugin implements LoggedPlugin {
     }
 
     @Override
-    public void onCall(ProceedingJoinPoint pjp, Data data, Logged options) {
-
-    }
+    public void onCall(ProceedingJoinPoint pjp, Data data, Logged options) { }
 
     @Override
-    public void onReturn(ProceedingJoinPoint pjp, Data data, Logged options) {
-
-    }
+    public void onReturn(ProceedingJoinPoint pjp, Data data, Logged options) { }
 
     @Override
-    public void onException(ProceedingJoinPoint pjp, Data data, Logged options, Throwable exception) {
-
-    }
+    public void onException(ProceedingJoinPoint pjp, Data data, Logged options, Throwable exception) { }
 
     @Override
     public String announceLoad() {
@@ -52,11 +49,9 @@ public class LoggedLogbackPlugin implements LoggedPlugin {
     }
 
     @Override
-    public void afterMethod() {
+    public void afterMethod() { }
 
-    }
-
-    public void wireFilters() {
+    private void wireFilters() {
 
         if(!props.isEnabled()) return;
 
@@ -69,7 +64,7 @@ public class LoggedLogbackPlugin implements LoggedPlugin {
 
             if(app instanceof FilterAttachable<ILoggingEvent> appender) {
 
-                var filter = new MarkerFilter(marker.getName(), marker.getOnMatch(), marker.getOnMismatch());
+                var filter = new LogbackMarkerFilter(marker.getName(), marker.getOnMatch(), marker.getOnMismatch());
 
                 filter.setContext(ctx);
                 filter.start();
@@ -82,10 +77,10 @@ public class LoggedLogbackPlugin implements LoggedPlugin {
     @SuppressWarnings("unchecked, rawtypes")
     public static Appender<ILoggingEvent> findInAttachable(AppenderAttachable attachable, String targetName) {
         for (Iterator<Appender<ILoggingEvent>> it = attachable.iteratorForAppenders(); it.hasNext();) {
-            Appender<ILoggingEvent> a = it.next();
+            var a = it.next();
             if (targetName.equals(a.getName())) return a;
             if (a instanceof AppenderAttachable<?> nested) {
-                Appender<ILoggingEvent> hit = findInAttachable(nested, targetName);
+                var hit = findInAttachable(nested, targetName);
                 if (hit != null) return hit;
             }
         }

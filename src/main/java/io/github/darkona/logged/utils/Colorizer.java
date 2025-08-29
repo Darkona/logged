@@ -95,21 +95,25 @@ public class Colorizer {
      * @return the colorized string, ending with a reset code to clear formatting
      */
     public static String rainbowify(String s) {
-        //if (!enabled) return s;
-        var r = new StringBuilder();
+        var out = new StringBuilder();
         int x = 0;
         for (int i = 0; i < s.length(); i++) {
-            String c = Character.toString(s.charAt(i));
-            if (!" ".equals(c) && !System.lineSeparator().equals(c)) {
-                r.append(rainbowColor(x));
-                x = (x + 1) % 7;
-            } else if (System.lineSeparator().equals(c)) {
+            char ch = s.charAt(i);
+            if (ch == '\n') {
                 x = 0;
+                out.append(ch);
+                continue;
             }
-            r.append(c);
+            if (ch == '\r' || Character.isWhitespace(ch)) {
+                out.append(ch);
+                continue;
+            }
+            out.append(rainbowColor(x));
+            x = (x + 1) % 7;
+            out.append(ch);
         }
-        r.append(ColorEnum.reset());
-        return r.toString();
+        out.append(ColorEnum.reset());
+        return out.toString();
     }
 
     /**
@@ -136,24 +140,27 @@ public class Colorizer {
             throw new IllegalArgumentException("Color list must not be null or empty.");
         }
 
-        var b = new StringBuilder();
+        var out = new StringBuilder();
         int x = 0;
 
         for (int i = 0; i < s.length(); i++) {
-            String c = Character.toString(s.charAt(i));
-
-            if (!" ".equals(c) && !System.lineSeparator().equals(c)) {
-                b.append(colors.get(x));
-                x = (x + 1) % colors.size();
-            } else if (System.lineSeparator().equals(c)) {
+            char ch = s.charAt(i);
+            if (ch == '\n') {
                 x = 0;
+                out.append(ch);
+                continue;
             }
-
-            b.append(c);
+            if (ch == '\r' || Character.isWhitespace(ch)) {
+                out.append(ch);
+                continue;
+            }
+            out.append(colors.get(x));
+            x = (x + 1) % colors.size();
+            out.append(ch);
         }
 
-        b.append(ColorEnum.reset());
-        return b.toString();
+        out.append(ColorEnum.reset());
+        return out.toString();
     }
 
     /**
@@ -362,7 +369,8 @@ public class Colorizer {
      * @see #reset()
      */
     public static String custom(int r, int g, int b, String s) {
-        return "\u001B[38;2;" + r + ";" + g + ";" + b + "m" + s + reset();
+        int rr = clamp8(r), gg = clamp8(g), bb = clamp8(b);
+        return "\u001B[38;2;" + rr + ";" + gg + ";" + bb + "m" + s + reset();
     }
 
     /**
@@ -390,7 +398,15 @@ public class Colorizer {
      * @see #reset()
      */
     public static String customBg(int r, int g, int b, String s) {
-        return "\u001B[48;2;" + r + ";" + g + ";" + b + "m" + s + reset();
+        int rr = clamp8(r), gg = clamp8(g), bb = clamp8(b);
+        return "\u001B[48;2;" + rr + ";" + gg + ";" + bb + "m" + s + reset();
     }
 
+    private static int clamp8(int v) {
+        return v < 0 ? 0 : (v > 255 ? 255 : v);
+    }
+
+    static String lightGray(String x) {
+        return colorizeHex("#999999", x);
+    }
 }

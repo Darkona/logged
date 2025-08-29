@@ -17,7 +17,9 @@ public class LoggedSlf4jPluginConfig {
     @Bean
     @Order(200)
     @ConditionalOnBooleanProperty(name = "logged.slf4j.enabled", matchIfMissing = true)
-    public LoggedSlf4jPlugin loggedSlf4jPlugin(LogDecorator decorator, LoggedSlf4jProperties props) {
-        return new LoggedSlf4jPlugin(decorator, props);
+    public LoggedSlf4jPlugin loggedSlf4jPlugin(LogDecorator decorator, LoggedSlf4jProperties props, io.github.darkona.logged.LoggedProperties loggedProps) {
+        var plugin = new LoggedSlf4jPlugin(decorator, props);
+        plugin.setRootProps(loggedProps);
+        return plugin;
     }
 }

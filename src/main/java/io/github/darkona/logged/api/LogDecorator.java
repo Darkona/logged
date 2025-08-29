@@ -118,6 +118,17 @@ public interface LogDecorator {
     String custom(int red, int green, int blue, String s);
 
     /**
+     * Applies a custom RGB background color to the given string.
+     *
+     * @param red   red component (0..255)
+     * @param green green component (0..255)
+     * @param blue  blue component (0..255)
+     * @param s     the input string
+     * @return the background-colored string
+     */
+    String customBg(int red, int green, int blue, String s);
+
+    /**
      * Applies a predefined custom color to the given string.
      *
      * @param color the color enum

@@ -1,0 +1,52 @@
+spring:
+  output:
+    ansi:
+      enabled: always
+logged:
+  color: true
+  otel:
+    enabled: true
+  mdc:
+    enabled: true
+  # Global redaction rules for tests
+  # Note: Use a single backslash in YAML (e.g. '\d{16}'),
+  # Spring will pass '\d{16}' to Java's Pattern.compile, matching 16 digits.
+  redactPatterns:
+    - '\d{16}'
+  redactTypeNames:
+    - 'java.util.UUID'
+  threshold:
+    warnMs: 5
+    promoteLevel: WARN
+  slf4j:
+    color: true
+    enabled: true
+  logback:
+    #Enable logback plugin for filtering logs to different appenders
+    enabled: true
+
+    #create logback filters for logs created by logged
+    appender-filters:
+      # Don't send logs with the marker "NO_CONSOLE" to the Console
+      # See logback-spring.xml
+      - appender-name: CONSOLE
+        name: NO_CONSOLE
+        on-match: deny
+        on-mismatch: neutral
+
+  log4j2:
+    #Enable log4j2 plugin for filtering logs to different appenders
+    enabled: true
+
+    #create log4j2 filters for logs created by logged
+    appender-filters:
+      # Don't send logs with the marker "LOKI" to the Console
+      # See log4j2-spring.xml
+      - appender-name: CONSOLE
+        name: NO_CONSOLE
+        on-match: deny
+        on-mismatch: neutral
+
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %highlight(%-5level) %msg%n"

@@ -1,5 +1,6 @@
-
 import org.springframework.boot.gradle.plugin.SpringBootPlugin
+
+import java.util.regex.Pattern
 
 plugins {
     id 'java-library'
@@ -23,30 +24,23 @@ repositories {
         mavenLocal()
     }
 }
+// DO NOT TOUCH THIS
+def orderedProcessors = [
+        'lombok.launch.AnnotationProcessorHider$AnnotationProcessor',
+        'org.springframework.boot.configurationprocessor.ConfigurationMetadataAnnotationProcessor'
+].join(',')
+
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.compilerArgs = options.compilerArgs.findAll { it != '-parameters' && !it.startsWith('-processor') }
+    options.compilerArgs += ['-parameters', '-processor', orderedProcessors]
+}
+
 java {
 
     toolchain {
         languageVersion = JavaLanguageVersion.of(21)
-    }
-
-    compileJava {
-        options.encoding = 'UTF-8'
-        options.compilerArgs += [
-                "-processor",
-                'lombok.launch.AnnotationProcessorHider$AnnotationProcessor,' +
-                        'org.springframework.boot.configurationprocessor.ConfigurationMetadataAnnotationProcessor',
-                "-parameters"
-        ]
-    }
-
-    compileTestJava {
-        options.encoding = 'UTF-8'
-        options.compilerArgs += [
-                "-processor",
-                'lombok.launch.AnnotationProcessorHider$AnnotationProcessor,' +
-                        'org.springframework.boot.configurationprocessor.ConfigurationMetadataAnnotationProcessor',
-                "-parameters"
-        ]
     }
 
     artifacts {
@@ -68,6 +62,8 @@ jar {
     }
 }
 
+
+compileJava.dependsOn(processResources)
 
 mavenPublishing {
 
@@ -122,28 +118,94 @@ dependencyManagement {
         mavenBom("io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom:2.18.1")
     }
 }
-configurations.configureEach {
+
+
+configurations.named("testImplementation") {
     exclude group: 'org.mockito'
+    exclude group: 'org.springframework.boot', module: 'spring-boot-starter-logging'
 }
+tasks.withType(ProcessResources).configureEach {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+sourceSets {
+
+    testLog4j2 {
+        java.srcDir 'src/testLog4j/java'
+        resources.srcDir 'src/testLog4j/resources'
+        compileClasspath += sourceSets.main.output
+        runtimeClasspath += output + compileClasspath
+    }
+    testLogback {
+        java.srcDir 'src/testLogback/java'
+        resources.srcDir 'src/testLogback/resources'
+        compileClasspath += sourceSets.main.output
+        runtimeClasspath += output + compileClasspath
+    }
+    test {
+        java.srcDir 'src/test/java'
+        resources.srcDir 'src/test/resources'
+        compileClasspath += sourceSets.main.output
+        runtimeClasspath += output + compileClasspath
+    }
+}
+
+configurations {
+    // --- Log4j2 test suite ---
+    testLog4j2Implementation.extendsFrom testImplementation
+    testLog4j2RuntimeOnly.extendsFrom testRuntimeOnly
+    testLog4j2CompileOnly.extendsFrom testCompileOnly
+    testLog4j2AnnotationProcessor.extendsFrom testAnnotationProcessor
+
+    // --- Logback test suite ---
+    testLogbackImplementation.extendsFrom testImplementation
+    testLogbackRuntimeOnly.extendsFrom testRuntimeOnly
+    testLogbackCompileOnly.extendsFrom testCompileOnly
+    testLogbackAnnotationProcessor.extendsFrom testAnnotationProcessor
+
+}
+
 dependencies {
+    api "org.springframework.boot:spring-boot-starter-aop"
+
     implementation "org.springframework.boot:spring-boot-autoconfigure"
+
     compileOnly 'org.projectlombok:lombok'
     compileOnly "io.opentelemetry.instrumentation:opentelemetry-spring-boot-starter"
+    compileOnly 'org.springframework.boot:spring-boot-starter-log4j2'
+    compileOnly 'ch.qos.logback:logback-classic:1.5.18'
+    compileOnly 'ch.qos.logback:logback-core:1.5.18'
+
     annotationProcessor 'org.projectlombok:lombok'
     annotationProcessor "org.springframework.boot:spring-boot-configuration-processor"
 
-    api "org.springframework.boot:spring-boot-starter-aop"
 
-
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testCompileOnly 'org.projectlombok:lombok'
-    testImplementation "io.opentelemetry.instrumentation:opentelemetry-spring-boot-starter"
-    testAnnotationProcessor 'org.projectlombok:lombok'
-    testAnnotationProcessor "org.springframework.boot:spring-boot-configuration-processor"
-    testImplementation "org.springframework.boot:spring-boot-autoconfigure"
     testImplementation platform('org.junit:junit-bom:5.10.3')
     testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation "io.opentelemetry.instrumentation:opentelemetry-spring-boot-starter"
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    testCompileOnly 'org.projectlombok:lombok'
+
+    testAnnotationProcessor 'org.projectlombok:lombok'
+    testAnnotationProcessor "org.springframework.boot:spring-boot-configuration-processor"
+
+}
+dependencies {
+
+    testLog4j2Implementation 'org.springframework.boot:spring-boot-starter-log4j2'
+    testLog4j2Implementation 'org.apache.logging.log4j:log4j-core'
+    /* -------------------   LOG4J2 ---------------------------*/
+    configurations.testLog4j2Implementation {
+        exclude group: "ch.qos.logback", module: "logback-classic"
+    }
+    testLogbackImplementation 'ch.qos.logback:logback-classic:1.5.18'
+    testLogbackImplementation 'ch.qos.logback:logback-core:1.5.18'
+
+    configurations.testLogbackImplementation {
+        exclude group: "org.apache.logging.log4j"
+    }
 }
 
 tasks.withType(JavaCompile).configureEach {
@@ -152,8 +214,72 @@ tasks.withType(JavaCompile).configureEach {
     )
 }
 
-test {
+tasks.register('testLog4j2Test', Test) {
+    description = 'Runs tests with Log4j2 stack'
+    testClassesDirs = sourceSets.testLog4j2.output.classesDirs
+    classpath = sourceSets.testLog4j2.runtimeClasspath
+    useJUnitPlatform()
+
+    systemProperty "log4j2.isThreadContextMapInheritable", "true"
+    systemProperty "spring.profiles.active", "log4j2"
+}
+
+
+tasks.register('testLogbackTest', Test) {
+    description = 'Runs tests with Logback stack'
+    testClassesDirs = sourceSets.testLogback.output.classesDirs
+    classpath = sourceSets.testLogback.runtimeClasspath
+    useJUnitPlatform()
+    systemProperty "spring.profiles.active", "logback"
+}
+
+tasks.named('check') {
+    dependsOn tasks.named('testLog4j2Test'), tasks.named('testLogbackTest')
+}
+
+// Ensure default test task (src/test) uses JUnit Platform
+tasks.named('test', Test) {
     useJUnitPlatform()
 }
 
-compileJava.dependsOn(processResources)
+
+// --- README version sync helpers ---
+tasks.register('updateReadmeVersion') {
+    group = 'release'
+    description = 'Sync README.md dependency snippets to project.version'
+    doLast {
+        def v = project.version.toString()
+        def f = file('README.md')
+        if (!f.exists()) return
+        def t = f.getText('UTF-8')
+        def updated = t
+                // Gradle snippet: io.github.darkona:logged:x.y.z
+                .replaceAll(/io\.github\.darkona:logged:[0-9A-Za-z.\-]+/, "io.github.darkona:logged:${v}")
+                // Maven snippet: <artifactId>logged</artifactId> ... <version>x.y.z</version>
+                .replaceAll(/(?s)(<artifactId>logged<\/artifactId>.*?<version>)([^<]+)(<\/version>)/, '$1' + v + '$3')
+
+        if (updated != t) {
+            f.setText(updated, 'UTF-8')
+            println "README.md updated to version ${v}"
+        } else {
+            println "README.md already at ${v}"
+        }
+    }
+}
+
+tasks.register('checkReadmeVersion') {
+    group = 'verification'
+    description = 'Verify README.md uses the current project.version'
+    doLast {
+        def v = Pattern.quote(project.version.toString())
+        def readme = file('README.md').getText('UTF-8')
+        def mvnOk = (readme =~ /(?s)<artifactId>logged<\/artifactId>.*?<version>${v}<\/version>/).find()
+        def gradleOk = (readme =~ /io\.github\.darkona:logged:${v}/).find()
+        if (!mvnOk || !gradleOk) {
+            throw new GradleException("README.md version mismatch. Run :updateReadmeVersion")
+        }
+    }
+}
+
+// Guard on CI/local checks
+tasks.named('check').configure { dependsOn 'checkReadmeVersion' }

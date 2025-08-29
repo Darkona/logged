@@ -3,4 +3,3 @@ io.github.darkona.logged.plugins.mdc.LoggedMdcPluginConfig
 io.github.darkona.logged.plugins.slf4j.LoggedSlf4jPluginConfig
 io.github.darkona.logged.plugins.otel.LoggedOpenTelemetryConfig
 io.github.darkona.logged.plugins.logback.LoggedLogbackPluginConfig
-

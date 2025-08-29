@@ -1,0 +1,195 @@
+{
+  "properties": [
+    {
+      "name": "logged.threshold.warnMs",
+      "type": "java.lang.Long",
+      "defaultValue": -1,
+      "description": "Global latency threshold in milliseconds; < 0 disables."
+    },
+    {
+      "name": "logged.threshold.promoteLevel",
+      "type": "org.slf4j.event.Level",
+      "defaultValue": "WARN",
+      "description": "Level to promote when the threshold is exceeded."
+    },
+    {
+      "name": "logged.useIconTheme",
+      "type": "java.lang.Boolean",
+      "defaultValue": false,
+      "description": "When true, use a predefined icon theme for entry/exit/throw/depth icons."
+    },
+    {
+      "name": "logged.iconTheme",
+      "type": "io.github.darkona.logged.utils.SymbolTheme",
+      "description": "Predefined icon theme to use when logged.useIconTheme=true."
+    },
+    { "name": "logged.enabled", "type": "java.lang.Boolean", "defaultValue": true, "description": "Enable the @Logged engine." },
+    { "name": "logged.announceLoad", "type": "java.lang.Boolean", "defaultValue": true, "description": "Log a banner when the engine and plugins load." },
+    { "name": "logged.color", "type": "java.lang.Boolean", "defaultValue": true, "description": "Use colored log decorator." },
+    { "name": "logged.icons", "type": "java.lang.Boolean", "defaultValue": true, "description": "Enable icon rendering in templates." },
+    { "name": "logged.useUtf8", "type": "java.lang.Boolean", "defaultValue": true, "description": "Enable UTF-8 on System.out for pretty symbols." },
+    { "name": "logged.redactMask", "type": "java.lang.String", "description": "Mask character(s) used for redaction." },
+    { "name": "logged.redactLength", "type": "java.lang.Integer", "defaultValue": 5, "description": "Length of the redacted string used in output." },
+    { "name": "logged.redactPatterns", "type": "java.util.List<java.lang.String>", "description": "Global regex patterns to trigger redaction on args/return values." },
+    { "name": "logged.redactTypeNames", "type": "java.util.List<java.lang.String>", "description": "Fully-qualified class names to trigger redaction when assignable." },
+    { "name": "logged.failOnInvalidRedactPatterns", "type": "java.lang.Boolean", "defaultValue": false, "description": "Fail startup if any redact pattern is invalid." },
+    { "name": "logged.failOnUnresolvedRedactTypes", "type": "java.lang.Boolean", "defaultValue": false, "description": "Fail startup if any redact type cannot be resolved." },
+    { "name": "logged.maskReturn", "type": "java.lang.Boolean", "defaultValue": false, "description": "Mask return values globally (can be overridden per method)." },
+    { "name": "logged.entryIcon", "type": "java.lang.String", "description": "Icon/string shown on method entry messages." },
+    { "name": "logged.exitIcon", "type": "java.lang.String", "description": "Icon/string shown on method exit messages." },
+    { "name": "logged.throwIcon", "type": "java.lang.String", "description": "Icon/string shown on exception messages." },
+    { "name": "logged.depthIcon", "type": "java.lang.String", "description": "Icon/string used to render depth/indentation." },
+    { "name": "logged.slf4j.enabled", "type": "java.lang.Boolean", "defaultValue": true, "description": "Enable the SLF4J plugin." },
+    { "name": "logged.slf4j.color", "type": "java.lang.Boolean", "defaultValue": true, "description": "Enable color decoration in SLF4J plugin." },
+    { "name": "logged.slf4j.iconColors", "type": "java.lang.Boolean", "defaultValue": true, "description": "Colorize icons separately in SLF4J output." },
+    { "name": "logged.slf4j.callMsgNoArgs", "type": "java.lang.String", "description": "Template used on method entry without arguments." },
+    { "name": "logged.slf4j.callMsgArgs", "type": "java.lang.String", "description": "Template used on method entry with arguments." },
+    { "name": "logged.slf4j.exitMsg", "type": "java.lang.String", "description": "Template used on method exit without return value." },
+    { "name": "logged.slf4j.argsTemplate", "type": "java.lang.String", "defaultValue": "({c}){k}:{v}", "description": "Template for individual arguments when building {a}." },
+    { "name": "logged.slf4j.exitMsgValue", "type": "java.lang.String", "description": "Template used on method exit with return value." },
+    { "name": "logged.slf4j.throwMsg", "type": "java.lang.String", "description": "Template used on exceptions." },
+    { "name": "logged.slf4j.timeTakenMsg", "type": "java.lang.String", "defaultValue": "Time taken: {d} ms", "description": "Template appended when timing is enabled." },
+    { "name": "logged.slf4j.logDepth", "type": "java.lang.Boolean", "defaultValue": true, "description": "Render visual depth/indentation in messages." },
+    { "name": "logged.slf4j.captureFromMdc", "type": "java.util.List<java.lang.String>", "description": "MDC keys to capture as tokens {mdc.<key>} in messages." },
+    { "name": "logged.slf4j.markers", "type": "java.util.List<java.lang.String>", "description": "Extra markers to attach to SLF4J events." },
+    { "name": "logged.slf4j.maxValueLength", "type": "java.lang.Integer", "defaultValue": 2048, "description": "Max characters for values (args/return) used by SLF4J plugin." },
+    { "name": "logged.slf4j.captureFromOtel", "type": "java.util.List<java.lang.String>", "description": "OTel attributes to capture (if available)." },
+    { "name": "logged.slf4j.keyValue", "type": "java.lang.Boolean", "defaultValue": false, "description": "Emit key-values to logging event where supported." },
+    { "name": "logged.slf4j.keyValues", "type": "java.util.List<io.github.darkona.logged.api.LogToken>", "description": "Tokens to emit as key-values in the logging event." },
+    { "name": "logged.mdc.enabled", "type": "java.lang.Boolean", "defaultValue": false, "description": "Enable the MDC plugin." },
+    { "name": "logged.mdc.argsTemplate", "type": "java.lang.String", "defaultValue": "({c}){k}:{v}", "description": "Template for MDC-printed argument rendering." },
+    { "name": "logged.mdc.addMark", "type": "java.lang.Boolean", "defaultValue": false, "description": "Add a constant key/value mark into MDC during execution." },
+    { "name": "logged.mdc.markerKey", "type": "java.lang.String", "defaultValue": "log_source", "description": "MDC key for the constant mark." },
+    { "name": "logged.mdc.markerValue", "type": "java.lang.String", "defaultValue": "logged", "description": "MDC value for the constant mark." },
+    { "name": "logged.mdc.maxValueLength", "type": "java.lang.Integer", "defaultValue": 2048, "description": "Max characters for values placed into MDC." },
+    { "name": "logged.otel.enabled", "type": "java.lang.Boolean", "defaultValue": false, "description": "Enable the OpenTelemetry plugin." },
+    { "name": "logged.otel.addSourceLine", "type": "java.lang.Boolean", "defaultValue": true, "description": "Add source file and line number to span attributes when available." },
+    { "name": "logged.otel.addClass", "type": "java.lang.Boolean", "defaultValue": true, "description": "Add class name to span attributes." },
+    { "name": "logged.otel.addMethod", "type": "java.lang.Boolean", "defaultValue": true, "description": "Add method name to span attributes." },
+    { "name": "logged.otel.addDepth", "type": "java.lang.Boolean", "defaultValue": true, "description": "Add call depth to span attributes." },
+    { "name": "logged.otel.addArgs", "type": "java.lang.Boolean", "defaultValue": true, "description": "Add argument names/count to span attributes." },
+    { "name": "logged.otel.addReturnType", "type": "java.lang.Boolean", "defaultValue": true, "description": "Add return type info to span attributes on return." },
+    { "name": "logged.otel.addExceptionMsg", "type": "java.lang.Boolean", "defaultValue": true, "description": "Include exception.toString() when setting ERROR status." },
+    { "name": "logged.otel.addToMdc", "type": "java.lang.Boolean", "defaultValue": true, "description": "Put span name into MDC under logged.otel.mdcKey." },
+    { "name": "logged.otel.mdcKey", "type": "java.lang.String", "defaultValue": "span_name", "description": "MDC key name for the span identifier." },
+    { "name": "logged.otel.spanIdTemplate", "type": "java.lang.String", "defaultValue": "Logged: {c}${m}()", "description": "Template used to build span names." },
+    { "name": "logged.logback.enabled", "type": "java.lang.Boolean", "defaultValue": false, "description": "Enable Logback helper plugin (marker filters)." },
+    { "name": "logged.logback.appender-filters", "type": "java.util.List<io.github.darkona.logged.plugins.logback.LoggedLogbackProperties.AppenderSimpleFilter>", "description": "List of appender/marker filter bindings for Logback." },
+    { "name": "logged.logback.appender-filters[].appender-name", "type": "java.lang.String", "description": "Target Logback appender name (e.g., CONSOLE, FILE, ROOT)." },
+    { "name": "logged.logback.appender-filters[].name", "type": "java.lang.String", "description": "Marker name to evaluate." },
+    { "name": "logged.logback.appender-filters[].on-match", "type": "ch.qos.logback.core.spi.FilterReply", "description": "Action when marker matches." },
+    { "name": "logged.logback.appender-filters[].on-mismatch", "type": "ch.qos.logback.core.spi.FilterReply", "description": "Action when marker does not match." },
+    { "name": "logged.log4j2.enabled", "type": "java.lang.Boolean", "defaultValue": false, "description": "Enable Log4j2 helper plugin (marker filters)." },
+    { "name": "logged.log4j2.appender-filters", "type": "java.util.List<io.github.darkona.logged.plugins.log4j2.LoggedLog4j2PluginProperties.AppenderSimpleFilter>", "description": "List of appender/marker filter bindings for Log4j2." },
+    { "name": "logged.log4j2.appender-filters[].appender-name", "type": "java.lang.String", "description": "Target Log4j2 appender name (e.g., Console, File, Root)." },
+    { "name": "logged.log4j2.appender-filters[].name", "type": "java.lang.String", "description": "Marker name to evaluate." },
+    { "name": "logged.log4j2.appender-filters[].on-match", "type": "org.apache.logging.log4j.core.Filter$Result", "description": "Action when marker matches." },
+    { "name": "logged.log4j2.appender-filters[].on-mismatch", "type": "org.apache.logging.log4j.core.Filter$Result", "description": "Action when marker does not match." }
+  ],
+  "hints": [
+    {
+      "name": "logged.threshold.promoteLevel",
+      "values": [
+        { "value": "TRACE" },
+        { "value": "DEBUG" },
+        { "value": "INFO" },
+        { "value": "WARN" },
+        { "value": "ERROR" }
+      ]
+    },
+    {
+      "name": "logged.iconTheme",
+      "values": [
+        { "value": "PRIME_1" }, { "value": "PRIME_2" }, { "value": "PRIME_3" }, { "value": "PRIME_4" }, { "value": "PRIME_5" },
+        { "value": "PRIME_6" }, { "value": "PRIME_7" }, { "value": "PRIME_8" }, { "value": "PRIME_9" }, { "value": "PRIME_10" },
+        { "value": "PRIME_11" }, { "value": "PRIME_12" }, { "value": "PRIME_13" }, { "value": "PRIME_14" }, { "value": "PRIME_15" },
+        { "value": "PRIME_16" }, { "value": "PRIME_17" }, { "value": "PRIME_18" }, { "value": "PRIME_19" }, { "value": "PRIME_20" },
+        { "value": "PRIME_21" }, { "value": "PRIME_22" }, { "value": "PRIME_23" }, { "value": "PRIME_24" }, { "value": "PRIME_25" },
+        { "value": "SJET_1" }, { "value": "SJET_2" }, { "value": "SJET_3" }, { "value": "SJET_4" }, { "value": "SJET_5" },
+        { "value": "SJET_6" }, { "value": "SJET_7" }, { "value": "SJET_8" }, { "value": "SJET_9" }, { "value": "SJET_10" },
+        { "value": "SJET_11" }, { "value": "SJET_12" }, { "value": "SJET_13" }, { "value": "SJET_14" }, { "value": "SJET_15" },
+        { "value": "SJET_16" }, { "value": "SJET_17" }, { "value": "SJET_18" }, { "value": "SJET_19" }, { "value": "SJET_20" },
+        { "value": "SJET_21" }, { "value": "SJET_22" }, { "value": "SJET_23" }, { "value": "SJET_24" }, { "value": "SJET_25" },
+        { "value": "DARK_1" }, { "value": "DARK_2" }, { "value": "DARK_3" }, { "value": "DARK_4" }, { "value": "DARK_5" },
+        { "value": "DARK_6" }, { "value": "DARK_7" }, { "value": "DARK_8" }, { "value": "DARK_9" }, { "value": "DARK_10" },
+        { "value": "DARK_11" }, { "value": "DARK_12" }, { "value": "DARK_13" }, { "value": "DARK_14" }, { "value": "DARK_15" },
+        { "value": "DARK_16" }, { "value": "DARK_17" }, { "value": "DARK_18" }, { "value": "DARK_19" }, { "value": "DARK_20" },
+        { "value": "DARK_21" }, { "value": "DARK_22" }, { "value": "DARK_23" }, { "value": "DARK_24" }, { "value": "DARK_25" },
+        { "value": "SOLENE_1" }, { "value": "SOLENE_2" }, { "value": "SOLENE_3" }, { "value": "SOLENE_4" }, { "value": "SOLENE_5" },
+        { "value": "SOLENE_6" }, { "value": "SOLENE_7" }, { "value": "SOLENE_8" }, { "value": "SOLENE_9" }, { "value": "SOLENE_10" },
+        { "value": "SOLENE_11" }, { "value": "SOLENE_12" }, { "value": "SOLENE_13" }, { "value": "SOLENE_14" }, { "value": "SOLENE_15" },
+        { "value": "SOLENE_16" }, { "value": "SOLENE_17" }, { "value": "SOLENE_18" }, { "value": "SOLENE_19" }, { "value": "SOLENE_20" },
+        { "value": "SOLENE_21" }, { "value": "SOLENE_22" }, { "value": "SOLENE_23" }, { "value": "SOLENE_24" }, { "value": "SOLENE_25" },
+        { "value": "JUNO_1" }, { "value": "JUNO_2" }, { "value": "JUNO_3" }, { "value": "JUNO_4" }, { "value": "JUNO_5" },
+        { "value": "JUNO_6" }, { "value": "JUNO_7" }, { "value": "JUNO_8" }, { "value": "JUNO_9" }, { "value": "JUNO_10" },
+        { "value": "JUNO_11" }, { "value": "JUNO_12" }, { "value": "JUNO_13" }, { "value": "JUNO_14" }, { "value": "JUNO_15" },
+        { "value": "JUNO_16" }, { "value": "JUNO_17" }, { "value": "JUNO_18" }, { "value": "JUNO_19" }, { "value": "JUNO_20" },
+        { "value": "JUNO_21" }, { "value": "JUNO_22" }, { "value": "JUNO_23" }, { "value": "JUNO_24" }, { "value": "JUNO_25" },
+        { "value": "SEASONS" }
+      ]
+    },
+    {
+      "name": "logged.slf4j.entryIconColor",
+      "values": [
+        { "value": "BLACK" }, { "value": "RED" }, { "value": "GREEN" }, { "value": "YELLOW" },
+        { "value": "BLUE" }, { "value": "MAGENTA" }, { "value": "CYAN" }, { "value": "WHITE" },
+        { "value": "GRAY" }, { "value": "LIGHT_GRAY" }, { "value": "DARK_GRAY" }, { "value": "ORANGE" },
+        { "value": "GOLD" }, { "value": "PINK" }, { "value": "PURPLE" }, { "value": "LIME" }
+      ]
+    },
+    {
+      "name": "logged.slf4j.exitIconColor",
+      "values": [
+        { "value": "BLACK" }, { "value": "RED" }, { "value": "GREEN" }, { "value": "YELLOW" },
+        { "value": "BLUE" }, { "value": "MAGENTA" }, { "value": "CYAN" }, { "value": "WHITE" },
+        { "value": "GRAY" }, { "value": "LIGHT_GRAY" }, { "value": "DARK_GRAY" }, { "value": "ORANGE" },
+        { "value": "GOLD" }, { "value": "PINK" }, { "value": "PURPLE" }, { "value": "LIME" }
+      ]
+    },
+    {
+      "name": "logged.slf4j.throwIconColor",
+      "values": [
+        { "value": "BLACK" }, { "value": "RED" }, { "value": "GREEN" }, { "value": "YELLOW" },
+        { "value": "BLUE" }, { "value": "MAGENTA" }, { "value": "CYAN" }, { "value": "WHITE" },
+        { "value": "GRAY" }, { "value": "LIGHT_GRAY" }, { "value": "DARK_GRAY" }, { "value": "ORANGE" },
+        { "value": "GOLD" }, { "value": "PINK" }, { "value": "PURPLE" }, { "value": "LIME" }
+      ]
+    },
+    {
+      "name": "logged.slf4j.depthIconColor",
+      "values": [
+        { "value": "BLACK" }, { "value": "RED" }, { "value": "GREEN" }, { "value": "YELLOW" },
+        { "value": "BLUE" }, { "value": "MAGENTA" }, { "value": "CYAN" }, { "value": "WHITE" },
+        { "value": "GRAY" }, { "value": "LIGHT_GRAY" }, { "value": "DARK_GRAY" }, { "value": "ORANGE" },
+        { "value": "GOLD" }, { "value": "PINK" }, { "value": "PURPLE" }, { "value": "LIME" }
+      ]
+    },
+    {
+      "name": "logged.slf4j.keyValues",
+      "values": [
+        { "value": "METHOD_NAME" }, { "value": "METHOD_TYPE" }, { "value": "CLASS_NAME" }, { "value": "CLASS_LONG" },
+        { "value": "RETURN_VALUE" }, { "value": "DURATION" }, { "value": "EXCEPTION_CLASS" }, { "value": "EXCEPTION_MESSAGE" },
+        { "value": "EXCEPTION_ORIGIN_CLASS" }, { "value": "EXCEPTION_ORIGIN_METHOD" }, { "value": "ARGUMENTS" },
+        { "value": "RETURN_CLASS" }, { "value": "LINE" }, { "value": "FILENAME" }, { "value": "ENTRY_ICON" },
+        { "value": "EXIT_ICON" }, { "value": "THROW_ICON" }, { "value": "DEPTH_ICON" }, { "value": "NULL" },
+        { "value": "MDC" }, { "value": "DEPTH" }
+      ]
+    },
+    {
+      "name": "logged.logback.appender-filters[].on-match",
+      "values": [ { "value": "ACCEPT" }, { "value": "NEUTRAL" }, { "value": "DENY" } ]
+    },
+    {
+      "name": "logged.logback.appender-filters[].on-mismatch",
+      "values": [ { "value": "ACCEPT" }, { "value": "NEUTRAL" }, { "value": "DENY" } ]
+    },
+    {
+      "name": "logged.log4j2.appender-filters[].on-match",
+      "values": [ { "value": "ACCEPT" }, { "value": "NEUTRAL" }, { "value": "DENY" } ]
+    },
+    {
+      "name": "logged.log4j2.appender-filters[].on-mismatch",
+      "values": [ { "value": "ACCEPT" }, { "value": "NEUTRAL" }, { "value": "DENY" } ]
+    }
+  ]
+}
