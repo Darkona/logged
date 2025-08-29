@@ -139,6 +139,12 @@ sourceSets {
         compileClasspath += sourceSets.main.output
         runtimeClasspath += output + compileClasspath
     }
+    test {
+        java.srcDir 'src/test/java'
+        resources.srcDir 'src/test/resources'
+        compileClasspath += sourceSets.main.output
+        runtimeClasspath += output + compileClasspath
+    }
 }
 
 configurations {
@@ -153,6 +159,7 @@ configurations {
     testLogbackRuntimeOnly.extendsFrom testRuntimeOnly
     testLogbackCompileOnly.extendsFrom testCompileOnly
     testLogbackAnnotationProcessor.extendsFrom testAnnotationProcessor
+
 }
 
 dependencies {
@@ -226,5 +233,10 @@ tasks.register('testLogbackTest', Test) {
 
 tasks.named('check') {
     dependsOn tasks.named('testLog4j2Test'), tasks.named('testLogbackTest')
+}
+
+// Ensure default test task (src/test) uses JUnit Platform
+tasks.named('test', Test) {
+    useJUnitPlatform()
 }
 

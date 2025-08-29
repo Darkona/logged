@@ -24,14 +24,14 @@ import java.util.function.Consumer;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest(classes = TestBootConfig.class)
+@SpringBootTest(classes = {TestBootConfig.class, Log4jTestObject.class})
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class Log4j2LoggedEngineTest {
 
     // use SLF4J logger; backend is Log4j2
-    private final String loggerName = TestObject.class.getName();
+    private final String loggerName = Log4jTestObject.class.getName();
     @Autowired
-    private TestObject testObject;
+    private Log4jTestObject testObject;
     private Log4j2ListAppender listAppender;
     private List<LogEvent> logs;
     @Autowired
@@ -45,7 +45,7 @@ class Log4j2LoggedEngineTest {
 
     @BeforeEach
     synchronized void setup() {
-        Logger logger = LoggerFactory.getLogger(TestObject.class);
+        Logger logger = LoggerFactory.getLogger(Log4jTestObject.class);
 
 
         // Always use the CORE LoggerContext
@@ -210,6 +210,17 @@ class Log4j2LoggedEngineTest {
     }
 
     @Test
+    void slowThresholdPromotesLevelAndAddsMarker() {
+        testObject.slowWithMarker();
+        logs = listAppender.getList();
+        // Check for WARN level event
+        assertTrue(logs.stream().anyMatch(e -> e.getLevel() == org.apache.logging.log4j.Level.WARN), "Expected WARN due to threshold");
+        // Check for SLOW marker
+        assertTrue(logs.stream().anyMatch(e -> e.getMarker() != null && (e.getMarker().getName().contains("SLOW") || e.getMarker().isInstanceOf("SLOW"))),
+                "Expected SLOW marker on slow call");
+    }
+
+    @Test
     void callWithoutExecutionTime() {
         callAndAssert("callWithoutExecutionTime", testObject::methodWithoutTime,
                 logs -> assertFalse(logsContain("Time taken"), "Execution time should not be logged"));
@@ -363,4 +374,54 @@ class Log4j2LoggedEngineTest {
 
 
     }
+
+    @Test
+    void typeBasedRedactionMasksArg() {
+        java.util.UUID id = java.util.UUID.fromString("123e4567-e89b-12d3-a456-426614174000");
+        callAndAssert("typeBasedRedactionMasksArg",
+                () -> testObject.methodWithTypeRedaction(id),
+                logs -> {
+                    assertFalse(logsContain(id.toString()), "UUID should not be visible");
+                    assertTrue(logsContain("█"), "Mask should be present");
+                });
+    }
+
+    @Test
+    void patternBasedRedactionMasksArg() {
+        String cc = "4111111111111111"; // 16 digits
+        callAndAssert("patternBasedRedactionMasksArg",
+                () -> testObject.methodWithPatternRedaction(cc),
+                logs -> {
+                    assertFalse(logsContain("41111111"), "Digits should be redacted");
+                    assertTrue(logsContain("█"), "Mask should be present");
+                });
+    }
+
+    @Test
+    void maskedReturnHidesSensitiveData() {
+        callAndAssert("maskedReturnHidesSensitiveData",
+                () -> { testObject.methodWithMaskedReturn(); },
+                logs -> {
+                    assertFalse(logsContain("TopSecret"), "Return value should be redacted");
+                    assertTrue(logsContain("█"), "Mask should be present in return value");
+                    assertTrue(logsContain("returned with value"));
+                });
+    }
+
+    @Test
+    void multiplePatternRedactionMasksArgs() {
+        String cc = "4111111111111111"; // matches \\d{16}
+        String token = "Bearer TOKEN-1234"; // matches (?i)token
+        String other = "hello"; // should pass through
+
+        callAndAssert("multiplePatternRedactionMasksArgs",
+                () -> testObject.methodWithMultiplePatternRedaction(cc, token, other),
+                logs -> {
+                    assertFalse(logsContain("41111111"), "Digits should be redacted (anno-level)");
+                    assertFalse(logsContain("TOKEN-1234"), "Token should be redacted (anno-level)");
+                    assertTrue(logsContain("returned with value") || logsContain("List")); // lenient on mask encoding
+                    assertTrue(logsContain("other:hello") || logsContain("hello"), "Unmatched arg should be visible");
+                });
+    }
 }
+

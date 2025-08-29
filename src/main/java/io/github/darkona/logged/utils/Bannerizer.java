@@ -1,237 +1,357 @@
 package io.github.darkona.logged.utils;
 
+import io.github.darkona.logged.colors.ColorEnum;
+
 import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Map;
 
 /**
- * Utility class for creating styled console banners, ornaments, and centered text output.
- * <p>
- * The {@code Bannerizer} provides helper methods to:
- * </p>
- * <ul>
- *   <li>Create visually styled banners using box-drawing or ASCII characters</li>
- *   <li>Center strings, including those containing ANSI formatting codes</li>
- *   <li>Generate consistent ornaments and dividers</li>
- *
- *   <li>Strip ANSI color codes from strings</li>
- * </ul>
- * <p>
- * These methods are intended for use in CLI applications, log outputs, or development tools where readable,
- * decorated output improves UX or traceability.
- * </p>
- *
- * <p>Example usages:</p>
- * <pre>{@code
- * Bannerizer.bannerize("System Initialized", 40);
- * Bannerizer.center("Version 1.0", 30);
- * Bannerizer.ornament(20);
- * }</pre>
- *
- * <p>This class is stateless and all methods are static.</p>
+ * Utility class for creating styled console banners, ornaments, and centered text output
+ * with minimal CPU/GC overhead. Provides ASCII and UTF box-drawing skins, ANSI‑aware centering
+ * and a linear ANSI clearer.
  */
 @SuppressWarnings("unused")
 public class Bannerizer {
 
-    private static final String u_d_top_l = "╔";
-    private static final String u_d_top_r = "╗";
-    private static final String u_d_bot_l = "╚";
-    private static final String u_d_bot_r = "╝";
-    private static final String u_d_hor = "═";
-    private static final String u_d_ver = "║";
-    private static final String u_d_top_t = "╦";
-    private static final String u_d_bot_t = "╩";
-    private static final String u_d_left_t = "╠";
-    private static final String u_d_right_t = "╣";
-    private static final String u_d_cross = "╬";
+    // Skin for borders (ASCII / UTF box-drawing)
+    private record Skin(String topLeft, String topRight, String bottomLeft, String bottomRight,
+                        String horizontal, String vertical) {}
 
-    private static final String d_hor = "-";
-    private static final String d_ver = "|";
-    private static final String d_cross = "+";
+    private static final Skin ASCII = new Skin("+", "+", "+", "+", "-", "|");
+    private static final Skin UTF = new Skin("\u2554", "\u2557", "\u255A", "\u255D", "\u2550", "\u2551");
+
+    // Optional override for UTF detection; null => auto-detect from System.out
+    private static volatile Boolean forceUtf8 = null;
+    private static boolean supportsUtf8() {
+        return forceUtf8 != null ? forceUtf8 : StandardCharsets.UTF_8.equals(System.out.charset());
+    }
+    public static void overrideUtf8(Boolean useUtf8) { forceUtf8 = useUtf8; }
 
     private Bannerizer() {}
 
-    /**
-     * Centers a string within the given width, accounting for visible character length.
-     * <p>
-     * This method strips formatting codes (e.g., ANSI colors) from the input to determine its visual length,
-     * so the centering appears correct when printed to a terminal. The original formatted string is preserved
-     * in the output.
-     * </p>
-     *
-     * <p>Example:</p>
-     * <pre>
-     * center("Hello", 11) → "   Hello   "
-     * </pre>
-     *
-     * @param s     the string to center (may include formatting codes; may be {@code null})
-     * @param width the total width to center the string in
-     * @return the centered string, or an empty string if {@code s} is {@code null}
-     */
+    /** Creates an ornament line like ||=======|| */
+    public static String ornament(int width) {
+        return "||" + Transformer.fill("=", Math.max(0, width)) + "||";
+    }
+
+    /** Centers a single line (ANSI‑aware). */
     public static String center(String s, int width) {
         if (s == null) return "";
-        var msg = clearColor(s);
-        return specialCenter(s, msg, width);
-    }
-
-    /**
-     * Creates a decorative ornament line of the specified width, framed with double pipe symbols.
-     * <p>
-     * The resulting string has the form: {@code "||====...====||"}, where the number of {@code '='} characters
-     * is equal to the specified width.
-     * </p>
-     *
-     * <p>Example:</p>
-     * <pre>
-     * ornament(20) → "||====================||"
-     * </pre>
-     *
-     * @param width the number of {@code '='} characters to include between the framing pipes
-     * @return the formatted ornament string
-     */
-    public static String ornament(int width) {
-        return "||" + Transformer.fill("=", width) + "||";
-    }
-
-    /**
-     * Bannerize a string. Will make the string look like this if no UTF-8 is available:
-     * <pre>
-     *     +----------------◄►----------------+
-     *     |              String              |
-     *     +----------------◄►----------------+
-     * </pre>
-     * If UTF-8 is available, it will look like this:
-     * <pre>
-     *     ╔═════════════════◄►═══════════════╗
-     *     ║              String              ║
-     *     ╚═════════════════◄►═══════════════╝
-     *  </pre>
-     *
-     * @param color the color to use to paint the banner. Use ansi color codes.
-     * @param s     the string to bannerize
-     * @param width the width of the banner
-     * @return the string inside a banner
-     */
-    public static String bannerize(String color, String s, int width) {
-        return System.out.charset().equals(StandardCharsets.UTF_8) ?
-               bannerize(color, s, width, u_d_ver, u_d_hor, u_d_top_l, u_d_top_r, u_d_bot_l, u_d_bot_r, "◄", "►") :
-               bannerize(color, s, width, d_ver, d_hor, d_cross, d_cross, d_cross, d_cross, "◄", "►");
-    }
-
-    /**
-     * Formats a string as a centered banner block using either ASCII or UTF-8 box-drawing characters.
-     * <p>
-     * If UTF-8 characters are supported, the banner will use box-drawing characters for borders.
-     * Otherwise, it falls back to a plain ASCII-style layout.
-     * </p>
-     *
-     * <p>Example output (ASCII fallback):</p>
-     * <pre>
-     * +----------------◄►----------------+
-     * |              Hello               |
-     * +----------------◄►----------------+
-     * </pre>
-     *
-     * <p>Example output (UTF-8 mode):</p>
-     * <pre>
-     * ╔════════════════◄►════════════════╗
-     * ║              Hello               ║
-     * ╚════════════════◄►════════════════╝
-     * </pre>
-     *
-     * @param s     the string to bannerize
-     * @param width the total width of the banner, including padding and borders
-     * @return the formatted banner string
-     */
-    public static String bannerize(String s, int width) {
-        return bannerize("", s, width);
-    }
-
-    /**
-     * Creates a fully customized banner around the given string, allowing full control over layout characters, colors,
-     * and framing symbols. This method supports multi-line strings and adjusts centering based on visible characters
-     * (excluding ANSI or other formatting codes).
-     * <p>
-     * If the string's visible content is too wide for the given banner width, the original string is returned unmodified.
-     * </p>
-     *
-     * <p>Example (UTF-8 styled):</p>
-     * <pre>
-     * ╔════════════◄►════════════╗
-     * ║        Hello World       ║
-     * ╚════════════◄►════════════╝
-     * </pre>
-     *
-     * @param color      an optional ANSI color prefix to apply (can be empty if no color is desired)
-     * @param s          the string to bannerize (may include ANSI or formatting codes)
-     * @param width      total width of the banner (must be greater than string length + 4)
-     * @param vertical   the character to use for vertical borders (e.g. {@code │} or {@code |})
-     * @param horizontal the character to use for horizontal lines (e.g. {@code ─} or {@code -})
-     * @param topL       top-left corner character (e.g. {@code ╔} or {@code +})
-     * @param topR       top-right corner character
-     * @param botL       bottom-left corner character
-     * @param botR       bottom-right corner character
-     * @param centerL    character to display before the center marker (e.g. {@code ◄})
-     * @param centerR    character to display after the center marker (e.g. {@code ►})
-     * @return the full banner string, with borders and optional color codes, or the original string if it exceeds width
-     */
-    public static String bannerize(String color, String s, int width, String vertical, String horizontal, String topL, String topR, String botL, String botR, String centerL, String centerR) {
-        StringBuilder sb = new StringBuilder();
-        if (s == null) return "";
         var clean = clearColor(s);
-        if (clean.length() > width - 4) return s;
+        return specialCenter(s, clean, width);
+    }
 
-        var top = topL + Transformer.fill(horizontal, width / 2 - 2) + centerL + centerR + Transformer.fill(horizontal, width / 2 - 2) + topR;
-        var bottom = botL + Transformer.fill(horizontal, width / 2 - 2) + centerL + centerR + Transformer.fill(horizontal, width / 2 - 2) + botR;
+    /** Banner with color code prefix (may be empty), auto skin. */
+    public static String bannerize(String color, String s, int width) {
+        Skin skin = supportsUtf8() ? UTF : ASCII;
+        return bannerize(color, s, width, skin);
+    }
 
-        if (!color.isEmpty()) sb.append(color);
+    /** Banner overload using ColorEnum (applies as a prefix). */
+    public static String bannerize(ColorEnum color, String s, int width) {
+        return bannerize(color != null ? color.toString() : "", s, width);
+    }
 
-        sb.append(top).append(System.lineSeparator());
+    /** Banner with separate colors for border and text. */
+    public static String bannerize(ColorEnum bannerColor, ColorEnum textColor, String s, int width) {
+        String bc = bannerColor != null ? bannerColor.toString() : "";
+        String tc = textColor != null ? textColor.toString() : "";
+        Skin skin = currentSkin();
+        return bannerize(bc, tc, s, width, skin);
+    }
 
-        for (var line : s.split(System.lineSeparator())) {
-            sb.append(vertical).append(" ");
-            sb.append(specialCenter(line, clean, width - 2));
-            if (!color.isEmpty()) sb.append(color);
-            sb.append(vertical).append(" ");
-            sb.append(System.lineSeparator());
+    /** Banner without color. */
+    public static String bannerize(String s, int width) { return bannerize("", s, width); }
+
+    /** Centers lines to width without borders. */
+    public static String bannerize(String s, int width, boolean withBorder) {
+        if (withBorder) return bannerize(s, width);
+        if (s == null) return "";
+        var lines = splitLines(s);
+        var sb = new StringBuilder(s.length() + Math.max(0, lines.length * width));
+        for (String line : lines) {
+            var clean = clearColor(line);
+            if (clean.length() >= width) {
+                sb.append(line).append(System.lineSeparator());
+                continue;
+            }
+            int left = (width - clean.length()) / 2;
+            int right = width - clean.length() - left;
+            sb.append(Transformer.fill(" ", left)).append(line).append(Transformer.fill(" ", right)).append(System.lineSeparator());
+        }
+        return sb.toString().trim();
+    }
+
+    /**
+     * Core bannerizer using the provided skin. Preserves ANSI in the payload and centers per line
+     * based on visible (ANSI‑stripped) length. Returns the original text if any line exceeds width.
+     */
+    private static String bannerize(String color, String s, int width, Skin skin) {
+        if (s == null) return "";
+        int inner = Math.max(0, width - 2);
+        String[] lines = splitLines(s);
+        // Validate fit
+        for (String line : lines) {
+            if (clearColor(line).length() > inner) return s;
         }
 
-        sb.append(bottom);
+        StringBuilder sb = new StringBuilder(s.length() + Math.max(0, width * (lines.length + 2)));
+        if (!color.isEmpty()) sb.append(color);
+        // Top
+        sb.append(skin.topLeft).append(Transformer.fill(skin.horizontal, inner)).append(skin.topRight)
+          .append(System.lineSeparator());
+        // Lines
+        for (String line : lines) {
+            String clean = clearColor(line);
+            int left = (inner - clean.length()) / 2;
+            int right = inner - clean.length() - left;
+            sb.append(skin.vertical)
+              .append(Transformer.fill(" ", left)).append(line).append(Transformer.fill(" ", right))
+              .append(skin.vertical)
+              .append(System.lineSeparator());
+        }
+        // Bottom
+        sb.append(skin.bottomLeft).append(Transformer.fill(skin.horizontal, inner)).append(skin.bottomRight);
         if (!color.isEmpty()) sb.append(Colorizer.reset());
         return sb.toString();
     }
 
-    /**
-     * Centers a formatted string within a given width, using a "clean" version (without formatting codes)
-     * to accurately calculate visible length and padding.
-     * <p>
-     * This method is useful for aligning colored or decorated text in console output, where the visible length
-     * differs from the raw string due to ANSI escape codes or other formatting.
-     * </p>
-     *
-     * @param s     the original string (may contain formatting codes)
-     * @param clean the "clean" version of {@code s}, with formatting codes removed
-     * @param width the total width to center within
-     * @return the centered string with proper padding; or an empty string if {@code s} is {@code null}
-     */
+    // Banner with separate colors
+    private static String bannerize(String borderColor, String textColor, String s, int width, Skin skin) {
+        if (s == null) return "";
+        int inner = Math.max(0, width - 2);
+        String[] lines = splitLines(s);
+        for (String line : lines) if (clearColor(line).length() > inner) return s;
+        StringBuilder sb = new StringBuilder(s.length() + Math.max(0, width * (lines.length + 2)));
+        // Top
+        if (!borderColor.isEmpty()) sb.append(borderColor);
+        sb.append(skin.topLeft).append(Transformer.fill(skin.horizontal, inner)).append(skin.topRight);
+        if (!borderColor.isEmpty()) sb.append(Colorizer.reset());
+        sb.append(System.lineSeparator());
+        // Lines
+        for (String line : lines) {
+            String clean = clearColor(line);
+            int left = (inner - clean.length()) / 2;
+            int right = inner - clean.length() - left;
+            if (!borderColor.isEmpty()) sb.append(borderColor);
+            sb.append(skin.vertical);
+            if (!borderColor.isEmpty()) sb.append(Colorizer.reset());
+            if (!textColor.isEmpty()) sb.append(textColor);
+            sb.append(Transformer.fill(" ", left)).append(line).append(Transformer.fill(" ", right));
+            if (!textColor.isEmpty()) sb.append(Colorizer.reset());
+            if (!borderColor.isEmpty()) sb.append(borderColor);
+            sb.append(skin.vertical);
+            if (!borderColor.isEmpty()) sb.append(Colorizer.reset());
+            sb.append(System.lineSeparator());
+        }
+        // Bottom
+        if (!borderColor.isEmpty()) sb.append(borderColor);
+        sb.append(skin.bottomLeft).append(Transformer.fill(skin.horizontal, inner)).append(skin.bottomRight);
+        if (!borderColor.isEmpty()) sb.append(Colorizer.reset());
+        return sb.toString();
+    }
+
+    /** Centers ANSI‑formatted text using a pre‑cleaned visible version. */
     public static String specialCenter(String s, String clean, int width) {
         if (s == null) return "";
         if (width <= clean.length()) return s;
-        var half = (width - clean.length()) / 2;
-        var space = (clean.length() % 2 == 0) ? (0 != width % 2) ? half + 1 : half - 1 : half;
-        return Transformer.fill(" ", half) + s + Transformer.fill(" ", space);
+        int left = (width - clean.length()) / 2;
+        int right = width - clean.length() - left;
+        return Transformer.fill(" ", left) + s + Transformer.fill(" ", right);
     }
 
+    /** Linear ANSI clearer: removes CSI sequences ESC[ ... final‑byte. */
+    public static String clearColor(String s) {
+        if (s == null || s.isEmpty()) return "";
+        StringBuilder out = new StringBuilder(s.length());
+        int i = 0, n = s.length();
+        while (i < n) {
+            char ch = s.charAt(i);
+            if (ch == '\u001B' && (i + 1) < n && s.charAt(i + 1) == '[') { // CSI
+                i += 2;
+                while (i < n) {
+                    char c = s.charAt(i++);
+                    if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')) break; // final byte
+                }
+                continue;
+            }
+            out.append(ch);
+            i++;
+        }
+        return out.toString();
+    }
+
+    private static String[] splitLines(String s) { return s.split("\r?\n", -1); }
+
+    private static Skin currentSkin() { return supportsUtf8() ? UTF : ASCII; }
+
+    private static int visibleLen(String s) { return clearColor(s).length(); }
+
+    private static String padRight(String s, int width) {
+        int len = visibleLen(s);
+        if (len == width) return s;
+        if (len > width) return Transformer.truncate(clearColor(s), width);
+        return s + Transformer.fill(" ", width - len);
+    }
+
+    // ===== Table (Map) =====
 
     /**
-     * Removes ANSI color codes (escape sequences) from the given string.
-     * <p>
-     * This is useful for cleaning up log output or terminal strings that include color formatting,
-     * such as {@code \u001B[31m} for red or {@code \u001B[0m} to reset formatting.
-     * </p>
-     *
-     * @param s the string potentially containing ANSI color codes
-     * @return the cleaned string with all ANSI color codes removed
+     * Renders a 2-column table using current skin with headers and a map of key/value rows (no colors).
      */
-    public static String clearColor(String s) {
-        return s.replaceAll("\u001B\\[[\\d;]*[m;]", "");
+    public static String mapTablerize(String[] headers, Map<String, String> data, int width) {
+        return mapTablerize("", "", "", "", headers, data, width);
+    }
+
+    /**
+     * Renders a 2-column table using current skin with header color and per-column colors.
+     */
+    public static String mapTablerize(ColorEnum headerColor, ColorEnum col1Color, ColorEnum col2Color,
+                                      String[] headers, Map<String, String> data, int width) {
+        String hc = headerColor != null ? headerColor.toString() : "";
+        String c1 = col1Color != null ? col1Color.toString() : "";
+        String c2 = col2Color != null ? col2Color.toString() : "";
+        return mapTablerize(hc, c1, c2, "", headers, data, width);
+    }
+
+    /**
+     * Table with header color, column colors and border color.
+     */
+    public static String mapTablerize(ColorEnum headerColor, ColorEnum col1Color, ColorEnum col2Color, ColorEnum borderColor,
+                                      String[] headers, Map<String, String> data, int width) {
+        String hc = headerColor != null ? headerColor.toString() : "";
+        String c1 = col1Color != null ? col1Color.toString() : "";
+        String c2 = col2Color != null ? col2Color.toString() : "";
+        String bc = borderColor != null ? borderColor.toString() : "";
+        return mapTablerize(hc, c1, c2, bc, headers, data, width);
+    }
+
+    private static String mapTablerize(String headerColor, String col1Color, String col2Color, String borderColor,
+                                       String[] headers, Map<String, String> data, int width) {
+        Skin skin = currentSkin();
+        if (width < 6) return ""; // too small
+        int inner = Math.max(0, width - 2);
+        String h1 = (headers != null && headers.length > 0 && headers[0] != null) ? headers[0] : "Key";
+        String h2 = (headers != null && headers.length > 1 && headers[1] != null) ? headers[1] : "Value";
+
+        // compute available text width (two cells + 1 separator + 4 spaces)
+        int textAvail = Math.max(1, inner - 1 - 4);
+        int maxKey = visibleLen(h1);
+        int maxVal = visibleLen(h2);
+        if (data != null) {
+            for (var e : data.entrySet()) {
+                maxKey = Math.max(maxKey, visibleLen(e.getKey()));
+                maxVal = Math.max(maxVal, visibleLen(e.getValue()));
+            }
+        }
+        int left = Math.max(1, Math.min(textAvail / 2, maxKey));
+        int right = Math.max(1, textAvail - left);
+
+        StringBuilder sb = new StringBuilder(width * (2 + (data != null ? data.size() : 0)) + 64);
+        // Top border
+        if (!borderColor.isEmpty()) sb.append(borderColor);
+        sb.append(skin.topLeft).append(Transformer.fill(skin.horizontal, inner)).append(skin.topRight);
+        if (!borderColor.isEmpty()) sb.append(Colorizer.reset());
+        sb.append(System.lineSeparator());
+
+        // Header
+        if (!borderColor.isEmpty()) sb.append(borderColor);
+        sb.append(skin.vertical);
+        if (!borderColor.isEmpty()) sb.append(Colorizer.reset());
+        sb.append(' ');
+        if (!headerColor.isEmpty()) sb.append(headerColor);
+        sb.append(padRight(h1, left));
+        if (!headerColor.isEmpty()) sb.append(Colorizer.reset());
+        sb.append(' ');
+        if (!borderColor.isEmpty()) sb.append(borderColor);
+        sb.append(skin.vertical);
+        if (!borderColor.isEmpty()) sb.append(Colorizer.reset());
+        sb.append(' ');
+        if (!headerColor.isEmpty()) sb.append(headerColor);
+        sb.append(padRight(h2, right));
+        if (!headerColor.isEmpty()) sb.append(Colorizer.reset());
+        sb.append(' ');
+        if (!borderColor.isEmpty()) sb.append(borderColor);
+        sb.append(skin.vertical);
+        if (!borderColor.isEmpty()) sb.append(Colorizer.reset());
+        sb.append(System.lineSeparator());
+
+        // Header separator
+        if (!borderColor.isEmpty()) sb.append(borderColor);
+        sb.append(skin.vertical).append(Transformer.fill(skin.horizontal, inner)).append(skin.vertical);
+        if (!borderColor.isEmpty()) sb.append(Colorizer.reset());
+        sb.append(System.lineSeparator());
+
+        // Rows
+        if (data != null) {
+            for (var e : data.entrySet()) {
+                if (!borderColor.isEmpty()) sb.append(borderColor);
+                sb.append(skin.vertical);
+                if (!borderColor.isEmpty()) sb.append(Colorizer.reset());
+                sb.append(' ');
+                if (col1Color != null && !col1Color.isEmpty()) sb.append(col1Color);
+                sb.append(padRight(e.getKey(), left));
+                if (col1Color != null && !col1Color.isEmpty()) sb.append(Colorizer.reset());
+                sb.append(' ');
+                if (!borderColor.isEmpty()) sb.append(borderColor);
+                sb.append(skin.vertical);
+                if (!borderColor.isEmpty()) sb.append(Colorizer.reset());
+                sb.append(' ');
+                if (col2Color != null && !col2Color.isEmpty()) sb.append(col2Color);
+                sb.append(padRight(e.getValue(), right));
+                if (col2Color != null && !col2Color.isEmpty()) sb.append(Colorizer.reset());
+                sb.append(' ');
+                if (!borderColor.isEmpty()) sb.append(borderColor);
+                sb.append(skin.vertical);
+                if (!borderColor.isEmpty()) sb.append(Colorizer.reset());
+                sb.append(System.lineSeparator());
+            }
+        }
+
+        // Bottom border
+        if (!borderColor.isEmpty()) sb.append(borderColor);
+        sb.append(skin.bottomLeft).append(Transformer.fill(skin.horizontal, inner)).append(skin.bottomRight);
+        if (!borderColor.isEmpty()) sb.append(Colorizer.reset());
+        return sb.toString();
+    }
+
+    // ===== Menus =====
+
+    /** Simple menu (numbered) with current skin and no colors. */
+    public static String menu(List<String> items, int width) {
+        return menu(null, null, items, width);
+    }
+
+    /** Colorized menu: number color and item color (optional). */
+    public static String menu(ColorEnum numberColor, ColorEnum itemColor, List<String> items, int width) {
+        Skin skin = currentSkin();
+        if (items == null || items.isEmpty()) return "";
+        int inner = Math.max(0, width - 2);
+        int idxWidth = String.valueOf(items.size()).length() + 2; // e.g., "12) "
+        int textWidth = Math.max(1, inner - idxWidth);
+        String ncol = numberColor != null ? numberColor.toString() : "";
+        String icol = itemColor != null ? itemColor.toString() : "";
+
+        StringBuilder sb = new StringBuilder(width * (items.size() + 2));
+        sb.append(skin.topLeft).append(Transformer.fill(skin.horizontal, inner)).append(skin.topRight)
+          .append(System.lineSeparator());
+        for (int i = 0; i < items.size(); i++) {
+            String num = (i + 1) + ") ";
+            String text = items.get(i) != null ? items.get(i) : "";
+            // Build line
+            sb.append(skin.vertical);
+            // number
+            if (!ncol.isEmpty()) sb.append(ncol);
+            sb.append(padRight(num, idxWidth));
+            if (!ncol.isEmpty()) sb.append(Colorizer.reset());
+            // item
+            if (!icol.isEmpty()) sb.append(icol);
+            sb.append(padRight(text, textWidth));
+            if (!icol.isEmpty()) sb.append(Colorizer.reset());
+            sb.append(skin.vertical).append(System.lineSeparator());
+        }
+        sb.append(skin.bottomLeft).append(Transformer.fill(skin.horizontal, inner)).append(skin.bottomRight);
+        return sb.toString();
     }
 }

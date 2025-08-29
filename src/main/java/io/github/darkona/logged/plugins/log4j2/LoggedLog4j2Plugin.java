@@ -9,6 +9,9 @@ import org.apache.logging.log4j.core.appender.AbstractAppender;
 import org.aspectj.lang.ProceedingJoinPoint;
 
 
+/**
+ * Log4j2 integration plugin for @Logged. Wires marker-based filters on startup.
+ */
 public class LoggedLog4j2Plugin implements LoggedPlugin {
 
     private final LoggedLog4j2PluginProperties props;
@@ -20,19 +23,13 @@ public class LoggedLog4j2Plugin implements LoggedPlugin {
     }
 
     @Override
-    public void onCall(ProceedingJoinPoint pjp, Data data, Logged options) {
-
-    }
+    public void onCall(ProceedingJoinPoint pjp, Data data, Logged options) { }
 
     @Override
-    public void onReturn(ProceedingJoinPoint pjp, Data data, Logged options) {
-
-    }
+    public void onReturn(ProceedingJoinPoint pjp, Data data, Logged options) { }
 
     @Override
-    public void onException(ProceedingJoinPoint pjp, Data data, Logged options, Throwable exception) {
-
-    }
+    public void onException(ProceedingJoinPoint pjp, Data data, Logged options, Throwable exception) { }
 
     @Override
     public String announceLoad() {

@@ -27,10 +27,14 @@ import java.util.Deque;
 import java.util.List;
 
 /**
+ * OpenTelemetry plugin for @Logged.
+ * Creates INTERNAL spans and adds basic code/args metadata; respects enablement.
+ */
+/*
  * OpenTelemetry plugin for {@code @Logged} that creates a new {@link io.opentelemetry.api.trace.Span}
  * for each intercepted method invocation and enriches it with code, call-depth and argument metadata.
- * <p>
- * <strong>Behavior</strong>
+ *
+ * Behavior
  * <ul>
  *   <li><b>onCall</b>: builds and starts an INTERNAL span named
  *       {@code <code.namespace>#<code.function>} using the current context as parent.
@@ -140,7 +144,7 @@ public class LoggedOpenTelemetryPlugin implements LoggedPlugin {
     @Override
     public void afterMethod() {
         if (props.isAddToMdc()) {
-            MDC.remove("spanId");
+            MDC.remove(props.getMdcKey());
         }
     }
 

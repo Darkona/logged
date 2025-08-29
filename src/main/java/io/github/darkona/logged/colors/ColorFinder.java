@@ -1,6 +1,7 @@
 package io.github.darkona.logged.colors;
 
 import java.util.List;
+import java.util.Locale;
 
 
 public class ColorFinder {
@@ -26,6 +27,19 @@ public class ColorFinder {
 
         final String raw = c.trim();
         if (raw.isEmpty()) return BasicColor.BLACK;
+
+        // 0) Try hex #RRGGBB (or RRGGBB)
+        String hex = raw.startsWith("#") ? raw.substring(1) : raw;
+        if (hex.length() == 6 && hex.chars().allMatch(ch -> Character.digit(ch, 16) >= 0)) {
+            try {
+                short r = (short) Integer.parseInt(hex.substring(0, 2), 16);
+                short g = (short) Integer.parseInt(hex.substring(2, 4), 16);
+                short b = (short) Integer.parseInt(hex.substring(4, 6), 16);
+                return new HexColor(r, g, b);
+            } catch (Exception ignored) {
+                // fall through
+            }
+        }
 
         // Normalize: case-insensitive; spaces/hyphens -> underscores
         final String normalized = raw.toUpperCase()
@@ -67,4 +81,14 @@ public class ColorFinder {
         }
         return null;
     }
+}
+
+/** Lightweight ColorEnum implementation for hex-based colors */
+final class HexColor implements ColorEnum {
+    private final short r, g, b;
+    HexColor(short r, short g, short b) { this.r = r; this.g = g; this.b = b; }
+    @Override public String toString() { return assemble(r, g, b); }
+    @Override public Short red() { return r; }
+    @Override public Short green() { return g; }
+    @Override public Short blue() { return b; }
 }

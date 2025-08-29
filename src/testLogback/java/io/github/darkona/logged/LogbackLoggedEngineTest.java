@@ -182,6 +182,15 @@ class LogbackLoggedEngineTest {
     }
 
     @Test
+    void slowThresholdPromotesLevelAndAddsMarker() {
+        logbackTestObject.slowWithMarker();
+        logs = listAppender.list;
+        Assertions.assertTrue(logs.stream().anyMatch(e -> e.getLevel() == Level.WARN), "Expected a WARN event due to threshold");
+        Assertions.assertTrue(logs.stream().anyMatch(e -> e.getMarkerList() != null && e.getMarkerList().stream().anyMatch(m -> m.contains("SLOW"))),
+                "Expected SLOW marker on slow call");
+    }
+
+    @Test
     void callWithoutExecutionTime() {
         callAndAssert("callWithoutExecutionTime", logbackTestObject::methodWithoutTime, logs -> Assertions.assertFalse(logsContain("Time taken"), "Execution time should not be logged"));
     }
@@ -319,5 +328,79 @@ class LogbackLoggedEngineTest {
         assertTrue(mdcFilter.isPresent());
     }
 
+
+    @Test
+    void typeBasedRedactionMasksArg() {
+        java.util.UUID id = java.util.UUID.fromString("123e4567-e89b-12d3-a456-426614174000");
+        callAndAssert("typeBasedRedactionMasksArg",
+                () -> logbackTestObject.methodWithTypeRedaction(id),
+                logs -> {
+                    Assertions.assertFalse(logsContain(id.toString()), "UUID should not be visible");
+                    Assertions.assertTrue(logsContain(props.getRedactMask()), "Mask should be present");
+                });
+    }
+
+    @Test
+    void patternBasedRedactionMasksArg() {
+        String cc = "4111111111111111"; // 16 digits
+        callAndAssert("patternBasedRedactionMasksArg",
+                () -> logbackTestObject.methodWithPatternRedaction(cc),
+                logs -> {
+                    Assertions.assertFalse(logsContain("41111111"), "Digits should be redacted");
+                    Assertions.assertTrue(logsContain(props.getRedactMask()), "Mask should be present");
+                });
+    }
+
+    @Test
+    void maskedReturnHidesSensitiveData() {
+        callAndAssert("maskedReturnHidesSensitiveData",
+                () -> {
+                    //noinspection ResultOfMethodCallIgnored
+                    logbackTestObject.methodWithMaskedReturn();
+                },
+                logs -> {
+                    Assertions.assertFalse(logsContain("TopSecret"), "Return value should be redacted");
+                    Assertions.assertTrue(logsContain(props.getRedactMask()), "Mask should be present in return value");
+                    Assertions.assertTrue(logsContain("returned with value"));
+                });
+    }
+
+    @Test
+    void globalTypeRedactionMasksArg() {
+        java.util.UUID id = java.util.UUID.fromString("123e4567-e89b-12d3-a456-426614174000");
+        callAndAssert("globalTypeRedactionMasksArg",
+                () -> logbackTestObject.plainTypeRedaction(id),
+                logs -> {
+                    Assertions.assertFalse(logsContain(id.toString()), "UUID should not be visible (global)");
+                    Assertions.assertTrue(logsContain(props.getRedactMask()), "Mask should be present (global)");
+                });
+    }
+
+    @Test
+    void globalPatternRedactionMasksArg() {
+        String cc = "4111111111111111"; // 16 digits
+        callAndAssert("globalPatternRedactionMasksArg",
+                () -> logbackTestObject.plainPatternRedaction(cc),
+                logs -> {
+                    Assertions.assertFalse(logsContain("41111111"), "Digits should be redacted (global)");
+                    Assertions.assertTrue(logsContain(props.getRedactMask()), "Mask should be present (global)");
+                });
+    }
+
+    @Test
+    void multiplePatternRedactionMasksArgs() {
+        String cc = "4111111111111111"; // matches \\d{16}
+        String token = "Bearer TOKEN-1234"; // matches (?i)token
+        String other = "hello"; // should pass through
+
+        callAndAssert("multiplePatternRedactionMasksArgs",
+                () -> logbackTestObject.methodWithMultiplePatternRedaction(cc, token, other),
+                logs -> {
+                    Assertions.assertFalse(logsContain("41111111"), "Digits should be redacted (anno-level)");
+                    Assertions.assertFalse(logsContain("TOKEN-1234"), "Token should be redacted (anno-level)");
+                    Assertions.assertTrue(logsContain(props.getRedactMask()), "Mask should be present");
+                    Assertions.assertTrue(logsContain("other:hello") || logsContain("hello"), "Unmatched arg should be visible");
+                });
+    }
 
 }

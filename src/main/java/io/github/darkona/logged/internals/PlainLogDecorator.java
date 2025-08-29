@@ -94,6 +94,11 @@ public class PlainLogDecorator implements LogDecorator {
     }
 
     @Override
+    public String customBg(int red, int green, int blue, String s) {
+        return s;
+    }
+
+    @Override
     public String custom(ColorEnum color, String s) {
         return s;
     }

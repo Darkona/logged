@@ -16,6 +16,9 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Iterator;
 
+/**
+ * Logback integration plugin for @Logged. Wires marker-based filters on startup.
+ */
 public class LoggedLogbackPlugin implements LoggedPlugin {
 
     private final LoggedLogbackProperties props;
@@ -27,19 +30,13 @@ public class LoggedLogbackPlugin implements LoggedPlugin {
     }
 
     @Override
-    public void onCall(ProceedingJoinPoint pjp, Data data, Logged options) {
-
-    }
+    public void onCall(ProceedingJoinPoint pjp, Data data, Logged options) { }
 
     @Override
-    public void onReturn(ProceedingJoinPoint pjp, Data data, Logged options) {
-
-    }
+    public void onReturn(ProceedingJoinPoint pjp, Data data, Logged options) { }
 
     @Override
-    public void onException(ProceedingJoinPoint pjp, Data data, Logged options, Throwable exception) {
-
-    }
+    public void onException(ProceedingJoinPoint pjp, Data data, Logged options, Throwable exception) { }
 
     @Override
     public String announceLoad() {
@@ -52,9 +49,7 @@ public class LoggedLogbackPlugin implements LoggedPlugin {
     }
 
     @Override
-    public void afterMethod() {
-
-    }
+    public void afterMethod() { }
 
     private void wireFilters() {
 
