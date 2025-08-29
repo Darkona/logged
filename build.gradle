@@ -240,3 +240,44 @@ tasks.named('test', Test) {
     useJUnitPlatform()
 }
 
+
+// --- README version sync helpers ---
+tasks.register('updateReadmeVersion') {
+    group = 'release'
+    description = 'Sync README.md dependency snippets to project.version'
+    doLast {
+        def v = project.version.toString()
+        def f = file('README.md')
+        if (!f.exists()) return
+        def t = f.getText('UTF-8')
+        def updated = t
+                // Gradle snippet: io.github.darkona:logged:x.y.z
+                .replaceAll(/io\.github\.darkona:logged:[0-9A-Za-z.\-]+/, "io.github.darkona:logged:${v}")
+                // Maven snippet: <artifactId>logged</artifactId> ... <version>x.y.z</version>
+                .replaceAll(/(?s)(<artifactId>logged<\/artifactId>.*?<version>)([^<]+)(<\/version>)/, '$1' + v + '$3')
+
+        if (updated != t) {
+            f.setText(updated, 'UTF-8')
+            println "README.md updated to version ${v}"
+        } else {
+            println "README.md already at ${v}"
+        }
+    }
+}
+
+tasks.register('checkReadmeVersion') {
+    group = 'verification'
+    description = 'Verify README.md uses the current project.version'
+    doLast {
+        def v = java.util.regex.Pattern.quote(project.version.toString())
+        def readme = file('README.md').getText('UTF-8')
+        def mvnOk = (readme =~ /(?s)<artifactId>logged<\/artifactId>.*?<version>${v}<\/version>/).find()
+        def gradleOk = (readme =~ /io\.github\.darkona:logged:${v}/).find()
+        if (!mvnOk || !gradleOk) {
+            throw new GradleException("README.md version mismatch. Run :updateReadmeVersion")
+        }
+    }
+}
+
+// Guard on CI/local checks
+tasks.named('check').configure { dependsOn 'checkReadmeVersion' }
