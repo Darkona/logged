@@ -9,7 +9,7 @@ import org.slf4j.Marker;
 
 @Setter
 @RequiredArgsConstructor
-public class MarkerFilter extends Filter<ILoggingEvent> {
+public class LogbackMarkerFilter extends Filter<ILoggingEvent> {
 
 
     private final String name;
@@ -23,5 +23,6 @@ public class MarkerFilter extends Filter<ILoggingEvent> {
                     .map(Marker::getName)
                     .anyMatch(markerName -> markerName.equals(name)) ? onMatch : onMismatch;
     }
+
 
 }

@@ -61,7 +61,7 @@ public class TestObject {
     @Logged(argValues = Logged.Values.NULL)
     public void methodWithNullArgValues(String nonNull, String maybeNull) {
         if (maybeNull == null) {
-            System.out.println(deco.bannerize("Received a null parameter" + nonNull,50));
+            System.out.println(deco.bannerize("Received a null parameter" + nonNull, 50));
         }
     }
 
@@ -87,7 +87,7 @@ public class TestObject {
 
     @Logged(argValues = Logged.Values.NONE)
     public void methodWithArgValuesNone(String stringArgument) {
-        System.out.println(deco.bannerize("Arg value is ignored: " + stringArgument,50));
+        System.out.println(deco.bannerize("Arg value is ignored: " + stringArgument, 50));
     }
 
     @Logged
@@ -117,7 +117,7 @@ public class TestObject {
     }
 
     @Logged(markers = "slf4j")
-    public String methodWithMarker(){
+    public String methodWithMarker() {
         return "Method with marker";
     }
 

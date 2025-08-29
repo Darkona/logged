@@ -4,9 +4,10 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
-import io.github.darkona.logged.plugins.logback.MarkerFilter;
+import io.github.darkona.logged.plugins.logback.LogbackMarkerFilter;
 import io.github.darkona.logged.plugins.slf4j.LoggedSlf4jProperties;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -15,6 +16,7 @@ import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.util.Arrays;
 import java.util.List;
@@ -23,22 +25,23 @@ import java.util.function.Consumer;
 import static io.github.darkona.logged.plugins.logback.LoggedLogbackPlugin.findInAttachable;
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest(classes = TestBootConfig.class)
+@SpringBootTest(classes = LogbackBootConfig.class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@ActiveProfiles("logback")
 class LogbackLoggedEngineTest {
 
     @Autowired
-    private TestObject testObject;
+    private LogbackTestObject logbackTestObject;
 
     private ListAppender<ILoggingEvent> listAppender;
     private List<ILoggingEvent> logs;
-    Logger logger = (Logger) LoggerFactory.getLogger(TestObject.class);
+    Logger logger = (Logger) LoggerFactory.getLogger(LogbackTestObject.class);
 
     @Autowired
     private ApplicationContext context;
 
     @Autowired
-    private LoggedSlf4jProperties slof4jProps;
+    private LoggedSlf4jProperties slof4JProps;
 
     @Autowired
     private LoggedProperties props;
@@ -72,9 +75,9 @@ class LogbackLoggedEngineTest {
                                    .filter(name -> name.toLowerCase().contains("loggedengine"))
                                    .findFirst()
                                    .orElse(null);
-        assertNotNull(matchedBean);
-        assertTrue(foundBean("loggedEngine"));
-        assertTrue(foundBean("springAspect"));
+        Assertions.assertNotNull(matchedBean);
+        Assertions.assertTrue(foundBean("loggedEngine"));
+        Assertions.assertTrue(foundBean("springAspect"));
 
         System.out.println("Found LoggedAspect bean: " + matchedBean);
     }
@@ -85,8 +88,8 @@ class LogbackLoggedEngineTest {
                                    .filter(name -> name.toLowerCase().contains("loggedslf4jplugin"))
                                    .findFirst()
                                    .orElse(null);
-        assertNotNull(matchedBean);
-        assertTrue(foundBean("loggedSlf4jPlugin"));
+        Assertions.assertNotNull(matchedBean);
+        Assertions.assertTrue(foundBean("loggedSlf4jPlugin"));
 
         System.out.println("Found Slf4j Plugin bean: " + matchedBean);
     }
@@ -97,8 +100,8 @@ class LogbackLoggedEngineTest {
                                    .filter(name -> name.toLowerCase().contains("loggedmdcplugin"))
                                    .findFirst()
                                    .orElse(null);
-        assertNotNull(matchedBean);
-        assertTrue(foundBean("loggedMdcPlugin"));
+        Assertions.assertNotNull(matchedBean);
+        Assertions.assertTrue(foundBean("loggedMdcPlugin"));
 
         System.out.println("Found MDC Plugin bean: " + matchedBean);
     }
@@ -109,8 +112,8 @@ class LogbackLoggedEngineTest {
                                    .filter(name -> name.toLowerCase().contains("loggedopentelemetryplugin"))
                                    .findFirst()
                                    .orElse(null);
-        assertNotNull(matchedBean);
-        assertTrue(foundBean("loggedOpenTelemetryPlugin"));
+        Assertions.assertNotNull(matchedBean);
+        Assertions.assertTrue(foundBean("loggedOpenTelemetryPlugin"));
 
         System.out.println("Found Slf4j Plugin bean: " + matchedBean);
     }
@@ -121,20 +124,20 @@ class LogbackLoggedEngineTest {
                                    .filter(name -> name.toLowerCase().contains("loggedlogbackplugin"))
                                    .findFirst()
                                    .orElse(null);
-        assertNotNull(matchedBean);
-        assertTrue(foundBean("loggedLogbackPlugin"));
+        Assertions.assertNotNull(matchedBean);
+        Assertions.assertTrue(foundBean("loggedLogbackPlugin"));
 
         System.out.println("Found Slf4j Plugin bean: " + matchedBean);
     }
     @Test
     void shouldBeProxied() {
-        System.out.println("TestObject class: " + testObject.getClass());
+        System.out.println("TestObject class: " + logbackTestObject.getClass());
     }
 
     private void callAndAssert(String methodName, Runnable methodCall, Consumer<List<ILoggingEvent>> assertions) {
         methodCall.run();
         logs = listAppender.list;
-        assertFalse(logs.isEmpty(), methodName + ": logs should not be empty");
+        Assertions.assertFalse(logs.isEmpty(), methodName + ": logs should not be empty");
         assertions.accept(logs);
     }
 
@@ -151,18 +154,18 @@ class LogbackLoggedEngineTest {
 
     private void assertMessageContains(String expected) {
         System.out.println("Expected: " + expected);
-        assertTrue(logsContain(expected), "Expected log message to contain: " + expected);
+        Assertions.assertTrue(logsContain(expected), "Expected log message to contain: " + expected);
     }
 
     @Test
     void colorIsOn(){
-        assertTrue(props.isColor());
-        assertTrue(slof4jProps.isColor());
+        Assertions.assertTrue(props.isColor());
+        Assertions.assertTrue(slof4JProps.isColor());
     }
 
     @Test
     void callWithArgs() {
-        callAndAssert("callWithArgs", () -> testObject.methodWithArgs("hello", 42), logs -> {
+        callAndAssert("callWithArgs", () -> logbackTestObject.methodWithArgs("hello", 42), logs -> {
             assertMessageContains("hello");
             assertMessageContains("42");
         });
@@ -170,77 +173,77 @@ class LogbackLoggedEngineTest {
 
     @Test
     void callWithoutArgs() {
-        callAndAssert("callWithoutArgs", testObject::methodWithoutArgs, logs -> assertFalse(logsContain("argValues"), "Args should not be present in log"));
+        callAndAssert("callWithoutArgs", logbackTestObject::methodWithoutArgs, logs -> Assertions.assertFalse(logsContain("argValues"), "Args should not be present in log"));
     }
 
     @Test
     void callWithExecutionTime() {
-        callAndAssert("callWithExecutionTime", testObject::methodWithTime, logs -> assertMessageContains("Time taken"));
+        callAndAssert("callWithExecutionTime", logbackTestObject::methodWithTime, logs -> assertMessageContains("Time taken"));
     }
 
     @Test
     void callWithoutExecutionTime() {
-        callAndAssert("callWithoutExecutionTime", testObject::methodWithoutTime, logs -> assertFalse(logsContain("Time taken"), "Execution time should not be logged"));
+        callAndAssert("callWithoutExecutionTime", logbackTestObject::methodWithoutTime, logs -> Assertions.assertFalse(logsContain("Time taken"), "Execution time should not be logged"));
     }
 
     @Test
     void callWithNullReturnValue() {
-        callAndAssert("callWithNullReturnValue", testObject::methodReturnsNull, logs -> assertMessageContains("returned with value: null"));
+        callAndAssert("callWithNullReturnValue", logbackTestObject::methodReturnsNull, logs -> assertMessageContains("returned with value: null"));
     }
 
     @Test
     void callWithoutReturnValue() {
-        callAndAssert("callWithoutReturnValue", testObject::methodWithoutReturnLogging, logs -> assertFalse(logsContain("returned with value"), "Return value should not be logged"));
+        callAndAssert("callWithoutReturnValue", logbackTestObject::methodWithoutReturnLogging, logs -> Assertions.assertFalse(logsContain("returned with value"), "Return value should not be logged"));
     }
 
     @Test
     void callWithReturnValueNullOnly() {
-        callAndAssert("callWithReturnValueNullOnly", testObject::methodReturnsNullOnlyWhenNull, logs -> assertMessageContains("returned with value: null"));
+        callAndAssert("callWithReturnValueNullOnly", logbackTestObject::methodReturnsNullOnlyWhenNull, logs -> assertMessageContains("returned with value: null"));
 
     }
 
     @Test
     void callWithReturnValueNullOnlyNonNull() {
-        callAndAssert("callWithReturnValueNullOnlyNonNull", testObject::methodReturnsNonNullSuppressed, logs -> assertFalse(logsContain("with value:"), "Return value should not be logged when non-null and returnValue = NULL"));
+        callAndAssert("callWithReturnValueNullOnlyNonNull", logbackTestObject::methodReturnsNonNullSuppressed, logs -> Assertions.assertFalse(logsContain("with value:"), "Return value should not be logged when non-null and returnValue = NULL"));
     }
 
     @Test
     void callWithArgValuesNullOnly() {
-        callAndAssert("callWithArgValuesNullOnly", () -> testObject.methodWithNullArgValues("test", null), logs -> {
-            assertFalse(logsContain("test"), "Non-null argument should not be logged");
-            assertTrue(logsContain("null"), "Null argument should be logged");
+        callAndAssert("callWithArgValuesNullOnly", () -> logbackTestObject.methodWithNullArgValues("test", null), logs -> {
+            Assertions.assertFalse(logsContain("test"), "Non-null argument should not be logged");
+            Assertions.assertTrue(logsContain("null"), "Null argument should be logged");
         });
     }
 
     @Test
     void callWithException() {
-        Exception ex = assertThrows(RuntimeException.class, testObject::methodThatThrows);
-        assertTrue(ex.getMessage().contains("kaboom"));
+        Exception ex = Assertions.assertThrows(RuntimeException.class, logbackTestObject::methodThatThrows);
+        Assertions.assertTrue(ex.getMessage().contains("kaboom"));
         logs = listAppender.list;
         assertMessageContains("kaboom");
     }
 
     @Test
     void callWithExceptionAndStacktrace() {
-        Exception ex = assertThrows(RuntimeException.class, testObject::methodThatThrowsWithStacktrace);
-        assertTrue( ex.getMessage().contains("boom"));
+        Exception ex = Assertions.assertThrows(RuntimeException.class, logbackTestObject::methodThatThrowsWithStacktrace);
+        Assertions.assertTrue( ex.getMessage().contains("boom"));
         logs = listAppender.list;
         assertMessageContains("threw a");
-        assertTrue(logs.stream().anyMatch(e -> e.getFormattedMessage().contains("at")), "Expected stack trace in logs");
+        Assertions.assertTrue(logs.stream().anyMatch(e -> e.getFormattedMessage().contains("at")), "Expected stack trace in logs");
     }
 
     @Test
     void callWithExceptionWithoutLogging() {
-        Exception ex = assertThrows(RuntimeException.class, testObject::methodThatThrowsNoLogging);
-        assertEquals("silent fail", ex.getMessage());
+        Exception ex = Assertions.assertThrows(RuntimeException.class, logbackTestObject::methodThatThrowsNoLogging);
+        Assertions.assertEquals("silent fail", ex.getMessage());
         logs = listAppender.list;
-        assertFalse(logsContain("threw a"), "Exception should not be logged");
+        Assertions.assertFalse(logsContain("threw a"), "Exception should not be logged");
         System.out.println(logs);
     }
 
     @Test
     void callWithCustomMessages() {
-        callAndAssert("callWithCustomMessages", testObject::methodWithCustomMessages, logs -> {
+        callAndAssert("callWithCustomMessages", logbackTestObject::methodWithCustomMessages, logs -> {
             assertMessageContains("🧪 calling method");
             assertMessageContains("✅ method done");
         });
@@ -248,12 +251,12 @@ class LogbackLoggedEngineTest {
 
     @Test
     void callWithArgValuesNone() {
-        callAndAssert("callWithArgValuesNone", () -> testObject.methodWithArgValuesNone("something"), logs -> assertFalse(logsContain("something"), "Argument value should not be present"));
+        callAndAssert("callWithArgValuesNone", () -> logbackTestObject.methodWithArgValuesNone("something"), logs -> Assertions.assertFalse(logsContain("something"), "Argument value should not be present"));
     }
 
     @Test
     void callWithDefaults() {
-        callAndAssert("callWithDefaults", () -> testObject.methodWithDefaults("Elephant"), logs -> {
+        callAndAssert("callWithDefaults", () -> logbackTestObject.methodWithDefaults("Elephant"), logs -> {
             assertMessageContains("called with args");
             assertMessageContains("[(String)stringArgument:Elephant]");
             assertMessageContains("returned with value");
@@ -266,56 +269,52 @@ class LogbackLoggedEngineTest {
 
     @Test
     void callWithCustomCallMsg() {
-        callAndAssert("customOnCall", testObject::customOnCall, logs -> assertMessageContains("Entering customOnCall"));
+        callAndAssert("customOnCall", logbackTestObject::customOnCall, logs -> assertMessageContains("Entering customOnCall"));
     }
 
     @Test
     void callWithCustomReturnMsg() {
-        callAndAssert("customOnReturn", testObject::customOnReturn, logs -> assertMessageContains("Returned from method customOnReturn"));
+        callAndAssert("customOnReturn", logbackTestObject::customOnReturn, logs -> assertMessageContains("Returned from method customOnReturn"));
     }
 
     @Test
     void callWithCustomExceptionMsg() {
-        Exception ex = assertThrows(RuntimeException.class, testObject::customExceptionMsg);
-        assertTrue( ex.getMessage().contains("oh no"));
+        Exception ex = Assertions.assertThrows(RuntimeException.class, logbackTestObject::customExceptionMsg);
+        Assertions.assertTrue( ex.getMessage().contains("oh no"));
         logs = listAppender.list;
-        assertTrue(logsContain("Something bad happened: oh no"), "oh no");
+        Assertions.assertTrue(logsContain("Something bad happened: oh no"), "oh no");
     }
 
     @Test
     void callWithRedactedArgs() {
         callAndAssert("methodWithRedactedArgs",
-                () -> testObject.methodWithRedactedArgs("Important Name", "Chicken", "Credit Card Number"),
+                () -> logbackTestObject.methodWithRedactedArgs("Important Name", "Chicken", "Credit Card Number"),
                 logs -> assertMessageContains("[(String)arg1:█████, (String)arg2:Chicken, (String)arg3:█████]"));
     }
 
     @Test
     void callWithMarker(){
-        testObject.methodWithMarker();
+        logbackTestObject.methodWithMarker();
         logs = listAppender.list;
-        assertFalse(logs.isEmpty(), "methodWithMarker: logs should not be empty");
-        assertTrue(logs.stream().anyMatch(log -> log.getMarkerList().stream().anyMatch(c -> c.contains("slf4j"))));
+        Assertions.assertFalse(logs.isEmpty(), "methodWithMarker: logs should not be empty");
+        Assertions.assertTrue(logs.stream().anyMatch(log -> log.getMarkerList().stream().anyMatch(c -> c.contains("slf4j"))));
     }
 
     @Test
     void callWithMarkerNoConsole(){
         var rootLogger = (Logger) LoggerFactory.getLogger("ROOT");
 
-
         var console = findInAttachable(rootLogger, "CONSOLE");
-        assertNotNull(console);
+        Assertions.assertNotNull(console);
 
-        testObject.methodWithMarkerNoConsole("Wombat", 13);
+        logbackTestObject.methodWithMarkerNoConsole("Wombat", 13);
         logs = listAppender.list;
 
-        assertTrue(logs.stream().anyMatch(log -> log.getMarkerList().stream().anyMatch(c -> c.contains("NO_CONSOLE"))));
+        Assertions.assertTrue(logs.stream().anyMatch(log -> log.getMarkerList().stream().anyMatch(c -> c.contains("NO_CONSOLE"))));
 
         var consoleFiltersList = console.getCopyOfAttachedFiltersList();
 
-
-        var mdcFilter = consoleFiltersList.stream().filter(filter -> filter instanceof MarkerFilter).findFirst();
-
-
+        var mdcFilter = consoleFiltersList.stream().filter(filter -> filter instanceof LogbackMarkerFilter).findFirst();
 
         assertTrue(mdcFilter.isPresent());
     }

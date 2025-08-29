@@ -56,7 +56,7 @@ public class LoggedLogbackPlugin implements LoggedPlugin {
 
     }
 
-    public void wireFilters() {
+    private void wireFilters() {
 
         if(!props.isEnabled()) return;
 
@@ -69,7 +69,7 @@ public class LoggedLogbackPlugin implements LoggedPlugin {
 
             if(app instanceof FilterAttachable<ILoggingEvent> appender) {
 
-                var filter = new MarkerFilter(marker.getName(), marker.getOnMatch(), marker.getOnMismatch());
+                var filter = new LogbackMarkerFilter(marker.getName(), marker.getOnMatch(), marker.getOnMismatch());
 
                 filter.setContext(ctx);
                 filter.start();
@@ -82,10 +82,10 @@ public class LoggedLogbackPlugin implements LoggedPlugin {
     @SuppressWarnings("unchecked, rawtypes")
     public static Appender<ILoggingEvent> findInAttachable(AppenderAttachable attachable, String targetName) {
         for (Iterator<Appender<ILoggingEvent>> it = attachable.iteratorForAppenders(); it.hasNext();) {
-            Appender<ILoggingEvent> a = it.next();
+            var a = it.next();
             if (targetName.equals(a.getName())) return a;
             if (a instanceof AppenderAttachable<?> nested) {
-                Appender<ILoggingEvent> hit = findInAttachable(nested, targetName);
+                var hit = findInAttachable(nested, targetName);
                 if (hit != null) return hit;
             }
         }

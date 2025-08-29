@@ -4,6 +4,7 @@ import ch.qos.logback.core.spi.FilterReply;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import java.util.ArrayList;
@@ -36,6 +37,7 @@ import java.util.List;
  */
 @Data
 @ConfigurationProperties(prefix = "logged.logback")
+@ConditionalOnClass(name = {"ch.qos.logback.classic.Logger", "ch.qos.logback.core.ConsoleAppender"})
 public class LoggedLogbackProperties {
 
     /**

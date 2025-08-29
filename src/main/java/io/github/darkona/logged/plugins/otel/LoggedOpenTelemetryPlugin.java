@@ -172,7 +172,7 @@ public class LoggedOpenTelemetryPlugin implements LoggedPlugin {
                     if (file != null && !file.isBlank()) builder.setAttribute(CODE_FILEPATH, file);
                     if (line > 0) builder.setAttribute(CODE_LINENO, (long) line);
                 }catch (UnsupportedOperationException e) {
-                    log.error("Can't obtain line number or filename from  {}", data.get(LogToken.CLASS_LONG));
+                    log.debug("Can't obtain line number or filename from  {}", data.get(LogToken.CLASS_LONG));
                 }
             }
         }

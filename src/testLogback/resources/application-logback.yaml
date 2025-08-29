@@ -1,0 +1,42 @@
+spring:
+  output:
+    ansi:
+      enabled: always
+logged:
+  color: true
+  otel:
+    enabled: true
+  mdc:
+    enabled: true
+  slf4j:
+    color: true
+    enabled: true
+  logback:
+    #Enable logback plugin for filtering logs to different appenders
+    enabled: true
+
+    #create logback filters for logs created by logged
+    appender-filters:
+      # Don't send logs with the marker "NO_CONSOLE" to the Console
+      # See logback-spring.xml
+      - appender-name: CONSOLE
+        name: NO_CONSOLE
+        on-match: deny
+        on-mismatch: neutral
+
+  log4j2:
+    #Enable log4j2 plugin for filtering logs to different appenders
+    enabled: true
+
+    #create log4j2 filters for logs created by logged
+    appender-filters:
+      # Don't send logs with the marker "LOKI" to the Console
+      # See log4j2-spring.xml
+      - appender-name: CONSOLE
+        name: NO_CONSOLE
+        on-match: deny
+        on-mismatch: neutral
+
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %highlight(%-5level) %msg%n"
