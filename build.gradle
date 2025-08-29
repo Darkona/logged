@@ -1,5 +1,7 @@
 import org.springframework.boot.gradle.plugin.SpringBootPlugin
 
+import java.util.regex.Pattern
+
 plugins {
     id 'java-library'
     id 'maven-publish'
@@ -269,7 +271,7 @@ tasks.register('checkReadmeVersion') {
     group = 'verification'
     description = 'Verify README.md uses the current project.version'
     doLast {
-        def v = java.util.regex.Pattern.quote(project.version.toString())
+        def v = Pattern.quote(project.version.toString())
         def readme = file('README.md').getText('UTF-8')
         def mvnOk = (readme =~ /(?s)<artifactId>logged<\/artifactId>.*?<version>${v}<\/version>/).find()
         def gradleOk = (readme =~ /io\.github\.darkona:logged:${v}/).find()
