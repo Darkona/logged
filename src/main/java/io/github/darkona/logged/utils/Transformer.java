@@ -8,12 +8,12 @@ import java.util.Locale;
 import java.util.Arrays;
 
 /**
- * Utilidades de transformación y formateo de texto usadas por la librería de logging.
+ * Text transformation and formatting utilities used by the logging library.
  *
- * <p>Diseñadas para ser baratas en CPU y GC en los caminos calientes (hot path) de logging:
- * evitan asignaciones innecesarias, usan rutas rápidas para tipos comunes y reservan
- * operaciones más costosas (por ejemplo, manejo de grafemas) para métodos específicos
- * que no se invocan por defecto.</p>
+ * <p>Designed to be cheap in CPU and GC on logging hot paths:
+ * avoids unnecessary allocations, uses fast paths for common types,
+ * and reserves more expensive operations (e.g., grapheme handling) for
+ * specialized methods that are not invoked by default.</p>
  */
 @SuppressWarnings("unused")
 @Component
@@ -22,16 +22,16 @@ public class Transformer {
     private Transformer() {}
 
     /**
-     * Devuelve una representación segura en texto del objeto recibido.
+     * Returns a safe textual representation of the given object.
      *
-     * - Rutas rápidas sin try/catch para {@link CharSequence}, wrappers numéricos,
-     *   {@link Boolean} y {@link Character}.
-     * - Soporte para arreglos: usa {@code Arrays.toString/deepToString} según corresponda.
-     * - Fallback seguro con {@code toString()} dentro de try/catch (evita romper el logging si el toString lanza).
-     * - No trunca: la truncación se realiza en los llamadores (p. ej., LoggedEngine) para no duplicar costo.
+     * - Fast paths without try/catch for {@link CharSequence}, numeric wrappers,
+     *   {@link Boolean}, and {@link Character}.
+     * - Array support: uses {@code Arrays.toString/deepToString} as appropriate.
+     * - Safe fallback using {@code toString()} inside try/catch (prevents logging from breaking if toString throws).
+     * - No truncation: callers (e.g., LoggedEngine) handle truncation to avoid duplicating cost.
      *
-     * @param o objeto a representar
-     * @return texto representando al objeto; "null" si el objeto es nulo
+     * @param o object to render
+     * @return textual representation; "null" if the object is {@code null}
      */
     public static String objectString(Object o) {
         if (o == null) return "null";
@@ -58,24 +58,24 @@ public class Transformer {
     }
 
     /**
-     * Repite la cadena indicada {@code amount} veces.
+     * Repeats the given string {@code amount} times.
      *
-     * @param s      patrón a repetir (no nulo)
-     * @param amount cantidad de repeticiones (si es ≤ 0 retorna "")
-     * @return la cadena repetida
+     * @param s      pattern to repeat (non-null)
+     * @param amount number of repetitions (<= 0 returns "")
+     * @return repeated string
      */
     public static String fill(String s, int amount) {
         return s.repeat(Math.max(0, amount));
     }
 
     /**
-     * Enmascara una cadena preservando opcionalmente los primeros {@code unmasked} caracteres.
-     * No crea {@code char[]} cuando enmascara todo; usa {@code repeat} para minimizar asignaciones.
+     * Masks a string while optionally preserving the first {@code unmasked} characters.
+     * Does not create a {@code char[]} when masking the entire string; uses {@code repeat} to minimize allocations.
      *
-     * @param string   entrada (puede ser nula → retorna null)
-     * @param unmasked cantidad de caracteres iniciales sin enmascarar (nulo o &lt;0 → 0)
-     * @param maskChar carácter de máscara (nulo → '*')
-     * @return cadena enmascarada o null si {@code string} es null
+     * @param string   input (may be null → returns null)
+     * @param unmasked number of leading characters to keep unmasked (null or &lt;0 → 0)
+     * @param maskChar masking character (null → '*')
+     * @return masked string or null if {@code string} is null
      */
     public static String mask(String string, @Nullable Integer unmasked, @Nullable Character maskChar) {
         if (string == null) return null;
@@ -91,20 +91,20 @@ public class Transformer {
     }
 
     /**
-     * Sobrecarga sin boxing para {@link #mask(String, Integer, Character)}.
+     * Boxing-free overload of {@link #mask(String, Integer, Character)}.
      */
     public static String mask(String string, int unmasked, char maskChar) {
         return mask(string, Integer.valueOf(unmasked), Character.valueOf(maskChar));
     }
 
     /**
-     * Enmascara un arreglo de caracteres preservando opcionalmente los primeros {@code unmasked}.
-     * Preasigna capacidad y evita ramas por carácter cuando es posible.
+     * Masks a character array while optionally preserving the first {@code unmasked} characters.
+     * Pre-allocates capacity and avoids per-character branches when possible.
      *
-     * @param bytes    caracteres de entrada (puede ser null → retorna null)
-     * @param unmasked cantidad de caracteres iniciales sin enmascarar (nulo o &lt;0 → 0)
-     * @param maskChar carácter de máscara (nulo → '*')
-     * @return cadena enmascarada, o copia de {@code bytes} si {@code unmasked ≥ length}
+     * @param bytes    input characters (may be null → returns null)
+     * @param unmasked number of leading characters to keep unmasked (null or &lt;0 → 0)
+     * @param maskChar masking character (null → '*')
+     * @return masked string, or a copy of {@code bytes} if {@code unmasked ≥ length}
      */
     public static String mask(char[] bytes, @Nullable Integer unmasked, @Nullable Character maskChar) {
         if (bytes == null) return null;
@@ -119,17 +119,17 @@ public class Transformer {
     }
 
     /**
-     * Sobrecarga sin boxing para {@link #mask(char[], Integer, Character)}.
+     * Boxing-free overload of {@link #mask(char[], Integer, Character)}.
      */
     public static String mask(char[] bytes, int unmasked, char maskChar) {
         return mask(bytes, Integer.valueOf(unmasked), Character.valueOf(maskChar));
     }
 
     /**
-     * Sufijo ordinal en inglés para un día del mes (st, nd, rd, th).
+     * English ordinal suffix for a day of the month (st, nd, rd, th).
      *
-     * @param day día del mes
-     * @return sufijo ordinal correspondiente
+     * @param day day of the month
+     * @return corresponding ordinal suffix
      */
     public static String daySuffix(int day) {
         if (day >= 11 && day <= 13) return "th";
@@ -142,8 +142,8 @@ public class Transformer {
     }
 
     /**
-     * Subcadena entre índices {@code begin} (incluido) y {@code end} (excluido).
-     * Retorna "" si la entrada es nula o vacía; retorna la original si los índices no son válidos.
+     * Substring between indexes {@code begin} (inclusive) and {@code end} (exclusive).
+     * Returns "" if the input is null or empty; returns the original string if the indexes are invalid.
      */
     public static String getSubstring(String str, int begin, int end) {
         if (str == null || str.isEmpty()) return "";
@@ -151,8 +151,8 @@ public class Transformer {
     }
 
     /**
-     * Subcadena desde {@code begin} hasta la primera ocurrencia de {@code delimiter} (excluido).
-     * Si no existe el delimitador, retorna {@code str.trim()}.
+     * Substring from {@code begin} up to the first occurrence of {@code delimiter} (exclusive).
+     * If the delimiter is absent, returns {@code str.trim()}.
      */
     public static String getSubstringUntil(String str, int begin, String delimiter) {
         if (str == null || str.isEmpty()) return "";
@@ -163,8 +163,8 @@ public class Transformer {
     }
 
     /**
-     * Capitaliza el primer carácter (versión ASCII/inglés; no locale-aware).
-     * Mantiene el resto de la cadena sin copiar más de lo necesario.
+     * Capitalizes the first character (ASCII/English; not locale-aware).
+     * Keeps the rest of the string without unnecessary copying.
      */
     public static String capitalize(String s) {
         if (s == null || s.isEmpty()) return s;
@@ -175,16 +175,16 @@ public class Transformer {
         return sb.toString();
     }
 
-    /** Carácter de puntos suspensivos usado por {@link #truncate(String, int)}. */
+    /** Ellipsis character used by {@link #truncate(String, int)}. */
     private static final String ELLIPSIS = "…";
 
     /**
-     * Trunca la cadena a lo más {@code max} caracteres y agrega un {@link #ELLIPSIS} al final
-     * si hubo truncamiento (de modo que la longitud resultante sea &gt; {@code max}).
+     * Truncates the string to at most {@code max} characters and appends {@link #ELLIPSIS} if truncation occurred
+     * so that the resulting length exceeds {@code max}.
      *
-     * @param s   entrada (puede ser null → retorna null)
-     * @param max longitud máxima previa al agregado del sufijo
-     * @return cadena truncada con sufijo o la original si no requiere truncar
+     * @param s   input (may be null → returns null)
+     * @param max maximum length before appending the suffix
+     * @return truncated string with suffix, or the original if no truncation is needed
      */
     public static String truncate(String s, int max) {
         if (s == null) return null;
@@ -195,13 +195,13 @@ public class Transformer {
     }
 
     /**
-     * Trunca por grupos de grafemas (caracteres percibidos por el usuario) usando {@link BreakIterator}.
-     * Costoso; úsalo solo cuando realmente necesites no partir emojis/combining marks.
+     * Truncates by grapheme clusters (user-perceived characters) using {@link BreakIterator}.
+     * Expensive; use only when you truly need to avoid splitting emojis or combining marks.
      *
-     * @param s           entrada (null → "")
-     * @param maxClusters máximo de grafemas
-     * @return subcadena limitada a {@code maxClusters} grafemas
-     * @throws IllegalArgumentException si {@code maxClusters} &lt; 0
+     * @param s           input (null → "")
+     * @param maxClusters maximum number of graphemes
+     * @return substring limited to {@code maxClusters} graphemes
+     * @throws IllegalArgumentException if {@code maxClusters} &lt; 0
      */
     public static String truncateGraphemes(String s, int maxClusters) {
         if (s == null) return "";
