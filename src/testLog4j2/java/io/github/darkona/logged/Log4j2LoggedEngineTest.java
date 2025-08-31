@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 
+import static org.apache.logging.log4j.Level.INFO;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(classes = {TestBootConfig.class, Log4jTestObject.class, Log4jTestObject.class})
@@ -43,6 +44,7 @@ class Log4j2LoggedEngineTest {
     private LoggedProperties props;
 
     @BeforeEach
+    @SuppressWarnings("deprecation")
     synchronized void setup() {
         Logger logger = LoggerFactory.getLogger(Log4jTestObject.class);
 
@@ -63,20 +65,14 @@ class Log4j2LoggedEngineTest {
         if (!loggerName.equals(effective.getName())) {
             //  No dedicated LoggerConfig for this logger; create one
             LoggerConfig dedicated = LoggerConfig.createLogger(
-                    /* additivity */ true,
-                    org.apache.logging.log4j.Level.INFO,
-                    loggerName,
-                    /* includeLocation/advertise */ "true",
-                    /* appender refs */ new AppenderRef[]{},
-                    /* properties */ null,
-                    config,
-                    /* filter */ null
-            );
-            dedicated.addAppender(listAppender, Level.INFO, null);
+                    true, INFO, loggerName, "true", new AppenderRef[]{},
+                    null, config, null);
+
+            dedicated.addAppender(listAppender, INFO, null);
             config.addLogger(loggerName, dedicated);
         } else {
             // There is already a LoggerConfig for loggerName; just attach the appender
-            effective.addAppender(listAppender, org.apache.logging.log4j.Level.INFO, null);
+            effective.addAppender(listAppender, INFO, null);
             effective.setAdditive(true); // or false if you *don't* want parent appenders
         }
 
@@ -399,7 +395,7 @@ class Log4j2LoggedEngineTest {
     @Test
     void maskedReturnHidesSensitiveData() {
         callAndAssert("maskedReturnHidesSensitiveData",
-                () -> { testObject.methodWithMaskedReturn(); },
+                () -> {testObject.methodWithMaskedReturn();},
                 logs -> {
                     assertFalse(logsContain("TopSecret"), "Return value should be masked");
                     assertTrue(logsContain("█"), "Mask should be present in return value");
@@ -423,4 +419,3 @@ class Log4j2LoggedEngineTest {
                 });
     }
 }
-
