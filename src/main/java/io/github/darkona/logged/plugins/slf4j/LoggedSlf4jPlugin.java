@@ -28,8 +28,7 @@ import java.util.stream.Collectors;
 
 import static io.github.darkona.logged.internals.LoggedEngine.NULL;
 
-
-/*
+/**
  * SLF4J logging plugin for {@code @Logged} that formats and emits call/return/exception
  * messages using {@link org.slf4j.Logger} and the library's token interpolation.
  *
@@ -105,13 +104,6 @@ import static io.github.darkona.logged.internals.LoggedEngine.NULL;
  * @see io.github.darkona.logged.api.Data
  * @see io.github.darkona.logged.api.LogToken
  * @see org.slf4j.Logger
- */
-/**
- * SLF4J plugin for {@code @Logged}.
- * - Emite entrada/salida/excepción con SLF4J
- * - Usa plantillas o sobreescrituras por anotación
- * - Puede añadir profundidad, argumentos, duración y marcadores
- * - Evita trabajo cuando el nivel está deshabilitado
  */
 public class LoggedSlf4jPlugin implements LoggedPlugin {
 
