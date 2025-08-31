@@ -29,6 +29,7 @@ public class Transformer {
      *   <li>Safe fallback: wraps {@code toString()} in try/catch (prevents logging failures if {@code toString} throws).</li>
      *   <li>No truncation here: callers (e.g., LoggedEngine) handle truncation to avoid duplicate cost.</li>
      * </ul>
+     *
      * @param o object to stringify
      * @return textual representation; "null" if the object is null
      */
@@ -39,15 +40,36 @@ public class Transformer {
         // Arrays: render contents instead of identity hash
         Class<?> c = o.getClass();
         if (c.isArray()) {
+
             if (o instanceof Object[] arr) return Arrays.deepToString(arr);
-            if (o instanceof int[] a) return Arrays.toString(a);
-            if (o instanceof long[] a) return Arrays.toString(a);
-            if (o instanceof double[] a) return Arrays.toString(a);
-            if (o instanceof float[] a) return Arrays.toString(a);
-            if (o instanceof boolean[] a) return Arrays.toString(a);
-            if (o instanceof byte[] a) return Arrays.toString(a);
-            if (o instanceof short[] a) return Arrays.toString(a);
-            if (o instanceof char[] a) return Arrays.toString(a);
+
+            switch (o) {
+                case int[] a -> {
+                    return Arrays.toString(a);
+                }
+                case long[] a -> {
+                    return Arrays.toString(a);
+                }
+                case double[] a -> {
+                    return Arrays.toString(a);
+                }
+                case float[] a -> {
+                    return Arrays.toString(a);
+                }
+                case boolean[] a -> {
+                    return Arrays.toString(a);
+                }
+                case byte[] a -> {
+                    return Arrays.toString(a);
+                }
+                case short[] a -> {
+                    return Arrays.toString(a);
+                }
+                case char[] a -> {
+                    return Arrays.toString(a);
+                }
+                default -> {}
+            }
         }
         try {
             return o.toString();
@@ -58,6 +80,7 @@ public class Transformer {
 
     /**
      * Repeats the given string {@code amount} times.
+     *
      * @param s      pattern to repeat (non-null)
      * @param amount number of repetitions (returns empty string if {@code amount <= 0})
      * @return the repeated string
@@ -69,8 +92,9 @@ public class Transformer {
     /**
      * Masks a string, optionally preserving the first {@code unmasked} characters.
      * Does not create a {@code char[]} when masking the entire string; uses {@code repeat} to minimize allocations.
+     *
      * @param string   input (may be null - returns null)
-     * @param unmasked number of leading characters to leave unmasked (null or < 0 ? 0)
+     * @param unmasked number of leading characters to leave unmasked
      * @param maskChar mask character (null ? '*')
      * @return masked string or null if {@code string} is null
      */
@@ -87,7 +111,9 @@ public class Transformer {
         return sb.toString();
     }
 
-    /** Primitive overload for {@link #mask(String, Integer, Character)}. */
+    /**
+     * Primitive overload for {@link #mask(String, Integer, Character)}.
+     */
     public static String mask(String string, int unmasked, char maskChar) {
         return mask(string, Integer.valueOf(unmasked), Character.valueOf(maskChar));
     }
@@ -95,8 +121,9 @@ public class Transformer {
     /**
      * Masks a character array preserving the first {@code unmasked} characters (optional).
      * Pre-allocates capacity and avoids per-character branching where possible.
+     *
      * @param bytes    input characters (may be null - returns null)
-     * @param unmasked number of leading characters to leave unmasked (null or < 0 ? 0)
+     * @param unmasked number of leading characters to leave unmasked
      * @param maskChar mask character (null ? '*')
      * @return masked string, or a copy of {@code bytes} if {@code unmasked >= length}
      */
@@ -112,13 +139,16 @@ public class Transformer {
         return sb.toString();
     }
 
-    /** Primitive overload for {@link #mask(char[], Integer, Character)}. */
+    /**
+     * Primitive overload for {@link #mask(char[], Integer, Character)}.
+     */
     public static String mask(char[] bytes, int unmasked, char maskChar) {
         return mask(bytes, Integer.valueOf(unmasked), Character.valueOf(maskChar));
     }
 
     /**
      * English ordinal suffix for a day of the month (st, nd, rd, th).
+     *
      * @param day day of month
      * @return ordinal suffix string
      */
@@ -166,12 +196,15 @@ public class Transformer {
         return sb.toString();
     }
 
-    /** Ellipsis character used by {@link #truncate(String, int)}. */
+    /**
+     * Ellipsis character used by {@link #truncate(String, int)}.
+     */
     private static final String ELLIPSIS = "\u2026";
 
     /**
      * Truncates the string to at most {@code max} characters and appends {@link #ELLIPSIS}
      * when truncated (so the resulting length is > {@code max}).
+     *
      * @param s   input (may be null - returns null)
      * @param max maximum length before the suffix
      * @return truncated string with suffix or the original if no truncation is required
@@ -187,10 +220,11 @@ public class Transformer {
     /**
      * Truncates by grapheme clusters (user-perceived characters) using {@link BreakIterator}.
      * Expensive; use only when you must avoid splitting emojis/combining marks.
+     *
      * @param s           input (null ? empty string)
      * @param maxClusters maximum number of graphemes
      * @return substring limited to {@code maxClusters} graphemes
-     * @throws IllegalArgumentException if {@code maxClusters} < 0
+     * @throws IllegalArgumentException if {@code maxClusters} less than 0
      */
     public static String truncateGraphemes(String s, int maxClusters) {
         if (s == null) return "";

@@ -36,7 +36,7 @@ Maven
 <dependency>
   <groupId>io.github.darkona</groupId>
   <artifactId>logged</artifactId>
-  <version>1.4.0</version>
+  <version>1.5.0</version>
 </dependency>
 ```
 
@@ -44,7 +44,7 @@ Gradle (Groovy)
 
 ```groovy
 dependencies {
-  implementation "io.github.darkona:logged:1.4.0"
+  implementation "io.github.darkona:logged:1.5.0"
 }
 ```
 
