@@ -355,7 +355,6 @@ class LogbackLoggedEngineTest {
     void maskedReturnHidesSensitiveData() {
         callAndAssert("maskedReturnHidesSensitiveData",
                 () -> {
-                    //noinspection ResultOfMethodCallIgnored
                     logbackTestObject.methodWithMaskedReturn();
                 },
                 logs -> {

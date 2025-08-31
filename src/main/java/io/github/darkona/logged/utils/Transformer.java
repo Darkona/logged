@@ -4,8 +4,8 @@ import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.text.BreakIterator;
-import java.util.Locale;
 import java.util.Arrays;
+import java.util.Locale;
 
 /**
  * Utilidades de transformación y formateo de texto usadas por la librería de logging.
