@@ -253,9 +253,9 @@ tasks.register('updateReadmeVersion') {
         if (!f.exists()) return
         def t = f.getText('UTF-8')
         def updated = t
-                // Gradle snippet: io.github.darkona:logged:x.y.z
+        // Gradle snippet: io.github.darkona:logged:x.y.z
                 .replaceAll(/io\.github\.darkona:logged:[0-9A-Za-z.\-]+/, "io.github.darkona:logged:${v}")
-                // Maven snippet: <artifactId>logged</artifactId> ... <version>x.y.z</version>
+        // Maven snippet: <artifactId>logged</artifactId> ... <version>x.y.z</version>
                 .replaceAll(/(?s)(<artifactId>logged<\/artifactId>.*?<version>)([^<]+)(<\/version>)/, '$1' + v + '$3')
 
         if (updated != t) {
@@ -282,4 +282,9 @@ tasks.register('checkReadmeVersion') {
 }
 
 // Guard on CI/local checks
-tasks.named('check').configure { dependsOn 'checkReadmeVersion' }
+tasks.named('check').configure {
+    dependsOn 'checkReadmeVersion'
+    dependsOn 'test'
+    dependsOn 'testLog4j2Test'
+    dependsOn 'testLogbackTest'
+}

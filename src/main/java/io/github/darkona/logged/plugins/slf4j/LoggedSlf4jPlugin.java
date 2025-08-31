@@ -119,9 +119,9 @@ public class LoggedSlf4jPlugin implements LoggedPlugin {
     private final LoggedSlf4jProperties props;
     private final LogDecorator deco;
 
-    private ColorEnum entryIconColor = BasicColor.BLUE;
-    private ColorEnum exitIconColor = BasicColor.GREEN;
-    private ColorEnum throwIconColor = BasicColor.RED;
+    private ColorEnum callIconColor = BasicColor.BLUE;
+    private ColorEnum returnIconColor = BasicColor.GREEN;
+    private ColorEnum exceptionIconColor = BasicColor.RED;
     private ColorEnum depthIconColor = Orange.ORANGE;
     private LoggedProperties rootProps;
 
@@ -130,9 +130,9 @@ public class LoggedSlf4jPlugin implements LoggedPlugin {
         this.deco = deco;
 
         if (props.isIconColors()) {
-            entryIconColor = ColorFinder.findColor(props.getEntryIconColor());
-            exitIconColor = ColorFinder.findColor(props.getExitIconColor());
-            throwIconColor = ColorFinder.findColor(props.getThrowIconColor());
+            callIconColor = ColorFinder.findColor(props.getCallIconColor());
+            returnIconColor = ColorFinder.findColor(props.getReturnIconColor());
+            exceptionIconColor = ColorFinder.findColor(props.getExceptionIconColor());
             depthIconColor = ColorFinder.findColor(props.getDepthIconColor());
         }
     }
@@ -187,9 +187,9 @@ public class LoggedSlf4jPlugin implements LoggedPlugin {
 
     private void setColorsToIcons(Data data) {
 
-        data.addToken(LogToken.ENTRY_ICON, deco.custom(entryIconColor, data.get(LogToken.ENTRY_ICON)));
-        data.addToken(LogToken.EXIT_ICON, deco.custom(exitIconColor, data.get(LogToken.EXIT_ICON)));
-        data.addToken(LogToken.THROW_ICON, deco.custom(throwIconColor, data.get(LogToken.THROW_ICON)));
+        data.addToken(LogToken.CALL_ICON, deco.custom(callIconColor, data.get(LogToken.CALL_ICON)));
+        data.addToken(LogToken.RETURN_ICON, deco.custom(returnIconColor, data.get(LogToken.RETURN_ICON)));
+        data.addToken(LogToken.EXCEPTION_ICON, deco.custom(exceptionIconColor, data.get(LogToken.EXCEPTION_ICON)));
         data.addToken(LogToken.DEPTH, deco.custom(depthIconColor, data.get(LogToken.DEPTH)));
     }
 
@@ -264,8 +264,8 @@ public class LoggedSlf4jPlugin implements LoggedPlugin {
         if (options.onReturn() && options.returnMsg().isEmpty()) {
             var rv = data.tokens().get(LogToken.RETURN_VALUE);
             String template = switch (options.returnValue()) {
-                case ALL -> props.getExitMsgValue();
-                case NULL -> rv.equals(NULL) ? props.getExitMsgValue() : props.getExitMsg();
+                case ALL -> props.getReturnMsgValue();
+                case NULL -> rv.equals(NULL) ? props.getReturnMsgValue() : props.getReturnMsg();
                 case NONE -> "";
             };
             if (template.isEmpty()) return;
@@ -293,7 +293,7 @@ public class LoggedSlf4jPlugin implements LoggedPlugin {
         if (!options.onException() && options.exceptionMsg().isBlank()) return;
 
         String template = options.exceptionMsg().isBlank()
-                          ? props.getThrowMsg() + (options.time() ? " " + props.getTimeTakenMsg() : "")
+                          ? props.getExceptionMsg() + (options.time() ? " " + props.getTimeTakenMsg() : "")
                           : options.exceptionMsg();
 
         if (options.logStackTrace()) {

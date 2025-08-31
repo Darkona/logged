@@ -28,8 +28,8 @@ public class LoggedEngine {
     private final LoggedProperties props;
     private final LogDecorator deco;
     private final List<LoggedPlugin> plugins;
-    private List<Pattern> redactPatterns = List.of();
-    private List<Class<?>> redactTypes = List.of();
+    private List<Pattern> maskPatterns = List.of();
+    private List<Class<?>> maskTypes = List.of();
 
 
     public LoggedEngine(LoggedProperties props, LogDecorator deco, List<LoggedPlugin> plugins) {
@@ -65,37 +65,37 @@ public class LoggedEngine {
             }
         });
 
-        // Pre-compile global redaction patterns and resolve redaction types once
-        if (props.getRedactPatterns() != null && !props.getRedactPatterns().isEmpty()) {
+        // Pre-compile global mask patterns and resolve mask types once
+        if (props.getMaskPatterns() != null && !props.getMaskPatterns().isEmpty()) {
             List<Pattern> compiled = new ArrayList<>();
-            for (String p : props.getRedactPatterns()) {
+            for (String p : props.getMaskPatterns()) {
                 if (p == null || p.isBlank()) continue;
                 try {
                     compiled.add(Pattern.compile(p));
                 } catch (Exception ex) {
-                    if (props.isFailOnInvalidRedactPatterns()) {
-                        throw new IllegalArgumentException("Invalid redact pattern: " + p, ex);
+                    if (props.isFailOnInvalidMaskPatterns()) {
+                        throw new IllegalArgumentException("Invalid mask pattern: " + p, ex);
                     }
-                    log.warn("Ignoring invalid redact pattern '{}': {}", p, ex.getMessage());
+                    log.warn("Ignoring invalid mask pattern '{}': {}", p, ex.getMessage());
                 }
             }
-            this.redactPatterns = List.copyOf(compiled);
+            this.maskPatterns = List.copyOf(compiled);
         }
 
-        if (props.getRedactTypeNames() != null && !props.getRedactTypeNames().isEmpty()) {
+        if (props.getMaskTypeNames() != null && !props.getMaskTypeNames().isEmpty()) {
             List<Class<?>> resolved = new ArrayList<>();
-            for (String cn : props.getRedactTypeNames()) {
+            for (String cn : props.getMaskTypeNames()) {
                 if (cn == null || cn.isBlank()) continue;
                 try {
                     resolved.add(Class.forName(cn));
                 } catch (Throwable t) {
-                    if (props.isFailOnUnresolvedRedactTypes()) {
-                        throw new IllegalArgumentException("Could not resolve redact type: " + cn, t);
+                    if (props.isFailOnUnresolvedMaskTypes()) {
+                        throw new IllegalArgumentException("Could not resolve mask type: " + cn, t);
                     }
-                    log.warn("Could not resolve redact type: {}", cn);
+                    log.warn("Could not resolve mask type: {}", cn);
                 }
             }
-            this.redactTypes = List.copyOf(resolved);
+            this.maskTypes = List.copyOf(resolved);
         }
     }
 
@@ -153,17 +153,14 @@ public class LoggedEngine {
         var start = System.currentTimeMillis();
         var depth = STACK.get().size();
         Map<LogToken, String> map = new HashMap<>();
-        if (props.isUseIconTheme() && props.getIconTheme() != null) {
-            map.put(LogToken.ENTRY_ICON, props.getIconTheme().entry());
-            map.put(LogToken.THROW_ICON, props.getIconTheme().exception());
-            map.put(LogToken.EXIT_ICON, props.getIconTheme().exit());
-            map.put(LogToken.DEPTH_ICON, props.getIconTheme().depth());
-        } else {
-            map.put(LogToken.ENTRY_ICON, props.getEntryIcon());
-            map.put(LogToken.THROW_ICON, props.getThrowIcon());
-            map.put(LogToken.EXIT_ICON, props.getExitIcon());
-            map.put(LogToken.DEPTH_ICON, props.getDepthIcon());
-        }
+        boolean themed = (props.isUseIconTheme() && props.getIconTheme() != null);
+        var theme = props.getIconTheme();
+
+        map.put(LogToken.CALL_ICON, themed ? theme.entry() : props.getCallIcon());
+        map.put(LogToken.EXCEPTION_ICON, themed ? theme.exception() : props.getExceptionIcon());
+        map.put(LogToken.RETURN_ICON, themed ? theme.exit() : props.getReturnIcon());
+        map.put(LogToken.DEPTH_ICON, themed ? theme.depth() : props.getDepthIcon());
+
         map.put(LogToken.CLASS_NAME, pjp.getSignature().getDeclaringType().getSimpleName());
         map.put(LogToken.CLASS_LONG, pjp.getSignature().getDeclaringType().getName());
         map.put(LogToken.METHOD_NAME, pjp.getSignature().getName());
@@ -177,27 +174,27 @@ public class LoggedEngine {
 
         var names = ParameterNames.resolve(pjp);
 
-        Set<String> redacts = new HashSet<>();
-        Set<Integer> redactIndexes = new HashSet<>();
+        Set<String> masksByName = new HashSet<>();
+        Set<Integer> maskIndexes = new HashSet<>();
 
-        if (options.redactArgValues().length > 0) {
-            redacts.addAll(Arrays.asList(options.redactArgValues()));
+        if (options.maskArgValues().length > 0) {
+            masksByName.addAll(Arrays.asList(options.maskArgValues()));
         }
-        if (options.redactAtPos().length > 0) {
-            Arrays.stream(options.redactAtPos()).forEach(redactIndexes::add);
+        if (options.maskAtPos().length > 0) {
+            Arrays.stream(options.maskAtPos()).forEach(maskIndexes::add);
         }
 
-        // Merge annotation-level redaction rules
-        List<Class<?>> annoTypes = Arrays.asList(options.redactTypes());
-        List<String> annoPatterns = Arrays.asList(options.redactPatterns());
+        // Merge annotation-level masking rules
+        List<Class<?>> annoTypes = Arrays.asList(options.maskTypes());
+        List<String> annoPatterns = Arrays.asList(options.maskPatterns());
 
         for (int i = 0; i < signature.getParameterTypes().length; i++) {
             Object raw = pjp.getArgs()[i];
             String rawStr = Transformer.objectString(raw);
 
-            boolean nameOrPos = redacts.contains(names[i]) || redactIndexes.contains(i);
-            boolean typeMatch = matchesType(raw, signature.getParameterTypes()[i], annoTypes, this.redactTypes);
-            boolean patternMatch = matchesPattern(rawStr, annoPatterns, this.redactPatterns);
+            boolean nameOrPos = masksByName.contains(names[i]) || maskIndexes.contains(i);
+            boolean typeMatch = matchesType(raw, signature.getParameterTypes()[i], annoTypes, this.maskTypes);
+            boolean patternMatch = matchesPattern(rawStr, annoPatterns, this.maskPatterns);
 
             String value;
             if (nameOrPos || typeMatch || patternMatch) {
@@ -208,7 +205,7 @@ public class LoggedEngine {
 
             args[i] = new Arg(signature.getParameterTypes()[i].getSimpleName(), names[i], value);
         }
-        return new Data(map, args, start, depth, redactIndexes);
+        return new Data(map, args, start, depth, maskIndexes);
     }
 
     @SuppressWarnings("unchecked")
@@ -220,12 +217,16 @@ public class LoggedEngine {
 
         boolean mustMask = props.isMaskReturn() || (options != null && options.maskReturn());
         if (!mustMask) {
-            // Apply rule-based masking (type/pattern) to return values as well
-            mustMask = matchesType(o, (o != null ? o.getClass() : null), List.of(), this.redactTypes)
-                    || matchesPattern(raw, List.of(), this.redactPatterns);
+            mustMask = matchesType(o, (o != null ? o.getClass() : null), List.of(), this.maskTypes)
+                    || matchesPattern(raw, List.of(), this.maskPatterns);
         }
 
-        String value = mustMask ? mask() : Transformer.truncate(raw, props.getMaxValueLength());
+        String value;
+        if (mustMask) {
+            value = mask();
+        } else {
+            value = Transformer.truncate(raw, props.getMaxValueLength());
+        }
         data.addToken(LogToken.RETURN_VALUE, value);
     }
 
@@ -262,7 +263,7 @@ public class LoggedEngine {
     }
 
     private String mask() {
-        return Transformer.truncate(Transformer.fill(props.getRedactMask(), props.getRedactLength()), props.getRedactLength());
+        return Transformer.truncate(Transformer.fill(props.getMaskString(), props.getMaskLength()), props.getMaskLength());
     }
 
     private void assembleExceptionData(Throwable e, Data data) {

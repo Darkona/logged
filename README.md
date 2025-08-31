@@ -1,6 +1,6 @@
 # Logged
 
-Logged is a lightweight Spring Boot library for method-level logging using Aspect-Oriented Programming (AOP). It provides an annotation-based mechanism to log method entry, return values, exceptions, and timing, with rich customization, redaction, plugins, and optional weaving for private/self calls.
+Logged is a lightweight Spring Boot library for method-level logging using Aspect-Oriented Programming (AOP). It provides an annotation-based mechanism to log method entry, return values, exceptions, and timing, with rich customization, masking, plugins, and optional weaving for private/self calls.
 
 Think of it as a careful scribe for your code: precise, flexible, and useful.
 
@@ -11,7 +11,7 @@ Compatible with **Java 21**, **Spring Boot 3.x**, and **SLF4J backends (Logback/
 ## Features / Highlights
 
 * ↓○ Entry, ↑○ Exit, ↑x Exception logging per method or per class (`@Logged`)
-* Argument names/types/values with configurable redaction and truncation
+* Argument names/types/values with configurable masking and truncation
 * Return value logging modes: `ALL`, `NONE`, `NULL`
 * Execution time capture and thresholds: auto-promote slow calls and add markers
 * Custom templates and icons; optional color decoration and icon themes
@@ -91,11 +91,11 @@ The core of this library is the `@Logged` annotation. Place it on methods or cla
 | `level`           | `INFO`  | Base level for entry/return.                 |
 | `exceptionLevel`  | `ERROR` | Level for exception.                         |
 | `logStackTrace`   | `false` | Include stack trace in log.                  |
-| `redactArgValues` | `{}`    | Redact by argument name.                     |
-| `redactAtPos`     | `{}`    | Redact by 0-based position.                  |
-| `redactTypes`     | `{}`    | Redact by type.                              |
-| `redactPatterns`  | `{}`    | Redact when `toString()` matches regex.      |
-| `maskReturn`      | `false` | Redact return value.                         |
+| `maskArgValues`   | `{}`    | Mask by argument name.                       |
+| `maskAtPos`       | `{}`    | Mask by 0-based position.                    |
+| `maskTypes`       | `{}`    | Mask by type.                                |
+| `maskPatterns`    | `{}`    | Mask when `toString()` matches regex.        |
+| `maskReturn`      | `false` | Mask return value.                           |
 | `markers`         | `{}`    | Extra markers to attach.                     |
 | `warnIfOverMs`    | `-1`    | Promote level if duration exceeds threshold. |
 | `slowMarker`      | `""`    | Marker for slow calls.                       |
@@ -114,26 +114,26 @@ logged:
   color: true
   icons: true
   useUtf8: true
-  entryIcon: "↓○"
-  exitIcon:  "↑○"
-  throwIcon: "↑x"
+  callIcon: "↓○"
+  returnIcon:  "↑○"
+  exceptionIcon: "↑x"
   depthIcon: ">"
   maxValueLength: 2048
 ```
 
-### Redaction
+### Masking
 
 ```yaml
 logged:
-  redactMask: "█"
-  redactLength: 5
-  redactPatterns:
+  maskString: "*****"
+  maskLength: 5
+  maskPatterns:
     - "\d{16}"
     - "(?i)secret|token"
-  redactTypeNames:
+  maskTypeNames:
     - "java.util.UUID"
-  failOnInvalidRedactPatterns: false
-  failOnUnresolvedRedactTypes: false
+  failOnInvalidMaskPatterns: false
+  failOnUnresolvedMaskTypes: false
   maskReturn: false
 ```
 
@@ -162,10 +162,10 @@ logged:
     enabled: true
     color: true
     iconColors: true
-    callMsgNoArgs: "{h:}{eI:} {c}::{m} called."
-    callMsgArgs:   "{h:}{eI:} {c}::{m} called with args: [{a}]"
-    exitMsg:       "{h:}{xI:} {c}::{m} returned."
-    exitMsgValue:  "{h:}{xI:} {c}::{m} returned with value: {rV}"
+    callMsgNoArgs: "{h:}{cI:} {c}::{m} called."
+    callMsgArgs:   "{h:}{cI:} {c}::{m} called with args: [{a}]"
+    returnMsg:     "{h:}{rI:} {c}::{m} returned."
+    returnMsgValue:"{h:}{rI:} {c}::{m} returned with value: {rV}"
     timeTakenMsg:  "Time taken: {d} ms"
     logDepth: true
     captureFromMdc: [trace_id, span_id, call_id]
@@ -267,8 +267,8 @@ public String salute() { return "Hello World!"; }
 @Logged(onCall = false)
 public String hello() { return "Hi"; }
 
-// Redact arguments
-@Logged(redactArgValues = {"password"}, redactAtPos = {1})
+// Mask arguments
+@Logged(maskArgValues = {"password"}, maskAtPos = {1})
 public void login(String username, String password) { }
 
 // Custom templates

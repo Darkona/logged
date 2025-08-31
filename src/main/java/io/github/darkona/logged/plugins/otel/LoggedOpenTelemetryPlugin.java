@@ -55,8 +55,8 @@ import java.util.List;
  *   <li>{@code logged.depth} – nesting depth of {@code @Logged} interceptions for the current call chain.</li>
  *   <li>{@code logged.args.count} – number of arguments observed by the aspect.</li>
  *   <li>{@code logged.args.names} – ordered list of argument names.</li>
- *   <li>{@code logged.args.redacted} – names of arguments whose <em>values</em> are configured to be redacted
- *       (derived from {@link io.github.darkona.logged.Logged#redactArgValues()} and {@link io.github.darkona.logged.Logged#redactAtPos()}).</li>
+ *   <li>{@code logged.args.redacted} – names of arguments whose <em>values</em> are configured to be masked
+ *       (derived from {@link io.github.darkona.logged.Logged#maskArgValues()} and {@link io.github.darkona.logged.Logged#maskAtPos()}).</li>
  *   <li>{@code logged.return.type} – declared simple name of the return type (reported on return when enabled).</li>
  *   <li>{@code logged.return.null} – {@code true} if the declared return type string equals {@code "null"}.</li>
  * </ul>
@@ -84,8 +84,8 @@ import java.util.List;
  * <ul>
  *   <li>{@link io.github.darkona.logged.Logged#onReturn()} – controls whether return metadata is added.</li>
  *   <li>{@link io.github.darkona.logged.Logged#onException()} – controls whether exceptions are recorded to the span.</li>
- *   <li>{@link io.github.darkona.logged.Logged#redactArgValues()} / {@link io.github.darkona.logged.Logged#redactAtPos()} –
- *       define which argument <em>values</em> should be treated as redacted; the plugin emits their names in
+ *   <li>{@link io.github.darkona.logged.Logged#maskArgValues()} / {@link io.github.darkona.logged.Logged#maskAtPos()} –
+ *       define which argument <em>values</em> should be treated as masked; the plugin emits their names in
  *       {@code logged.args.redacted} but does not serialize argument values into span attributes.</li>
  * </ul>
  *
@@ -243,11 +243,11 @@ public class LoggedOpenTelemetryPlugin implements LoggedPlugin {
         List<String> out = new ArrayList<>();
         if (options == null || args == null) return out;
 
-        for (String rn : options.redactArgValues()) {
+        for (String rn : options.maskArgValues()) {
             if (rn != null && !rn.isBlank()) out.add(rn);
         }
 
-        for (int p : options.redactAtPos()) {
+        for (int p : options.maskAtPos()) {
             if (p >= 0 && p < args.length) {
                 out.add(args[p].name());
             }
@@ -271,4 +271,3 @@ public class LoggedOpenTelemetryPlugin implements LoggedPlugin {
     }
 
 }
-

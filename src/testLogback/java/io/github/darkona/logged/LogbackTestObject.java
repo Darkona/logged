@@ -113,8 +113,8 @@ public class LogbackTestObject {
         throw new RuntimeException("oh no");
     }
 
-    @Logged(redactArgValues = {"arg1"}, redactAtPos = {2}, returnValue = Logged.Values.NONE)
-    public String methodWithRedactedArgs(String arg1, String arg2, String arg3) {
+    @Logged(maskArgValues = {"arg1"}, maskAtPos = {2}, returnValue = Logged.Values.NONE)
+    public String methodWithMaskedArgs(String arg1, String arg2, String arg3) {
         return arg1 + "::" + arg2 + "::" + arg3;
     }
 
@@ -137,15 +137,15 @@ public class LogbackTestObject {
         }
     }
 
-    // --- Redaction enhancements tests ---
+    // --- Masking enhancements tests ---
 
-    @Logged(redactTypes = {UUID.class})
-    public void methodWithTypeRedaction(UUID id) {
+    @Logged(maskTypes = {UUID.class})
+    public void methodWithTypeMasking(UUID id) {
         System.out.println("id=" + id);
     }
 
-    @Logged(redactPatterns = {"\\d{16}"})
-    public void methodWithPatternRedaction(String creditCard) {
+    @Logged(maskPatterns = {"\\d{16}"})
+    public void methodWithPatternMasking(String creditCard) {
         System.out.println("cc=" + creditCard);
     }
 
@@ -154,20 +154,20 @@ public class LogbackTestObject {
         return "TopSecret";
     }
 
-    // Methods without annotation-level redaction to validate global properties
+    // Methods without annotation-level masking to validate global properties
     @Logged
-    public void plainTypeRedaction(UUID id) {
+    public void plainTypeMasking(UUID id) {
         System.out.println("plain id=" + id);
     }
 
     @Logged
-    public void plainPatternRedaction(String creditCard) {
+    public void plainPatternMasking(String creditCard) {
         System.out.println("plain cc=" + creditCard);
     }
 
-    // Multiple pattern redaction at annotation level (to validate combined patterns)
-    @Logged(redactPatterns = {"\\d{16}", "(?i)token"})
-    public void methodWithMultiplePatternRedaction(String creditCard, String token, String other) {
+    // Multiple pattern masking at annotation level (to validate combined patterns)
+    @Logged(maskPatterns = {"\\d{16}", "(?i)token"})
+    public void methodWithMultiplePatternMasking(String creditCard, String token, String other) {
         System.out.println("cc=" + creditCard + ", token=" + token + ", other=" + other);
     }
 }

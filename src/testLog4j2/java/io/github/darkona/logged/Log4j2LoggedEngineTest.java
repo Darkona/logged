@@ -24,11 +24,10 @@ import java.util.function.Consumer;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest(classes = {TestBootConfig.class, Log4jTestObject.class})
+@SpringBootTest(classes = {TestBootConfig.class, Log4jTestObject.class, Log4jTestObject.class})
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class Log4j2LoggedEngineTest {
 
-    // use SLF4J logger; backend is Log4j2
     private final String loggerName = Log4jTestObject.class.getName();
     @Autowired
     private Log4jTestObject testObject;
@@ -338,9 +337,9 @@ class Log4j2LoggedEngineTest {
     }
 
     @Test
-    void callWithRedactedArgs() {
-        callAndAssert("methodWithRedactedArgs",
-                () -> testObject.methodWithRedactedArgs("Important Name", "Chicken", "Credit Card Number"),
+    void callWithMaskedArgs() {
+        callAndAssert("methodWithMaskedArgs",
+                () -> testObject.methodWithMaskedArgs("Important Name", "Chicken", "Credit Card Number"),
                 logs -> assertMessageContains("[(String)arg1:█████, (String)arg2:Chicken, (String)arg3:█████]"));
     }
 
@@ -376,10 +375,10 @@ class Log4j2LoggedEngineTest {
     }
 
     @Test
-    void typeBasedRedactionMasksArg() {
+    void typeBasedMaskingMasksArg() {
         java.util.UUID id = java.util.UUID.fromString("123e4567-e89b-12d3-a456-426614174000");
-        callAndAssert("typeBasedRedactionMasksArg",
-                () -> testObject.methodWithTypeRedaction(id),
+        callAndAssert("typeBasedMaskingMasksArg",
+                () -> testObject.methodWithTypeMasking(id),
                 logs -> {
                     assertFalse(logsContain(id.toString()), "UUID should not be visible");
                     assertTrue(logsContain("█"), "Mask should be present");
@@ -387,12 +386,12 @@ class Log4j2LoggedEngineTest {
     }
 
     @Test
-    void patternBasedRedactionMasksArg() {
+    void patternBasedMaskingMasksArg() {
         String cc = "4111111111111111"; // 16 digits
-        callAndAssert("patternBasedRedactionMasksArg",
-                () -> testObject.methodWithPatternRedaction(cc),
+        callAndAssert("patternBasedMaskingMasksArg",
+                () -> testObject.methodWithPatternMasking(cc),
                 logs -> {
-                    assertFalse(logsContain("41111111"), "Digits should be redacted");
+                    assertFalse(logsContain("41111111"), "Digits should be masked");
                     assertTrue(logsContain("█"), "Mask should be present");
                 });
     }
@@ -402,23 +401,23 @@ class Log4j2LoggedEngineTest {
         callAndAssert("maskedReturnHidesSensitiveData",
                 () -> { testObject.methodWithMaskedReturn(); },
                 logs -> {
-                    assertFalse(logsContain("TopSecret"), "Return value should be redacted");
+                    assertFalse(logsContain("TopSecret"), "Return value should be masked");
                     assertTrue(logsContain("█"), "Mask should be present in return value");
                     assertTrue(logsContain("returned with value"));
                 });
     }
 
     @Test
-    void multiplePatternRedactionMasksArgs() {
+    void multiplePatternMaskingMasksArgs() {
         String cc = "4111111111111111"; // matches \\d{16}
         String token = "Bearer TOKEN-1234"; // matches (?i)token
         String other = "hello"; // should pass through
 
-        callAndAssert("multiplePatternRedactionMasksArgs",
-                () -> testObject.methodWithMultiplePatternRedaction(cc, token, other),
+        callAndAssert("multiplePatternMaskingMasksArgs",
+                () -> testObject.methodWithMultiplePatternMasking(cc, token, other),
                 logs -> {
-                    assertFalse(logsContain("41111111"), "Digits should be redacted (anno-level)");
-                    assertFalse(logsContain("TOKEN-1234"), "Token should be redacted (anno-level)");
+                    assertFalse(logsContain("41111111"), "Digits should be masked (anno-level)");
+                    assertFalse(logsContain("TOKEN-1234"), "Token should be masked (anno-level)");
                     assertTrue(logsContain("returned with value") || logsContain("List")); // lenient on mask encoding
                     assertTrue(logsContain("other:hello") || logsContain("hello"), "Unmatched arg should be visible");
                 });
