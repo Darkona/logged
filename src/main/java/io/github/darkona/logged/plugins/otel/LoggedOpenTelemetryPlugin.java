@@ -55,8 +55,8 @@ import java.util.List;
  *   <li>{@code logged.depth} – nesting depth of {@code @Logged} interceptions for the current call chain.</li>
  *   <li>{@code logged.args.count} – number of arguments observed by the aspect.</li>
  *   <li>{@code logged.args.names} – ordered list of argument names.</li>
- *   <li>{@code logged.args.redacted} – names of arguments whose <em>values</em> are configured to be redacted
- *       (derived from {@link io.github.darkona.logged.Logged#redactArgValues()} and {@link io.github.darkona.logged.Logged#redactAtPos()}).</li>
+ *   <li>{@code logged.args.masked} – names of arguments whose <em>values</em> are configured to be masked
+ *       (derived from {@link io.github.darkona.logged.Logged#maskArgValues()} and {@link io.github.darkona.logged.Logged#maskAtPos()}).</li>
  *   <li>{@code logged.return.type} – declared simple name of the return type (reported on return when enabled).</li>
  *   <li>{@code logged.return.null} – {@code true} if the declared return type string equals {@code "null"}.</li>
  * </ul>
@@ -84,9 +84,9 @@ import java.util.List;
  * <ul>
  *   <li>{@link io.github.darkona.logged.Logged#onReturn()} – controls whether return metadata is added.</li>
  *   <li>{@link io.github.darkona.logged.Logged#onException()} – controls whether exceptions are recorded to the span.</li>
- *   <li>{@link io.github.darkona.logged.Logged#redactArgValues()} / {@link io.github.darkona.logged.Logged#redactAtPos()} –
- *       define which argument <em>values</em> should be treated as redacted; the plugin emits their names in
- *       {@code logged.args.redacted} but does not serialize argument values into span attributes.</li>
+ *   <li>{@link io.github.darkona.logged.Logged#maskArgValues()} / {@link io.github.darkona.logged.Logged#maskAtPos()} –
+ *       define which argument <em>values</em> should be treated as masked; the plugin emits their names in
+ *       {@code logged.args.masked} but does not serialize argument values into span attributes.</li>
  * </ul>
  *
  * <p>
@@ -116,7 +116,7 @@ public class LoggedOpenTelemetryPlugin implements LoggedPlugin {
     private static final AttributeKey<Long> LOGGED_DEPTH = AttributeKey.longKey("logged.depth");
     private static final AttributeKey<Long> LOGGED_ARGS_COUNT = AttributeKey.longKey("logged.args.count");
     private static final AttributeKey<List<String>> LOGGED_ARGS_NAMES = AttributeKey.stringArrayKey("logged.args.names");
-    private static final AttributeKey<List<String>> LOGGED_ARGS_REDACTED = AttributeKey.stringArrayKey("logged.args.redacted");
+    private static final AttributeKey<List<String>> LOGGED_ARGS_MASKED = AttributeKey.stringArrayKey("logged.args.masked");
     private static final AttributeKey<String> LOGGED_RETURN_TYPE = AttributeKey.stringKey("logged.return.type");
     private static final AttributeKey<Boolean> LOGGED_RETURN_NULL = AttributeKey.booleanKey("logged.return.null");
     private static final Logger log = LoggerFactory.getLogger(LoggedOpenTelemetryPlugin.class);
@@ -190,7 +190,7 @@ public class LoggedOpenTelemetryPlugin implements LoggedPlugin {
             int argCount = (args == null) ? 0 : args.length;
             builder.setAttribute(LOGGED_ARGS_COUNT, (long) argCount);
             builder.setAttribute(LOGGED_ARGS_NAMES, data.argNames());
-            builder.setAttribute(LOGGED_ARGS_REDACTED, redactedArgNames(options, args));
+            builder.setAttribute(LOGGED_ARGS_MASKED, maskedArgNames(options, args));
         }
 
         if (props.isAddToMdc()) {
@@ -239,15 +239,15 @@ public class LoggedOpenTelemetryPlugin implements LoggedPlugin {
         endTopSpan();
     }
 
-    private List<String> redactedArgNames(Logged options, Arg[] args) {
+    private List<String> maskedArgNames(Logged options, Arg[] args) {
         List<String> out = new ArrayList<>();
         if (options == null || args == null) return out;
 
-        for (String rn : options.redactArgValues()) {
+        for (String rn : options.maskArgValues()) {
             if (rn != null && !rn.isBlank()) out.add(rn);
         }
 
-        for (int p : options.redactAtPos()) {
+        for (int p : options.maskAtPos()) {
             if (p >= 0 && p < args.length) {
                 out.add(args[p].name());
             }
@@ -271,4 +271,3 @@ public class LoggedOpenTelemetryPlugin implements LoggedPlugin {
     }
 
 }
-

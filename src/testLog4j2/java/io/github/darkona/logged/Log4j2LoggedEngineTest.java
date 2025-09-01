@@ -22,16 +22,16 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 
+import static org.apache.logging.log4j.Level.INFO;
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest(classes = {TestBootConfig.class, Log4jTestObject.class})
+@SpringBootTest(classes = {TestBootConfig.class, Log4j2TestObject.class})
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class Log4j2LoggedEngineTest {
 
-    // use SLF4J logger; backend is Log4j2
-    private final String loggerName = Log4jTestObject.class.getName();
+    private final String loggerName = Log4j2TestObject.class.getName();
     @Autowired
-    private Log4jTestObject testObject;
+    private Log4j2TestObject testObject;
     private Log4j2ListAppender listAppender;
     private List<LogEvent> logs;
     @Autowired
@@ -44,8 +44,9 @@ class Log4j2LoggedEngineTest {
     private LoggedProperties props;
 
     @BeforeEach
+    @SuppressWarnings("deprecation")
     synchronized void setup() {
-        Logger logger = LoggerFactory.getLogger(Log4jTestObject.class);
+        Logger logger = LoggerFactory.getLogger(Log4j2TestObject.class);
 
 
         // Always use the CORE LoggerContext
@@ -64,20 +65,14 @@ class Log4j2LoggedEngineTest {
         if (!loggerName.equals(effective.getName())) {
             //  No dedicated LoggerConfig for this logger; create one
             LoggerConfig dedicated = LoggerConfig.createLogger(
-                    /* additivity */ true,
-                    org.apache.logging.log4j.Level.INFO,
-                    loggerName,
-                    /* includeLocation/advertise */ "true",
-                    /* appender refs */ new AppenderRef[]{},
-                    /* properties */ null,
-                    config,
-                    /* filter */ null
-            );
-            dedicated.addAppender(listAppender, Level.INFO, null);
+                    true, INFO, loggerName, "true", new AppenderRef[]{},
+                    null, config, null);
+
+            dedicated.addAppender(listAppender, INFO, null);
             config.addLogger(loggerName, dedicated);
         } else {
             // There is already a LoggerConfig for loggerName; just attach the appender
-            effective.addAppender(listAppender, org.apache.logging.log4j.Level.INFO, null);
+            effective.addAppender(listAppender, INFO, null);
             effective.setAdditive(true); // or false if you *don't* want parent appenders
         }
 
@@ -90,20 +85,15 @@ class Log4j2LoggedEngineTest {
                 (org.apache.logging.log4j.core.LoggerContext) LogManager.getContext(false);
         var config = ctx.getConfiguration();
 
-        // capture before removal
         logs = listAppender.getList();
 
-        // Detach from the dedicated/effective LoggerConfig
         LoggerConfig lc = config.getLoggerConfig(loggerName);
         lc.removeAppender("List");
 
-        // If we created a dedicated config in setup, removing it is optional.
-        // Safer: only remove if it exactly matches the name.
         if (loggerName.equals(lc.getName())) {
             config.removeLogger(loggerName);
         }
 
-        // Stop and drop the appender from the config registry
         var app = config.getAppender("List");
         if (app != null) {
             app.stop();
@@ -150,9 +140,6 @@ class Log4j2LoggedEngineTest {
         assertTrue(foundBean("loggedMdcPlugin"));
         System.out.println("Found MDC Plugin bean: " + matchedBean);
     }
-
-    // If you still expose a Log4j2-specific plugin bean, assert it here instead of Logback:
-    // @Test void shouldSeeLog4j2PluginInContext() { ... }
 
     @Test
     void shouldBeProxied() {
@@ -338,9 +325,9 @@ class Log4j2LoggedEngineTest {
     }
 
     @Test
-    void callWithRedactedArgs() {
-        callAndAssert("methodWithRedactedArgs",
-                () -> testObject.methodWithRedactedArgs("Important Name", "Chicken", "Credit Card Number"),
+    void callWithMaskedArgs() {
+        callAndAssert("methodWithMaskedArgs",
+                () -> testObject.methodWithMaskedArgs("Important Name", "Chicken", "Credit Card Number"),
                 logs -> assertMessageContains("[(String)arg1:█████, (String)arg2:Chicken, (String)arg3:█████]"));
     }
 
@@ -376,10 +363,10 @@ class Log4j2LoggedEngineTest {
     }
 
     @Test
-    void typeBasedRedactionMasksArg() {
+    void typeBasedMaskingMasksArg() {
         java.util.UUID id = java.util.UUID.fromString("123e4567-e89b-12d3-a456-426614174000");
-        callAndAssert("typeBasedRedactionMasksArg",
-                () -> testObject.methodWithTypeRedaction(id),
+        callAndAssert("typeBasedMaskingMasksArg",
+                () -> testObject.methodWithTypeMasking(id),
                 logs -> {
                     assertFalse(logsContain(id.toString()), "UUID should not be visible");
                     assertTrue(logsContain("█"), "Mask should be present");
@@ -387,12 +374,12 @@ class Log4j2LoggedEngineTest {
     }
 
     @Test
-    void patternBasedRedactionMasksArg() {
+    void patternBasedMaskingMasksArg() {
         String cc = "4111111111111111"; // 16 digits
-        callAndAssert("patternBasedRedactionMasksArg",
-                () -> testObject.methodWithPatternRedaction(cc),
+        callAndAssert("patternBasedMaskingMasksArg",
+                () -> testObject.methodWithPatternMasking(cc),
                 logs -> {
-                    assertFalse(logsContain("41111111"), "Digits should be redacted");
+                    assertFalse(logsContain("41111111"), "Digits should be masked");
                     assertTrue(logsContain("█"), "Mask should be present");
                 });
     }
@@ -400,28 +387,27 @@ class Log4j2LoggedEngineTest {
     @Test
     void maskedReturnHidesSensitiveData() {
         callAndAssert("maskedReturnHidesSensitiveData",
-                () -> { testObject.methodWithMaskedReturn(); },
+                () -> {testObject.methodWithMaskedReturn();},
                 logs -> {
-                    assertFalse(logsContain("TopSecret"), "Return value should be redacted");
+                    assertFalse(logsContain("TopSecret"), "Return value should be masked");
                     assertTrue(logsContain("█"), "Mask should be present in return value");
                     assertTrue(logsContain("returned with value"));
                 });
     }
 
     @Test
-    void multiplePatternRedactionMasksArgs() {
+    void multiplePatternMaskingMasksArgs() {
         String cc = "4111111111111111"; // matches \\d{16}
         String token = "Bearer TOKEN-1234"; // matches (?i)token
         String other = "hello"; // should pass through
 
-        callAndAssert("multiplePatternRedactionMasksArgs",
-                () -> testObject.methodWithMultiplePatternRedaction(cc, token, other),
+        callAndAssert("multiplePatternMaskingMasksArgs",
+                () -> testObject.methodWithMultiplePatternMasking(cc, token, other),
                 logs -> {
-                    assertFalse(logsContain("41111111"), "Digits should be redacted (anno-level)");
-                    assertFalse(logsContain("TOKEN-1234"), "Token should be redacted (anno-level)");
+                    assertFalse(logsContain("41111111"), "Digits should be masked (anno-level)");
+                    assertFalse(logsContain("TOKEN-1234"), "Token should be masked (anno-level)");
                     assertTrue(logsContain("returned with value") || logsContain("List")); // lenient on mask encoding
                     assertTrue(logsContain("other:hello") || logsContain("hello"), "Unmatched arg should be visible");
                 });
     }
 }
-

@@ -94,30 +94,30 @@ public @interface Logged {
     boolean logStackTrace() default false;
 
     /**
-     * Redact parameter value by name of parameter
+     * Mask parameter value by the parameter name.
      */
-    @NonNull String[] redactArgValues() default {};
+    @NonNull String[] maskArgValues() default {};
 
     /**
-     * Redact parameter value by position of parameter (0 is first parameter)
+     * Mask parameter value by parameter position (0 is first parameter).
      */
-    int[] redactAtPos() default {};
+    int[] maskAtPos() default {};
 
     /**
-     * Redact parameter values when their runtime type matches any of these classes
-     * (or is assignable to them). Additive with name/position redaction.
+     * Mask parameter values when their runtime type matches any of these classes
+     * (or is assignable to them). Additive with name/position masking.
      */
-    @NonNull Class<?>[] redactTypes() default {};
+    @NonNull Class<?>[] maskTypes() default {};
 
     /**
-     * Redact parameter values when their String representation matches any of these
-     * regular expressions. Additive with name/position redaction.
+     * Mask parameter values when their String representation matches any of these
+     * regular expressions. Additive with name/position masking.
      */
-    @NonNull String[] redactPatterns() default {};
+    @NonNull String[] maskPatterns() default {};
 
     /**
      * If true, mask the method's return value in logs. Can also be enabled globally
-     * via properties. Type/pattern redaction also applies to return values.
+     * via properties. Type/pattern masking also applies to return values.
      */
     boolean maskReturn() default false;
 

@@ -4,12 +4,11 @@ import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.text.BreakIterator;
-import java.util.Locale;
 import java.util.Arrays;
+import java.util.Locale;
 
 /**
  * Text transformation and formatting utilities used by the logging library.
- *
  * <p>Designed to be cheap in CPU and GC on logging hot paths:
  * avoids unnecessary allocations, uses fast paths for common types,
  * and reserves more expensive operations (e.g., grapheme handling) for
@@ -22,16 +21,16 @@ public class Transformer {
     private Transformer() {}
 
     /**
-     * Returns a safe textual representation of the given object.
+     * Returns a safe String representation of the given object.
+     * <ul>
+     *   <li>Fast paths (no try/catch) for {@link CharSequence}, numeric wrappers, {@link Boolean} and {@link Character}.</li>
+     *   <li>Arrays: renders contents via {@code Arrays.toString/deepToString} instead of identity hashes.</li>
+     *   <li>Safe fallback: wraps {@code toString()} in try/catch (prevents logging failures if {@code toString} throws).</li>
+     *   <li>No truncation here: callers (e.g., LoggedEngine) handle truncation to avoid duplicate cost.</li>
+     * </ul>
      *
-     * - Fast paths without try/catch for {@link CharSequence}, numeric wrappers,
-     *   {@link Boolean}, and {@link Character}.
-     * - Array support: uses {@code Arrays.toString/deepToString} as appropriate.
-     * - Safe fallback using {@code toString()} inside try/catch (prevents logging from breaking if toString throws).
-     * - No truncation: callers (e.g., LoggedEngine) handle truncation to avoid duplicating cost.
-     *
-     * @param o object to render
-     * @return textual representation; "null" if the object is {@code null}
+     * @param o object to stringify
+     * @return textual representation; "null" if the object is null
      */
     public static String objectString(Object o) {
         if (o == null) return "null";
@@ -40,15 +39,36 @@ public class Transformer {
         // Arrays: render contents instead of identity hash
         Class<?> c = o.getClass();
         if (c.isArray()) {
+
             if (o instanceof Object[] arr) return Arrays.deepToString(arr);
-            if (o instanceof int[] a) return Arrays.toString(a);
-            if (o instanceof long[] a) return Arrays.toString(a);
-            if (o instanceof double[] a) return Arrays.toString(a);
-            if (o instanceof float[] a) return Arrays.toString(a);
-            if (o instanceof boolean[] a) return Arrays.toString(a);
-            if (o instanceof byte[] a) return Arrays.toString(a);
-            if (o instanceof short[] a) return Arrays.toString(a);
-            if (o instanceof char[] a) return Arrays.toString(a);
+
+            switch (o) {
+                case int[] a -> {
+                    return Arrays.toString(a);
+                }
+                case long[] a -> {
+                    return Arrays.toString(a);
+                }
+                case double[] a -> {
+                    return Arrays.toString(a);
+                }
+                case float[] a -> {
+                    return Arrays.toString(a);
+                }
+                case boolean[] a -> {
+                    return Arrays.toString(a);
+                }
+                case byte[] a -> {
+                    return Arrays.toString(a);
+                }
+                case short[] a -> {
+                    return Arrays.toString(a);
+                }
+                case char[] a -> {
+                    return Arrays.toString(a);
+                }
+                default -> {}
+            }
         }
         try {
             return o.toString();
@@ -61,8 +81,8 @@ public class Transformer {
      * Repeats the given string {@code amount} times.
      *
      * @param s      pattern to repeat (non-null)
-     * @param amount number of repetitions (<= 0 returns "")
-     * @return repeated string
+     * @param amount number of repetitions (returns empty string if {@code amount <= 0})
+     * @return the repeated string
      */
     public static String fill(String s, int amount) {
         return s.repeat(Math.max(0, amount));
@@ -127,7 +147,6 @@ public class Transformer {
 
     /**
      * English ordinal suffix for a day of the month (st, nd, rd, th).
-     *
      * @param day day of the month
      * @return corresponding ordinal suffix
      */
@@ -174,6 +193,7 @@ public class Transformer {
         sb.append(first).append(s, 1, s.length());
         return sb.toString();
     }
+
 
     /** Ellipsis character used by {@link #truncate(String, int)}. */
     private static final String ELLIPSIS = "…";
