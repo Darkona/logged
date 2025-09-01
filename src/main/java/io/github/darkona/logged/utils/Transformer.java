@@ -9,11 +9,10 @@ import java.util.Locale;
 
 /**
  * Text transformation and formatting utilities used by the logging library.
- * <p>
- * Designed to be CPU/GC-friendly on logging hot paths: avoids unnecessary allocations,
- * uses fast paths for common types, and reserves more expensive operations (e.g., grapheme
- * handling) for specific methods that are not invoked by default.
- * </p>
+ * <p>Designed to be cheap in CPU and GC on logging hot paths:
+ * avoids unnecessary allocations, uses fast paths for common types,
+ * and reserves more expensive operations (e.g., grapheme handling) for
+ * specialized methods that are not invoked by default.</p>
  */
 @SuppressWarnings("unused")
 @Component
@@ -90,12 +89,12 @@ public class Transformer {
     }
 
     /**
-     * Masks a string, optionally preserving the first {@code unmasked} characters.
+     * Masks a string while optionally preserving the first {@code unmasked} characters.
      * Does not create a {@code char[]} when masking the entire string; uses {@code repeat} to minimize allocations.
      *
-     * @param string   input (may be null - returns null)
-     * @param unmasked number of leading characters to leave unmasked
-     * @param maskChar mask character (null ? '*')
+     * @param string   input (may be null → returns null)
+     * @param unmasked number of leading characters to keep unmasked (null or &lt;0 → 0)
+     * @param maskChar masking character (null → '*')
      * @return masked string or null if {@code string} is null
      */
     public static String mask(String string, @Nullable Integer unmasked, @Nullable Character maskChar) {
@@ -112,20 +111,20 @@ public class Transformer {
     }
 
     /**
-     * Primitive overload for {@link #mask(String, Integer, Character)}.
+     * Boxing-free overload of {@link #mask(String, Integer, Character)}.
      */
     public static String mask(String string, int unmasked, char maskChar) {
         return mask(string, Integer.valueOf(unmasked), Character.valueOf(maskChar));
     }
 
     /**
-     * Masks a character array preserving the first {@code unmasked} characters (optional).
-     * Pre-allocates capacity and avoids per-character branching where possible.
+     * Masks a character array while optionally preserving the first {@code unmasked} characters.
+     * Pre-allocates capacity and avoids per-character branches when possible.
      *
-     * @param bytes    input characters (may be null - returns null)
-     * @param unmasked number of leading characters to leave unmasked
-     * @param maskChar mask character (null ? '*')
-     * @return masked string, or a copy of {@code bytes} if {@code unmasked >= length}
+     * @param bytes    input characters (may be null → returns null)
+     * @param unmasked number of leading characters to keep unmasked (null or &lt;0 → 0)
+     * @param maskChar masking character (null → '*')
+     * @return masked string, or a copy of {@code bytes} if {@code unmasked ≥ length}
      */
     public static String mask(char[] bytes, @Nullable Integer unmasked, @Nullable Character maskChar) {
         if (bytes == null) return null;
@@ -140,7 +139,7 @@ public class Transformer {
     }
 
     /**
-     * Primitive overload for {@link #mask(char[], Integer, Character)}.
+     * Boxing-free overload of {@link #mask(char[], Integer, Character)}.
      */
     public static String mask(char[] bytes, int unmasked, char maskChar) {
         return mask(bytes, Integer.valueOf(unmasked), Character.valueOf(maskChar));
@@ -148,9 +147,8 @@ public class Transformer {
 
     /**
      * English ordinal suffix for a day of the month (st, nd, rd, th).
-     *
-     * @param day day of month
-     * @return ordinal suffix string
+     * @param day day of the month
+     * @return corresponding ordinal suffix
      */
     public static String daySuffix(int day) {
         if (day >= 11 && day <= 13) return "th";
@@ -163,8 +161,8 @@ public class Transformer {
     }
 
     /**
-     * Substring between indices {@code begin} (inclusive) and {@code end} (exclusive).
-     * Returns an empty string for null/empty input; returns the original string when indices are invalid.
+     * Substring between indexes {@code begin} (inclusive) and {@code end} (exclusive).
+     * Returns "" if the input is null or empty; returns the original string if the indexes are invalid.
      */
     public static String getSubstring(String str, int begin, int end) {
         if (str == null || str.isEmpty()) return "";
@@ -172,8 +170,8 @@ public class Transformer {
     }
 
     /**
-     * Substring from {@code begin} to the first occurrence of {@code delimiter} (exclusive).
-     * If the delimiter is not present, returns {@code str.trim()}.
+     * Substring from {@code begin} up to the first occurrence of {@code delimiter} (exclusive).
+     * If the delimiter is absent, returns {@code str.trim()}.
      */
     public static String getSubstringUntil(String str, int begin, String delimiter) {
         if (str == null || str.isEmpty()) return "";
@@ -184,8 +182,8 @@ public class Transformer {
     }
 
     /**
-     * Capitalizes the first character (ASCII; not locale-aware).
-     * Keeps the rest of the string without unnecessary copies.
+     * Capitalizes the first character (ASCII/English; not locale-aware).
+     * Keeps the rest of the string without unnecessary copying.
      */
     public static String capitalize(String s) {
         if (s == null || s.isEmpty()) return s;
@@ -196,18 +194,17 @@ public class Transformer {
         return sb.toString();
     }
 
-    /**
-     * Ellipsis character used by {@link #truncate(String, int)}.
-     */
-    private static final String ELLIPSIS = "\u2026";
+
+    /** Ellipsis character used by {@link #truncate(String, int)}. */
+    private static final String ELLIPSIS = "…";
 
     /**
-     * Truncates the string to at most {@code max} characters and appends {@link #ELLIPSIS}
-     * when truncated (so the resulting length is > {@code max}).
+     * Truncates the string to at most {@code max} characters and appends {@link #ELLIPSIS} if truncation occurred
+     * so that the resulting length exceeds {@code max}.
      *
-     * @param s   input (may be null - returns null)
-     * @param max maximum length before the suffix
-     * @return truncated string with suffix or the original if no truncation is required
+     * @param s   input (may be null → returns null)
+     * @param max maximum length before appending the suffix
+     * @return truncated string with suffix, or the original if no truncation is needed
      */
     public static String truncate(String s, int max) {
         if (s == null) return null;
@@ -219,12 +216,12 @@ public class Transformer {
 
     /**
      * Truncates by grapheme clusters (user-perceived characters) using {@link BreakIterator}.
-     * Expensive; use only when you must avoid splitting emojis/combining marks.
+     * Expensive; use only when you truly need to avoid splitting emojis or combining marks.
      *
-     * @param s           input (null ? empty string)
+     * @param s           input (null → "")
      * @param maxClusters maximum number of graphemes
      * @return substring limited to {@code maxClusters} graphemes
-     * @throws IllegalArgumentException if {@code maxClusters} less than 0
+     * @throws IllegalArgumentException if {@code maxClusters} &lt; 0
      */
     public static String truncateGraphemes(String s, int maxClusters) {
         if (s == null) return "";

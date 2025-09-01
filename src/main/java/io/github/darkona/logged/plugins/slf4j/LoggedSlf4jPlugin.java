@@ -29,6 +29,7 @@ import java.util.Map;
 import static io.github.darkona.logged.internals.LoggedEngine.NULL;
 
 
+
 /**
  * SLF4J plugin for {@code @Logged}.
  * - Emite entrada/salida/excepción con SLF4J
