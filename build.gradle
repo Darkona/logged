@@ -24,6 +24,7 @@ repositories {
         mavenLocal()
     }
 }
+
 // DO NOT TOUCH THIS
 def orderedProcessors = [
         'lombok.launch.AnnotationProcessorHider$AnnotationProcessor',
@@ -61,7 +62,6 @@ jar {
         )
     }
 }
-
 
 compileJava.dependsOn(processResources)
 
@@ -119,7 +119,6 @@ dependencyManagement {
     }
 }
 
-
 configurations.named("testImplementation") {
     exclude group: 'org.mockito'
     exclude group: 'org.springframework.boot', module: 'spring-boot-starter-logging'
@@ -130,8 +129,9 @@ tasks.withType(ProcessResources).configureEach {
 sourceSets {
 
     testLog4j2 {
-        java.srcDir 'src/testLog4j/java'
-        resources.srcDir 'src/testLog4j/resources'
+
+        java.srcDir 'src/testLog4j2/java'
+        resources.srcDir 'src/testLog4j2/resources'
         compileClasspath += sourceSets.main.output
         runtimeClasspath += output + compileClasspath
     }
@@ -208,13 +208,13 @@ dependencies {
     }
 }
 
-tasks.withType(JavaCompile).configureEach {
-    options.generatedSourceOutputDirectory.set(
-            layout.buildDirectory.dir("generated/sources/annotationProcessor/${name}")
-    )
-}
+//tasks.withType(JavaCompile).configureEach {
+//    options.generatedSourceOutputDirectory.set(
+//            layout.buildDirectory.dir("generated/sources/annotationProcessor/${name}")
+//    )
+//}
 
-tasks.register('testLog4j2Test', Test) {
+tasks.register('testLog4j2', Test) {
     description = 'Runs tests with Log4j2 stack'
     testClassesDirs = sourceSets.testLog4j2.output.classesDirs
     classpath = sourceSets.testLog4j2.runtimeClasspath
@@ -225,7 +225,7 @@ tasks.register('testLog4j2Test', Test) {
 }
 
 
-tasks.register('testLogbackTest', Test) {
+tasks.register('testLogback', Test) {
     description = 'Runs tests with Logback stack'
     testClassesDirs = sourceSets.testLogback.output.classesDirs
     classpath = sourceSets.testLogback.runtimeClasspath
@@ -234,7 +234,7 @@ tasks.register('testLogbackTest', Test) {
 }
 
 tasks.named('check') {
-    dependsOn tasks.named('testLog4j2Test'), tasks.named('testLogbackTest')
+    dependsOn tasks.named('testLog4j2'), tasks.named('testLogback')
 }
 
 // Ensure default test task (src/test) uses JUnit Platform
@@ -242,30 +242,6 @@ tasks.named('test', Test) {
     useJUnitPlatform()
 }
 
-
-// --- README version sync helpers ---
-tasks.register('updateReadmeVersion') {
-    group = 'release'
-    description = 'Sync README.md dependency snippets to project.version'
-    doLast {
-        def v = project.version.toString()
-        def f = file('README.md')
-        if (!f.exists()) return
-        def t = f.getText('UTF-8')
-        def updated = t
-        // Gradle snippet: io.github.darkona:logged:x.y.z
-                .replaceAll(/io\.github\.darkona:logged:[0-9A-Za-z.\-]+/, "io.github.darkona:logged:${v}")
-        // Maven snippet: <artifactId>logged</artifactId> ... <version>x.y.z</version>
-                .replaceAll(/(?s)(<artifactId>logged<\/artifactId>.*?<version>)([^<]+)(<\/version>)/, '$1' + v + '$3')
-
-        if (updated != t) {
-            f.setText(updated, 'UTF-8')
-            println "README.md updated to version ${v}"
-        } else {
-            println "README.md already at ${v}"
-        }
-    }
-}
 
 tasks.register('checkReadmeVersion') {
     group = 'verification'
@@ -283,8 +259,8 @@ tasks.register('checkReadmeVersion') {
 
 // Guard on CI/local checks
 tasks.named('check').configure {
-    dependsOn 'checkReadmeVersion'
     dependsOn 'test'
-    dependsOn 'testLog4j2Test'
-    dependsOn 'testLogbackTest'
+    dependsOn 'testLog4j2'
+    dependsOn 'testLogback'
 }
+

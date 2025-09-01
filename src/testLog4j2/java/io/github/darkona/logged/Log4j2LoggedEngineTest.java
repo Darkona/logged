@@ -25,13 +25,13 @@ import java.util.function.Consumer;
 import static org.apache.logging.log4j.Level.INFO;
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest(classes = {TestBootConfig.class, Log4jTestObject.class, Log4jTestObject.class})
+@SpringBootTest(classes = {TestBootConfig.class, Log4j2TestObject.class})
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class Log4j2LoggedEngineTest {
 
-    private final String loggerName = Log4jTestObject.class.getName();
+    private final String loggerName = Log4j2TestObject.class.getName();
     @Autowired
-    private Log4jTestObject testObject;
+    private Log4j2TestObject testObject;
     private Log4j2ListAppender listAppender;
     private List<LogEvent> logs;
     @Autowired
@@ -46,7 +46,7 @@ class Log4j2LoggedEngineTest {
     @BeforeEach
     @SuppressWarnings("deprecation")
     synchronized void setup() {
-        Logger logger = LoggerFactory.getLogger(Log4jTestObject.class);
+        Logger logger = LoggerFactory.getLogger(Log4j2TestObject.class);
 
 
         // Always use the CORE LoggerContext

@@ -8,7 +8,7 @@ import java.util.UUID;
 
 @SuppressWarnings("UnusedReturnValue")
 @Component
-public class Log4jTestObject {
+public class Log4j2TestObject {
 
     @Autowired
     private LogDecorator deco;
