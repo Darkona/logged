@@ -85,20 +85,15 @@ class Log4j2LoggedEngineTest {
                 (org.apache.logging.log4j.core.LoggerContext) LogManager.getContext(false);
         var config = ctx.getConfiguration();
 
-        // capture before removal
         logs = listAppender.getList();
 
-        // Detach from the dedicated/effective LoggerConfig
         LoggerConfig lc = config.getLoggerConfig(loggerName);
         lc.removeAppender("List");
 
-        // If we created a dedicated config in setup, removing it is optional.
-        // Safer: only remove if it exactly matches the name.
         if (loggerName.equals(lc.getName())) {
             config.removeLogger(loggerName);
         }
 
-        // Stop and drop the appender from the config registry
         var app = config.getAppender("List");
         if (app != null) {
             app.stop();
@@ -145,9 +140,6 @@ class Log4j2LoggedEngineTest {
         assertTrue(foundBean("loggedMdcPlugin"));
         System.out.println("Found MDC Plugin bean: " + matchedBean);
     }
-
-    // If you still expose a Log4j2-specific plugin bean, assert it here instead of Logback:
-    // @Test void shouldSeeLog4j2PluginInContext() { ... }
 
     @Test
     void shouldBeProxied() {
