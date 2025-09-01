@@ -8,12 +8,12 @@ logged:
     enabled: true
   mdc:
     enabled: true
-  # Global redaction rules for tests
+  # Global masking rules for tests
   # Note: Use a single backslash in YAML (e.g. '\d{16}'),
   # Spring will pass '\d{16}' to Java's Pattern.compile, matching 16 digits.
-  redactPatterns:
+  maskPatterns:
     - '\d{16}'
-  redactTypeNames:
+  maskTypeNames:
     - 'java.util.UUID'
   threshold:
     warnMs: 5

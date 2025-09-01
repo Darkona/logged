@@ -16,7 +16,7 @@
       "name": "logged.useIconTheme",
       "type": "java.lang.Boolean",
       "defaultValue": false,
-      "description": "When true, use a predefined icon theme for entry/exit/throw/depth icons."
+      "description": "When true, use a predefined icon theme for call/return/exception/depth icons."
     },
     {
       "name": "logged.iconTheme",
@@ -28,26 +28,26 @@
     { "name": "logged.color", "type": "java.lang.Boolean", "defaultValue": true, "description": "Use colored log decorator." },
     { "name": "logged.icons", "type": "java.lang.Boolean", "defaultValue": true, "description": "Enable icon rendering in templates." },
     { "name": "logged.useUtf8", "type": "java.lang.Boolean", "defaultValue": true, "description": "Enable UTF-8 on System.out for pretty symbols." },
-    { "name": "logged.redactMask", "type": "java.lang.String", "description": "Mask character(s) used for redaction." },
-    { "name": "logged.redactLength", "type": "java.lang.Integer", "defaultValue": 5, "description": "Length of the redacted string used in output." },
-    { "name": "logged.redactPatterns", "type": "java.util.List<java.lang.String>", "description": "Global regex patterns to trigger redaction on args/return values." },
-    { "name": "logged.redactTypeNames", "type": "java.util.List<java.lang.String>", "description": "Fully-qualified class names to trigger redaction when assignable." },
-    { "name": "logged.failOnInvalidRedactPatterns", "type": "java.lang.Boolean", "defaultValue": false, "description": "Fail startup if any redact pattern is invalid." },
-    { "name": "logged.failOnUnresolvedRedactTypes", "type": "java.lang.Boolean", "defaultValue": false, "description": "Fail startup if any redact type cannot be resolved." },
+    { "name": "logged.redactMask", "type": "java.lang.String", "description": "Mask string used when masking values." },
+    { "name": "logged.maskLength", "type": "java.lang.Integer", "defaultValue": 5, "description": "Length of the mask string used in output." },
+    { "name": "logged.maskPatterns", "type": "java.util.List<java.lang.String>", "description": "Global regex patterns to trigger masking on args/return values." },
+    { "name": "logged.maskTypeNames", "type": "java.util.List<java.lang.String>", "description": "Fully-qualified class names to trigger masking when assignable." },
+    { "name": "logged.failOnInvalidMaskPatterns", "type": "java.lang.Boolean", "defaultValue": false, "description": "Fail startup if any mask pattern is invalid." },
+    { "name": "logged.failOnUnresolvedMaskTypes", "type": "java.lang.Boolean", "defaultValue": false, "description": "Fail startup if any mask type cannot be resolved." },
     { "name": "logged.maskReturn", "type": "java.lang.Boolean", "defaultValue": false, "description": "Mask return values globally (can be overridden per method)." },
-    { "name": "logged.entryIcon", "type": "java.lang.String", "description": "Icon/string shown on method entry messages." },
-    { "name": "logged.exitIcon", "type": "java.lang.String", "description": "Icon/string shown on method exit messages." },
-    { "name": "logged.throwIcon", "type": "java.lang.String", "description": "Icon/string shown on exception messages." },
+    { "name": "logged.callIcon", "type": "java.lang.String", "description": "Icon/string shown on method call messages." },
+    { "name": "logged.returnIcon", "type": "java.lang.String", "description": "Icon/string shown on method return messages." },
+    { "name": "logged.exceptionIcon", "type": "java.lang.String", "description": "Icon/string shown on exception messages." },
     { "name": "logged.depthIcon", "type": "java.lang.String", "description": "Icon/string used to render depth/indentation." },
     { "name": "logged.slf4j.enabled", "type": "java.lang.Boolean", "defaultValue": true, "description": "Enable the SLF4J plugin." },
     { "name": "logged.slf4j.color", "type": "java.lang.Boolean", "defaultValue": true, "description": "Enable color decoration in SLF4J plugin." },
     { "name": "logged.slf4j.iconColors", "type": "java.lang.Boolean", "defaultValue": true, "description": "Colorize icons separately in SLF4J output." },
     { "name": "logged.slf4j.callMsgNoArgs", "type": "java.lang.String", "description": "Template used on method entry without arguments." },
     { "name": "logged.slf4j.callMsgArgs", "type": "java.lang.String", "description": "Template used on method entry with arguments." },
-    { "name": "logged.slf4j.exitMsg", "type": "java.lang.String", "description": "Template used on method exit without return value." },
+    { "name": "logged.slf4j.returnMsg", "type": "java.lang.String", "description": "Template used on method return without return value." },
     { "name": "logged.slf4j.argsTemplate", "type": "java.lang.String", "defaultValue": "({c}){k}:{v}", "description": "Template for individual arguments when building {a}." },
-    { "name": "logged.slf4j.exitMsgValue", "type": "java.lang.String", "description": "Template used on method exit with return value." },
-    { "name": "logged.slf4j.throwMsg", "type": "java.lang.String", "description": "Template used on exceptions." },
+    { "name": "logged.slf4j.returnMsgValue", "type": "java.lang.String", "description": "Template used on method return with return value." },
+    { "name": "logged.slf4j.exceptionMsg", "type": "java.lang.String", "description": "Template used on exceptions." },
     { "name": "logged.slf4j.timeTakenMsg", "type": "java.lang.String", "defaultValue": "Time taken: {d} ms", "description": "Template appended when timing is enabled." },
     { "name": "logged.slf4j.logDepth", "type": "java.lang.Boolean", "defaultValue": true, "description": "Render visual depth/indentation in messages." },
     { "name": "logged.slf4j.captureFromMdc", "type": "java.util.List<java.lang.String>", "description": "MDC keys to capture as tokens {mdc.<key>} in messages." },
@@ -129,7 +129,7 @@
       ]
     },
     {
-      "name": "logged.slf4j.entryIconColor",
+      "name": "logged.slf4j.callIconColor",
       "values": [
         { "value": "BLACK" }, { "value": "RED" }, { "value": "GREEN" }, { "value": "YELLOW" },
         { "value": "BLUE" }, { "value": "MAGENTA" }, { "value": "CYAN" }, { "value": "WHITE" },
@@ -138,7 +138,7 @@
       ]
     },
     {
-      "name": "logged.slf4j.exitIconColor",
+      "name": "logged.slf4j.returnIconColor",
       "values": [
         { "value": "BLACK" }, { "value": "RED" }, { "value": "GREEN" }, { "value": "YELLOW" },
         { "value": "BLUE" }, { "value": "MAGENTA" }, { "value": "CYAN" }, { "value": "WHITE" },
@@ -147,7 +147,7 @@
       ]
     },
     {
-      "name": "logged.slf4j.throwIconColor",
+      "name": "logged.slf4j.exceptionIconColor",
       "values": [
         { "value": "BLACK" }, { "value": "RED" }, { "value": "GREEN" }, { "value": "YELLOW" },
         { "value": "BLUE" }, { "value": "MAGENTA" }, { "value": "CYAN" }, { "value": "WHITE" },
@@ -170,8 +170,8 @@
         { "value": "METHOD_NAME" }, { "value": "METHOD_TYPE" }, { "value": "CLASS_NAME" }, { "value": "CLASS_LONG" },
         { "value": "RETURN_VALUE" }, { "value": "DURATION" }, { "value": "EXCEPTION_CLASS" }, { "value": "EXCEPTION_MESSAGE" },
         { "value": "EXCEPTION_ORIGIN_CLASS" }, { "value": "EXCEPTION_ORIGIN_METHOD" }, { "value": "ARGUMENTS" },
-        { "value": "RETURN_CLASS" }, { "value": "LINE" }, { "value": "FILENAME" }, { "value": "ENTRY_ICON" },
-        { "value": "EXIT_ICON" }, { "value": "THROW_ICON" }, { "value": "DEPTH_ICON" }, { "value": "NULL" },
+        { "value": "RETURN_CLASS" }, { "value": "LINE" }, { "value": "FILENAME" }, { "value": "CALL_ICON" },
+        { "value": "RETURN_ICON" }, { "value": "EXCEPTION_ICON" }, { "value": "DEPTH_ICON" }, { "value": "NULL" },
         { "value": "MDC" }, { "value": "DEPTH" }
       ]
     },

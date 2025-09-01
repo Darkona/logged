@@ -1,7 +1,6 @@
 package io.github.darkona.logged.colors;
 
 import java.util.List;
-import java.util.Locale;
 
 
 public class ColorFinder {

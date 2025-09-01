@@ -33,7 +33,7 @@ public class LoggedSlf4jProperties {
      * <p>Meaning: Logs the method entry using the entry icon, class name, and method name.</p>
      * <p>Example: {@code ↓○ MyClass::myMethod called.}</p>
      */
-    private String callMsgNoArgs = "{h:}{eI:} {c}::{m} called.";
+    private String callMsgNoArgs = "{h:}{cI:} {c}::{m} called.";
 
     /**
      * Template for method entry when there are arguments.
@@ -41,7 +41,7 @@ public class LoggedSlf4jProperties {
      * <p>Meaning: Logs method entry and includes the argument list.</p>
      * <p>Example: {@code ↓○ MyClass::myMethod called with args: [42, "foo"]}</p>
      */
-    private String callMsgArgs = "{h:}{eI:} {c}::{m} called with args: [{a}]";
+    private String callMsgArgs = "{h:}{cI:} {c}::{m} called with args: [{a}]";
 
     /**
      * Template for method exit without a return value.
@@ -49,7 +49,7 @@ public class LoggedSlf4jProperties {
      * <p>Meaning: Logs the fact that a method has returned, without showing any return value.</p>
      * <p>Example: {@code ↑○ MyClass::myMethod returned.}</p>
      */
-    private String exitMsg = "{h:}{xI:} {c}::{m} returned.";
+    private String returnMsg = "{h:}{rI:} {c}::{m} returned.";
 
     /**
      * Template for arguments or parameters of the method.
@@ -65,7 +65,7 @@ public class LoggedSlf4jProperties {
      * <p>Meaning: Logs that the method returned and shows the return value.</p>
      * <p>Example: {@code ↑○ MyClass::myMethod returned with value: 123}</p>
      */
-    private String exitMsgValue = "{h:}{xI:} {c}::{m} returned with value: {rV}";
+    private String returnMsgValue = "{h:}{rI:} {c}::{m} returned with value: {rV}";
 
 
     /**
@@ -74,7 +74,7 @@ public class LoggedSlf4jProperties {
      * <p>Meaning: Logs the exception with its type, message, and origin point in the code.</p>
      * <p>Example: {@code ↑x MyClass::myMethod threw a NullPointerException: boom at MyClass.otherMethod (MyClass.java:42)}</p>
      */
-    private String throwMsg = "{h:}{tI:} {c}::{m} threw a {ex}: {eM} \n\tat {ec}.{em} ({f}:{L})";
+    private String exceptionMsg = "{h:}{exI:} {c}::{m} threw a {ex}: {eM} \n\tat {ec}.{em} ({f}:{L})";
 
     /**
      * Template for logging method execution time.
@@ -116,19 +116,19 @@ public class LoggedSlf4jProperties {
      * Uses {@link BasicColor} or any of the color classes to find a color.
      * See {@link io.github.darkona.logged.colors.Blue} for reference;
      */
-    private String entryIconColor = "BLUE";
+    private String callIconColor = "BLUE";
 
     /**
      * Uses {@link BasicColor} or any of the color classes to find a color.
      * See {@link io.github.darkona.logged.colors.Green} for reference;
      */
-    private String exitIconColor = "GREEN";
+    private String returnIconColor = "GREEN";
 
     /**
      * Uses {@link BasicColor} or any of the color classes to find a color.
      * See {@link io.github.darkona.logged.colors.Red} for reference;
      */
-    private String throwIconColor = "RED";
+    private String exceptionIconColor = "RED";
 
     /**
      * Uses {@link BasicColor} or any of the color classes to find a color.

@@ -15,14 +15,22 @@ import java.util.Map;
 public class Bannerizer {
 
     // Skin for borders (ASCII / UTF box-drawing)
-    private record Skin(String topLeft, String topRight, String bottomLeft, String bottomRight,
-                        String horizontal, String vertical) {}
+    private record Skin(String topLeft, String topRight,
+                        String bottomLeft, String bottomRight,
+                        String horizontal, String vertical,
+                        String joinLeft, String joinCross,
+                        String joinRight, String topJoin, String bottomJoin) {
 
-    private static final Skin ASCII = new Skin("+", "+", "+", "+", "-", "|");
-    private static final Skin UTF = new Skin("\u2554", "\u2557", "\u255A", "\u255D", "\u2550", "\u2551");
+    }
+
+    private static final Skin ASCII = new Skin("+", "+", "+", "+", "-", "|", "+",
+            "+", "+", "+", "+");
+    private static final Skin UTF = new Skin("╔", "╗", "╚", "╝", "═", "║", "╠",
+            "╬", "╣", "╦", "╩");
 
     // Optional override for UTF detection; null => auto-detect from System.out
     private static volatile Boolean forceUtf8 = null;
+
     private static boolean supportsUtf8() {
         return forceUtf8 != null ? forceUtf8 : StandardCharsets.UTF_8.equals(System.out.charset());
     }
@@ -117,7 +125,7 @@ public class Bannerizer {
         return sb.toString();
     }
 
-    // Banner with separate colors
+
     private static String bannerize(String borderColor, String textColor, String s, int width, Skin skin) {
         if (s == null) return "";
         int inner = Math.max(0, width - 2);
@@ -195,8 +203,6 @@ public class Bannerizer {
         return s + Transformer.fill(" ", width - len);
     }
 
-    // ===== Table (Map) =====
-
     /**
      * Renders a 2-column table using current skin with headers and a map of key/value rows (no colors).
      */
@@ -229,13 +235,16 @@ public class Bannerizer {
 
     private static String mapTablerize(String headerColor, String col1Color, String col2Color, String borderColor,
                                        String[] headers, Map<String, String> data, int width) {
+
+
         Skin skin = currentSkin();
-        if (width < 6) return ""; // too small
-        int inner = Math.max(0, width - 2);
+
         String h1 = (headers != null && headers.length > 0 && headers[0] != null) ? headers[0] : "Key";
         String h2 = (headers != null && headers.length > 1 && headers[1] != null) ? headers[1] : "Value";
+        int headerLen = h1.length() + h2.length();
+        if (width < headerLen + 8) return "";
+        int inner = Math.max(0, width - 2);
 
-        // compute available text width (two cells + 1 separator + 4 spaces)
         int textAvail = Math.max(1, inner - 1 - 4);
         int maxKey = visibleLen(h1);
         int maxVal = visibleLen(h2);
@@ -245,76 +254,106 @@ public class Bannerizer {
                 maxVal = Math.max(maxVal, visibleLen(e.getValue()));
             }
         }
+
         int left = Math.max(1, Math.min(textAvail / 2, maxKey));
         int right = Math.max(1, textAvail - left);
 
         StringBuilder sb = new StringBuilder(width * (2 + (data != null ? data.size() : 0)) + 64);
-        // Top border
-        if (!borderColor.isEmpty()) sb.append(borderColor);
-        sb.append(skin.topLeft).append(Transformer.fill(skin.horizontal, inner)).append(skin.topRight);
-        if (!borderColor.isEmpty()) sb.append(Colorizer.reset());
-        sb.append(System.lineSeparator());
 
-        // Header
-        if (!borderColor.isEmpty()) sb.append(borderColor);
-        sb.append(skin.vertical);
-        if (!borderColor.isEmpty()) sb.append(Colorizer.reset());
-        sb.append(' ');
-        if (!headerColor.isEmpty()) sb.append(headerColor);
-        sb.append(padRight(h1, left));
-        if (!headerColor.isEmpty()) sb.append(Colorizer.reset());
-        sb.append(' ');
-        if (!borderColor.isEmpty()) sb.append(borderColor);
-        sb.append(skin.vertical);
-        if (!borderColor.isEmpty()) sb.append(Colorizer.reset());
-        sb.append(' ');
-        if (!headerColor.isEmpty()) sb.append(headerColor);
-        sb.append(padRight(h2, right));
-        if (!headerColor.isEmpty()) sb.append(Colorizer.reset());
-        sb.append(' ');
-        if (!borderColor.isEmpty()) sb.append(borderColor);
-        sb.append(skin.vertical);
-        if (!borderColor.isEmpty()) sb.append(Colorizer.reset());
-        sb.append(System.lineSeparator());
+        appendTopBorder(sb, skin, borderColor, left, right);
 
-        // Header separator
-        if (!borderColor.isEmpty()) sb.append(borderColor);
-        sb.append(skin.vertical).append(Transformer.fill(skin.horizontal, inner)).append(skin.vertical);
-        if (!borderColor.isEmpty()) sb.append(Colorizer.reset());
-        sb.append(System.lineSeparator());
+        appendRow(sb, skin, borderColor, h1, left, headerColor, h2, right, headerColor);
 
-        // Rows
+        appendHeaderSeparator(sb, skin, borderColor, left, right);
+
         if (data != null) {
             for (var e : data.entrySet()) {
-                if (!borderColor.isEmpty()) sb.append(borderColor);
-                sb.append(skin.vertical);
-                if (!borderColor.isEmpty()) sb.append(Colorizer.reset());
-                sb.append(' ');
-                if (col1Color != null && !col1Color.isEmpty()) sb.append(col1Color);
-                sb.append(padRight(e.getKey(), left));
-                if (col1Color != null && !col1Color.isEmpty()) sb.append(Colorizer.reset());
-                sb.append(' ');
-                if (!borderColor.isEmpty()) sb.append(borderColor);
-                sb.append(skin.vertical);
-                if (!borderColor.isEmpty()) sb.append(Colorizer.reset());
-                sb.append(' ');
-                if (col2Color != null && !col2Color.isEmpty()) sb.append(col2Color);
-                sb.append(padRight(e.getValue(), right));
-                if (col2Color != null && !col2Color.isEmpty()) sb.append(Colorizer.reset());
-                sb.append(' ');
-                if (!borderColor.isEmpty()) sb.append(borderColor);
-                sb.append(skin.vertical);
-                if (!borderColor.isEmpty()) sb.append(Colorizer.reset());
-                sb.append(System.lineSeparator());
+                appendRow(sb, skin, borderColor,
+                          e.getKey(), left, (col1Color != null ? col1Color : ""),
+                          e.getValue(), right, (col2Color != null ? col2Color : ""));
             }
         }
 
-        // Bottom border
-        if (!borderColor.isEmpty()) sb.append(borderColor);
-        sb.append(skin.bottomLeft).append(Transformer.fill(skin.horizontal, inner)).append(skin.bottomRight);
-        if (!borderColor.isEmpty()) sb.append(Colorizer.reset());
+        appendBottomBorder(sb, skin, borderColor, left, right);
+
         return sb.toString();
     }
+
+    private static void beginColor(StringBuilder sb, String color) {
+        if (color != null && !color.isEmpty()) sb.append(color);
+    }
+
+    private static void endColor(StringBuilder sb, String color) {
+        if (color != null && !color.isEmpty()) sb.append(Colorizer.reset());
+    }
+
+    private static void appendVertical(StringBuilder sb, Skin skin, String borderColor) {
+        beginColor(sb, borderColor);
+        sb.append(skin.vertical);
+        endColor(sb, borderColor);
+    }
+
+    private static void appendCell(StringBuilder sb, String content, int width, String color) {
+        sb.append(' ');
+        beginColor(sb, color);
+        sb.append(padRight(content != null ? content : "", width));
+        endColor(sb, color);
+        sb.append(' ');
+    }
+
+    private static void appendRow(StringBuilder sb, Skin skin, String borderColor,
+                                  String c1, int w1, String c1Color,
+                                  String c2, int w2, String c2Color) {
+        appendVertical(sb, skin, borderColor);
+        appendCell(sb, c1, w1, c1Color);
+        appendVertical(sb, skin, borderColor);
+        appendCell(sb, c2, w2, c2Color);
+        appendVertical(sb, skin, borderColor);
+        sb.append(System.lineSeparator());
+    }
+
+    private static void appendTopBorder(StringBuilder sb, Skin skin, String borderColor, int left, int right) {
+        beginColor(sb, borderColor);
+        String H = skin.horizontal;
+        int leftSpan = 1 + left + 1;   // space + content + space
+        int rightSpan = 1 + right + 1; // space + content + space
+        sb.append(skin.topLeft)
+          .append(Transformer.fill(H, leftSpan))
+          .append(skin.topJoin)
+          .append(Transformer.fill(H, rightSpan))
+          .append(skin.topRight);
+        endColor(sb, borderColor);
+        sb.append(System.lineSeparator());
+    }
+
+    private static void appendHeaderSeparator(StringBuilder sb, Skin skin, String borderColor, int left, int right) {
+        beginColor(sb, borderColor);
+        String H = skin.horizontal;
+        int leftSpan = 1 + left + 1;
+        int rightSpan = 1 + right + 1;
+        sb.append(skin.joinLeft)
+          .append(Transformer.fill(H, leftSpan))
+          .append(skin.joinCross)
+          .append(Transformer.fill(H, rightSpan))
+          .append(skin.joinRight)
+          .append(System.lineSeparator());
+        endColor(sb, borderColor);
+    }
+
+    private static void appendBottomBorder(StringBuilder sb, Skin skin, String borderColor, int left, int right) {
+        beginColor(sb, borderColor);
+        String HB = skin.horizontal;
+        int bLeftSpan = 1 + left + 1;
+        int bRightSpan = 1 + right + 1;
+        sb.append(skin.bottomLeft)
+          .append(Transformer.fill(HB, bLeftSpan))
+          .append(skin.bottomJoin)
+          .append(Transformer.fill(HB, bRightSpan))
+          .append(skin.bottomRight);
+        endColor(sb, borderColor);
+    }
+
+
 
     // ===== Menus =====
 

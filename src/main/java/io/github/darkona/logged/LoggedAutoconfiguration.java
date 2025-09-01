@@ -23,7 +23,7 @@ import java.util.List;
 
 @AutoConfiguration
 @ConditionalOnClass(name = {"org.slf4j.Logger", "org.slf4j.LoggerFactory"})
-@EnableConfigurationProperties(LoggedProperties.class)
+@EnableConfigurationProperties({LoggedProperties.class})
 @EnableAspectJAutoProxy
 @ComponentScan("io.github.darkona.logged")
 public class LoggedAutoconfiguration {
@@ -43,7 +43,7 @@ public class LoggedAutoconfiguration {
     }
 
     @Bean
-    public LoggedEngine loggedEngine(LogDecorator logDecorator, LoggedProperties loggedProperties, List<LoggedPlugin> plugins) {
+    public LoggedEngine loggedEngine(LogDecorator logDecorator,LoggedProperties loggedProperties,List<LoggedPlugin> plugins) {
         return new LoggedEngine(loggedProperties, logDecorator, plugins);
     }
 
