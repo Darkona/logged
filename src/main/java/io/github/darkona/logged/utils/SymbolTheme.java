@@ -143,7 +143,7 @@ public enum SymbolTheme {
     JUNO_24("🐾", "🏞️", "⚠️", "🪵"),
     JUNO_25("🎯", "🏆", "❌", "🎲"),
 
-    SEASONS("🌱", "☀️", "🍂", "❄️");
+    SEASONS("🌱", "❄️", "☀️", "🍂");
 
     private final String entry;
     private final String exit;

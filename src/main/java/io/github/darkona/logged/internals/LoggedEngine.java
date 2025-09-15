@@ -10,7 +10,9 @@ import io.github.darkona.logged.api.LogToken;
 import io.github.darkona.logged.api.LoggedPlugin;
 import io.github.darkona.logged.colors.Orange;
 import io.github.darkona.logged.utils.Transformer;
+import jakarta.annotation.Nullable;
 import jakarta.annotation.PostConstruct;
+import lombok.Setter;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.slf4j.LoggerFactory;
@@ -30,12 +32,15 @@ public class LoggedEngine {
     private final List<LoggedPlugin> plugins;
     private List<Pattern> maskPatterns = List.of();
     private List<Class<?>> maskTypes = List.of();
+    @Setter
+    private boolean woven;
 
 
-    public LoggedEngine(LoggedProperties props, LogDecorator deco, List<LoggedPlugin> plugins) {
+    public LoggedEngine(LoggedProperties props, LogDecorator deco, List<LoggedPlugin> plugins, @Nullable Boolean woven) {
         this.props = props;
         this.deco = deco;
         this.plugins = plugins;
+        this.woven = woven != null ?  woven : false;
     }
 
     private static void pop() {
@@ -47,21 +52,23 @@ public class LoggedEngine {
     @PostConstruct
     void init() {
         var log = LoggerFactory.getLogger(LoggedEngine.class);
-
+        var msg = "@Logged engine initialized";
         if (props.isUseUtf8() && System.out.charset() != StandardCharsets.UTF_8) {
             Utf8Installer.install();
-            log.info(deco.custom(Orange.DARK_ORANGE, "@Logged engine initialized with output UTF-8 enabled."));
-        } else {
-            log.info(deco.custom(Orange.DARK_ORANGE, "@Logged engine initialized."));
+            msg += ", output UTF-8 enabled";
         }
+
+        msg += woven ? ", and aspect weaving detected." : ".";
+
+        log.info(deco.custom(Orange.DARK_ORANGE, msg));
 
         plugins.forEach(loggedPlugin -> {
             try {
                 loggedPlugin.onLoad();
                 if (props.isAnnounceLoad() && !loggedPlugin.announceLoad().isBlank()) log.info(loggedPlugin.announceLoad());
             } catch (Exception e) {
-                var msg = "Error loading plugin: " + loggedPlugin.getClass().getSimpleName();
-                log.error(msg, e);
+                var  m = "Error loading plugin: " + loggedPlugin.getClass().getSimpleName();
+                log.error(m, e);
             }
         });
 
@@ -105,6 +112,7 @@ public class LoggedEngine {
         final var data = assembleCallData(pjp, options);
 
         STACK.get().push(data);
+
         plugins.forEach(p -> p.onCall(pjp, data, options));
 
         try {
@@ -154,12 +162,11 @@ public class LoggedEngine {
         var depth = STACK.get().size();
         Map<LogToken, String> map = new HashMap<>();
         boolean themed = (props.isUseIconTheme() && props.getIconTheme() != null);
-        var theme = props.getIconTheme();
 
-        map.put(LogToken.CALL_ICON, themed ? theme.entry() : props.getCallIcon());
-        map.put(LogToken.EXCEPTION_ICON, themed ? theme.exception() : props.getExceptionIcon());
-        map.put(LogToken.RETURN_ICON, themed ? theme.exit() : props.getReturnIcon());
-        map.put(LogToken.DEPTH_ICON, themed ? theme.depth() : props.getDepthIcon());
+        map.put(LogToken.CALL_ICON, themed ? props.getIconTheme().entry() : props.getCallIcon());
+        map.put(LogToken.EXCEPTION_ICON, themed ? props.getIconTheme().exception() : props.getExceptionIcon());
+        map.put(LogToken.RETURN_ICON, themed ? props.getIconTheme().exit() : props.getReturnIcon());
+        map.put(LogToken.DEPTH_ICON, themed ? props.getIconTheme().depth() : props.getDepthIcon());
 
         map.put(LogToken.CLASS_NAME, pjp.getSignature().getDeclaringType().getSimpleName());
         map.put(LogToken.CLASS_LONG, pjp.getSignature().getDeclaringType().getName());
@@ -276,4 +283,5 @@ public class LoggedEngine {
         data.addToken(LogToken.NULL, String.valueOf(origin.getFileName()));
         data.addToken(LogToken.FILENAME, origin.getFileName());
     }
+
 }

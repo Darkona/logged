@@ -54,10 +54,15 @@ public class LoggedProperties {
     private boolean maskReturn = false;
 
     /** Icons (ASCII by default). */
-    private String callIcon = ">>";
-    private String returnIcon = "<<";
-    private String exceptionIcon = "!!";
+    private String callIcon = "↓○";
+    private String returnIcon = "↑○";
+    private String exceptionIcon = "↑x";
     private String depthIcon = ">";
+
+    /**
+     * Add a depth icon and move call statements to the right for each subsequent call in the stack.
+     */
+    private boolean logDepth = true;
 
     /** Use a predefined icon theme when true. */
     private boolean useIconTheme = false;

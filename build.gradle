@@ -11,7 +11,7 @@ plugins {
 }
 
 group = 'io.github.darkona'
-version = '1.5.0'
+version = '1.5.1'
 
 
 def filename = "${rootProject.name}-${this.version}.jar"
