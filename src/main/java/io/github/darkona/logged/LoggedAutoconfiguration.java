@@ -42,23 +42,33 @@ public class LoggedAutoconfiguration {
         return new PlainLogDecorator();
     }
 
-    @Bean
-    public LoggedEngine loggedEngine(LogDecorator logDecorator,LoggedProperties loggedProperties,List<LoggedPlugin> plugins) {
-        return new LoggedEngine(loggedProperties, logDecorator, plugins);
+    @Bean("loggedEngine")
+    @Conditional(Conditions.OnAspectJWeaving.class)
+    public LoggedEngine wovenEngine(LogDecorator logDecorator, LoggedProperties loggedProperties, List<LoggedPlugin> plugins) {
+        return new LoggedEngine(loggedProperties, logDecorator, plugins, true);
+    }
+
+    @Bean("loggedEngine")
+    @Primary
+    @Conditional(Conditions.OnNoAspectJWeaving.class)
+    public LoggedEngine loggedEngine(LogDecorator logDecorator, LoggedProperties loggedProperties, List<LoggedPlugin> plugins) {
+        loggedProperties.setLogDepth(false);
+        return new LoggedEngine(loggedProperties, logDecorator, plugins, false);
     }
 
     @Bean
     @Conditional(Conditions.OnNoAspectJWeaving.class)
     @ConditionalOnBooleanProperty(value = "logged.enabled", matchIfMissing = true)
-    public LoggedAspect springAspect(LoggedEngine engine) {
+    public LoggedAspect springAspect(LoggedEngine engine, LoggedProperties loggedProperties) {
+
         return new LoggedAspect(engine);
     }
 
     @Bean
     @Conditional(Conditions.OnAspectJWeaving.class)
     @ConditionalOnBooleanProperty(value = "logged.enabled", matchIfMissing = true)
-    public BridgeInstaller bridgeInstaller(LoggedEngine loggedEngine) {
-        return new BridgeInstaller(loggedEngine);
+    public BridgeInstaller bridgeInstaller(LoggedEngine engine) {
+        return new BridgeInstaller(engine);
     }
 
 

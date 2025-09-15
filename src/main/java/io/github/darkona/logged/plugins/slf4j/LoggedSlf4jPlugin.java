@@ -88,8 +88,8 @@ public class LoggedSlf4jPlugin implements LoggedPlugin {
         Logger log = LoggerFactory.getLogger(pjp.getSignature().getDeclaringType());
         if (isEnabled(log, options.level())) {
             captureMdc(data);
-            if (props.isLogDepth()) {
-                var depthS = data.depth() > 0 ? Transformer.fill(data.get(LogToken.DEPTH_ICON), data.depth()) : "";
+            if (rootProps.isLogDepth()) {
+                var depthS = Transformer.fill(data.get(LogToken.DEPTH_ICON), data.depth());
                 data.addToken(LogToken.DEPTH, depthS);
             }
 
