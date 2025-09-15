@@ -2,7 +2,7 @@ package io.github.darkona.logged.colors;
 
 public interface ColorEnum {
 
-    static String RESET = "\u001B[0m";
+    String RESET = "\u001B[0m";
     static String reset() {
         return "\u001B[0m";
     }

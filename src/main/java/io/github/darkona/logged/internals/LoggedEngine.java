@@ -36,11 +36,11 @@ public class LoggedEngine {
     private boolean woven;
 
 
-    public LoggedEngine(LoggedProperties props, LogDecorator deco, List<LoggedPlugin> plugins, @Nullable Boolean woven) {
+    public LoggedEngine(LoggedProperties props, LogDecorator deco, List<LoggedPlugin> plugins) {
         this.props = props;
         this.deco = deco;
         this.plugins = plugins;
-        this.woven = woven != null ?  woven : false;
+        this.woven = props.isLogDepth();
     }
 
     private static void pop() {
