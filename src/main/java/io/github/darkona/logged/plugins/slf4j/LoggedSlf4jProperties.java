@@ -1,11 +1,9 @@
 package io.github.darkona.logged.plugins.slf4j;
 
-import io.github.darkona.logged.LoggedProperties;
 import io.github.darkona.logged.api.LogToken;
 import io.github.darkona.logged.colors.BasicColor;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Import;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -45,7 +45,7 @@ public class LoggedAutoconfiguration {
     @Bean("loggedEngine")
     @Conditional(Conditions.OnAspectJWeaving.class)
     public LoggedEngine wovenEngine(LogDecorator logDecorator, LoggedProperties loggedProperties, List<LoggedPlugin> plugins) {
-        return new LoggedEngine(loggedProperties, logDecorator, plugins, true);
+        return new LoggedEngine(loggedProperties, logDecorator, plugins);
     }
 
     @Bean("loggedEngine")
@@ -53,14 +53,13 @@ public class LoggedAutoconfiguration {
     @Conditional(Conditions.OnNoAspectJWeaving.class)
     public LoggedEngine loggedEngine(LogDecorator logDecorator, LoggedProperties loggedProperties, List<LoggedPlugin> plugins) {
         loggedProperties.setLogDepth(false);
-        return new LoggedEngine(loggedProperties, logDecorator, plugins, false);
+        return new LoggedEngine(loggedProperties, logDecorator, plugins);
     }
 
     @Bean
     @Conditional(Conditions.OnNoAspectJWeaving.class)
     @ConditionalOnBooleanProperty(value = "logged.enabled", matchIfMissing = true)
-    public LoggedAspect springAspect(LoggedEngine engine, LoggedProperties loggedProperties) {
-
+    public LoggedAspect springAspect(LoggedEngine engine) {
         return new LoggedAspect(engine);
     }
 
