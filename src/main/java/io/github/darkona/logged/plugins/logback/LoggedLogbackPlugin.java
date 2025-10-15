@@ -19,6 +19,7 @@ import java.util.Iterator;
 /**
  * Logback integration plugin for @Logged. Wires marker-based filters on startup.
  */
+@SuppressWarnings({"ClassCanBeRecord", "unchecked"})
 public class LoggedLogbackPlugin implements LoggedPlugin {
 
     private final LoggedLogbackProperties props;
