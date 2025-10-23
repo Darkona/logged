@@ -11,9 +11,9 @@ plugins {
 }
 
 group = 'io.github.darkona'
-version = '1.5.2'
+version = '1.5.3'
 
-
+def logbackVersion = "1.5.20"
 def filename = "${rootProject.name}-${this.version}.jar"
 def isCi = providers.environmentVariable("ci").isPresent()
 def isRelease = providers.gradleProperty("release").map { it.toBoolean() }.orElse(false).get()
@@ -170,15 +170,15 @@ configurations {
 }
 
 dependencies {
-    api "org.springframework.boot:spring-boot-starter-aop"
+    implementation "org.springframework.boot:spring-boot-starter-aop"
 
-    implementation "org.springframework.boot:spring-boot-autoconfigure"
+    compileOnly "org.springframework.boot:spring-boot-autoconfigure"
 
     compileOnly 'org.projectlombok:lombok'
     compileOnly "io.opentelemetry.instrumentation:opentelemetry-spring-boot-starter"
     compileOnly 'org.springframework.boot:spring-boot-starter-log4j2'
-    compileOnly 'ch.qos.logback:logback-classic:1.5.19'
-    compileOnly 'ch.qos.logback:logback-core:1.5.19'
+    compileOnly "ch.qos.logback:logback-classic:${logbackVersion}"
+    compileOnly "ch.qos.logback:logback-core:${logbackVersion}"
 
     annotationProcessor 'org.projectlombok:lombok'
     annotationProcessor "org.springframework.boot:spring-boot-configuration-processor"
@@ -204,9 +204,11 @@ dependencies {
     /* -------------------   LOG4J2 ---------------------------*/
     configurations.testLog4j2Implementation {
         exclude group: "ch.qos.logback", module: "logback-classic"
+        exclude group: "ch.qos.logback", module: "logback-core"
     }
-    testLogbackImplementation 'ch.qos.logback:logback-classic:1.5.19'
-    testLogbackImplementation 'ch.qos.logback:logback-core:1.5.19'
+
+    testLogbackImplementation "ch.qos.logback:logback-classic:${logbackVersion}"
+    testLogbackImplementation "ch.qos.logback:logback-core:${logbackVersion}"
 
     configurations.testLogbackImplementation {
         exclude group: "org.apache.logging.log4j"
