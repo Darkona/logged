@@ -143,4 +143,54 @@ public class ColorLogDecorator implements LogDecorator {
     public String clearColor(String s) {
         return Bannerizer.clearColor(s);
     }
+
+    @Override
+    public String bannerize(ColorEnum color, String s, int width) {
+        return Bannerizer.bannerize(color, s, width);
+    }
+
+    @Override
+    public String bannerize(ColorEnum bannerColor, ColorEnum textColor, String s, int width) {
+        return Bannerizer.bannerize(bannerColor, textColor, s, width);
+    }
+
+    @Override
+    public String bannerize(String s, int width, boolean withBorder) {
+        return Bannerizer.bannerize(s, width, withBorder);
+    }
+
+    @Override
+    public String objectString(Object o) {
+        return Transformer.objectString(o);
+    }
+
+    @Override
+    public String getSubstring(String str, int begin, int end) {
+        return Transformer.getSubstring(str, begin, end);
+    }
+
+    @Override
+    public String getSubstringUntil(String str, int begin, String delimiter) {
+        return Transformer.getSubstringUntil(str, begin, delimiter);
+    }
+
+    @Override
+    public String truncate(String s, int max) {
+        return Transformer.truncate(s, max);
+    }
+
+    @Override
+    public String truncateGraphemes(String s, int maxClusters) {
+        return Transformer.truncateGraphemes(s, maxClusters);
+    }
+
+    @Override
+    public String colorizeHex(String hex, String s) {
+        return Colorizer.colorizeHex(hex, s);
+    }
+
+    @Override
+    public String colorizeChars(String s, java.util.List<ColorEnum> colors) {
+        return Colorizer.colorizeChars(s, colors);
+    }
 }

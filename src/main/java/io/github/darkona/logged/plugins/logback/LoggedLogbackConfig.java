@@ -23,4 +23,6 @@ public class LoggedLogbackConfig {
         return new LoggedLogbackPlugin(loggedLogbackProperties, logDecorator);
     }
 
+
+
 }
