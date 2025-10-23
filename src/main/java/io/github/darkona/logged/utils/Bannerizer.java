@@ -6,13 +6,12 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Utility class for creating styled console banners, ornaments, and centered text output
- * with minimal CPU/GC overhead. Provides ASCII and UTF box-drawing skins, ANSI‑aware centering
- * and a linear ANSI clearer.
- */
+/// Utility class for creating styled console banners, ornaments, and centered text output
+/// with minimal CPU/GC overhead. Provides ASCII and UTF box-drawing skins, ANSI‑aware centering
+/// and a linear ANSI clearer.
 @SuppressWarnings("unused")
 public class Bannerizer {
+
 
     // Skin for borders (ASCII / UTF box-drawing)
     private record Skin(String topLeft, String topRight,

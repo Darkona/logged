@@ -211,4 +211,101 @@ public interface LogDecorator {
      * @return the plain string without color codes
      */
     String clearColor(String s);
+
+    // Additional methods from utility classes
+
+    /**
+     * Creates a decorated banner with a given color enum and width.
+     *
+     * @param color the banner color
+     * @param s     the text to display
+     * @param width the banner width
+     * @return the bannerized string
+     */
+    String bannerize(ColorEnum color, String s, int width);
+
+    /**
+     * Creates a decorated banner with separate colors for border and text.
+     *
+     * @param bannerColor the border color
+     * @param textColor   the text color
+     * @param s           the text to display
+     * @param width       the banner width
+     * @return the bannerized string
+     */
+    String bannerize(ColorEnum bannerColor, ColorEnum textColor, String s, int width);
+
+    /**
+     * Creates a banner with optional border.
+     *
+     * @param s          the text to display
+     * @param width      the banner width
+     * @param withBorder whether to include border
+     * @return the bannerized string
+     */
+    String bannerize(String s, int width, boolean withBorder);
+
+    /**
+     * Returns a safe String representation of the given object.
+     *
+     * @param o object to stringify
+     * @return textual representation
+     */
+    String objectString(Object o);
+
+    /**
+     * Substring between indexes begin (inclusive) and end (exclusive).
+     *
+     * @param str   the string
+     * @param begin start index
+     * @param end   end index
+     * @return the substring
+     */
+    String getSubstring(String str, int begin, int end);
+
+    /**
+     * Substring from begin up to the first occurrence of delimiter.
+     *
+     * @param str       the string
+     * @param begin     start index
+     * @param delimiter the delimiter
+     * @return the substring
+     */
+    String getSubstringUntil(String str, int begin, String delimiter);
+
+    /**
+     * Truncates the string to at most max characters.
+     *
+     * @param s   input string
+     * @param max maximum length
+     * @return truncated string
+     */
+    String truncate(String s, int max);
+
+    /**
+     * Truncates by grapheme clusters.
+     *
+     * @param s           input string
+     * @param maxClusters maximum number of graphemes
+     * @return truncated string
+     */
+    String truncateGraphemes(String s, int maxClusters);
+
+    /**
+     * Applies a custom color using hexadecimal color code.
+     *
+     * @param hex the hexadecimal color string
+     * @param s   the input string
+     * @return the colored string
+     */
+    String colorizeHex(String hex, String s);
+
+    /**
+     * Applies a sequence of colors to each character.
+     *
+     * @param s      the string to colorize
+     * @param colors the list of colors to cycle through
+     * @return the colorized string
+     */
+    String colorizeChars(String s, java.util.List<ColorEnum> colors);
 }

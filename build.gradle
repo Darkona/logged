@@ -11,7 +11,7 @@ plugins {
 }
 
 group = 'io.github.darkona'
-version = '1.5.1'
+version = '1.5.2'
 
 
 def filename = "${rootProject.name}-${this.version}.jar"
@@ -162,6 +162,11 @@ configurations {
     testLogbackCompileOnly.extendsFrom testCompileOnly
     testLogbackAnnotationProcessor.extendsFrom testAnnotationProcessor
 
+    configureEach {
+        resolutionStrategy {
+            cacheChangingModulesFor 60, 'seconds'
+        }
+    }
 }
 
 dependencies {
