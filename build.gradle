@@ -5,17 +5,19 @@ import java.util.regex.Pattern
 plugins {
     id 'java-library'
     id 'maven-publish'
-    id 'org.springframework.boot' version '3.5.6' apply false
+    id 'org.springframework.boot' version '3.5.16' apply false
     id 'io.spring.dependency-management' version '1.1.7'
     id 'com.vanniktech.maven.publish' version '0.34.0'
 }
 
 group = 'io.github.darkona'
-version = '1.5.3'
+// The release workflow passes the git-tag version via ORG_GRADLE_PROJECT_version;
+// assigning unconditionally here would override it, so only fall back when absent.
+version = providers.gradleProperty('version').getOrElse('1.6.0')
 
-def logbackVersion = "1.5.20"
+def logbackVersion = "1.5.38"
 def filename = "${rootProject.name}-${this.version}.jar"
-def isCi = providers.environmentVariable("ci").isPresent()
+def isCi = providers.environmentVariable("CI").isPresent()
 def isRelease = providers.gradleProperty("release").map { it.toBoolean() }.orElse(false).get()
 
 repositories {
@@ -82,9 +84,9 @@ mavenPublishing {
         url = "https://github.com/Darkona/logged"
         licenses {
             license {
-                name = "LGPL-3.0"
+                name = "LGPL-3.0-or-later"
                 url = "https://www.gnu.org/licenses/lgpl-3.0.txt"
-                distribution = "https://www.gnu.org/licenses/lgpl-3.0.en.html"
+                distribution = "repo"
             }
         }
         developers {
@@ -115,7 +117,7 @@ publishing {
 dependencyManagement {
     imports {
         mavenBom SpringBootPlugin.BOM_COORDINATES
-        mavenBom("io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom:2.18.1")
+        mavenBom("io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom:2.30.0")
     }
 }
 
@@ -184,7 +186,6 @@ dependencies {
     annotationProcessor "org.springframework.boot:spring-boot-configuration-processor"
 
 
-    testImplementation platform('org.junit:junit-bom:5.10.3')
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testImplementation "io.opentelemetry.instrumentation:opentelemetry-spring-boot-starter"
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
@@ -240,10 +241,6 @@ tasks.register('testLogback', Test) {
     systemProperty "spring.profiles.active", "logback"
 }
 
-tasks.named('check') {
-    dependsOn tasks.named('testLog4j2'), tasks.named('testLogback')
-}
-
 // Ensure default test task (src/test) uses JUnit Platform
 tasks.named('test', Test) {
     useJUnitPlatform()
@@ -264,10 +261,28 @@ tasks.register('checkReadmeVersion') {
     }
 }
 
+tasks.register('updateReadmeVersion') {
+    group = 'documentation'
+    description = 'Rewrite README.md dependency snippets to the current project.version'
+    def readmeFile = file('README.md')
+    def newVersion = project.version.toString()
+    doLast {
+        def text = readmeFile.getText('UTF-8')
+        text = text.replaceAll(
+                /(?s)(<artifactId>logged<\/artifactId>\s*<version>)[^<]+(<\/version>)/,
+                '$1' + newVersion + '$2')
+        text = text.replaceAll(
+                /io\.github\.darkona:logged:[\w.\-]+/,
+                "io.github.darkona:logged:${newVersion}")
+        readmeFile.setText(text, 'UTF-8')
+    }
+}
+
 // Guard on CI/local checks
 tasks.named('check').configure {
     dependsOn 'test'
     dependsOn 'testLog4j2'
     dependsOn 'testLogback'
+    dependsOn 'checkReadmeVersion'
 }
 
