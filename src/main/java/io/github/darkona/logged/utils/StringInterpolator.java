@@ -38,10 +38,6 @@ import java.util.regex.Pattern;
 @SuppressWarnings("unused")
 public class StringInterpolator {
 
-    private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\{([^}]+)}");
-
-    private static final Pattern DEFAULTABLE_PATTERN = Pattern.compile("\\{([^}:]+)(?::([^}]*))?}");
-
     // --- Micro-cache for compiled templates ---
     private static final int CACHE_CAPACITY = 256;
     private static final Map<String, CompiledTemplate> CACHE_PLAIN = java.util.Collections.synchronizedMap(new LruMap(CACHE_CAPACITY));
@@ -157,6 +153,8 @@ public class StringInterpolator {
      * @return the interpolated string with placeholders replaced
      */
     public static String interpolate(String template, Map<String, String> values) {
+        if (template == null || template.isEmpty()) return "";
+        if (values == null) values = Map.of();
         CompiledTemplate ct = compile(template, Mode.PLAIN);
         StringBuilder out = new StringBuilder(template.length() + 16);
         for (Segment s : ct.segments) s.render(out, values, false);
@@ -181,6 +179,8 @@ public class StringInterpolator {
      * @throws IllegalArgumentException if a placeholder is not found in the map
      */
     public static String interpolateStrict(String template, Map<String, String> values) {
+        if (template == null || template.isEmpty()) return "";
+        if (values == null) values = Map.of();
         CompiledTemplate ct = compile(template, Mode.PLAIN);
         StringBuilder out = new StringBuilder(template.length() + 16);
         for (Segment s : ct.segments) s.render(out, values, true);
@@ -206,6 +206,8 @@ public class StringInterpolator {
      * @return the interpolated string
      */
     public static String interpolateWithDefaults(String template, Map<String, String> values) {
+        if (template == null || template.isEmpty()) return "";
+        if (values == null) values = Map.of();
         CompiledTemplate ct = compile(template, Mode.DEFAULTABLE);
         StringBuilder out = new StringBuilder(template.length() + 16);
         for (Segment s : ct.segments) s.render(out, values, false);

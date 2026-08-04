@@ -16,7 +16,11 @@ public class ColorFinder {
             Pink.class,
             White.class,
             Gray.class,
-            Brown.class
+            Brown.class,
+            // Last so family enums keep priority for overlapping names, but
+            // LogColor-only names (PURPLE, MAGENTA, ...) resolve instead of
+            // silently falling back to BLACK
+            LogColor.class
     );
 
     private ColorFinder() {}
@@ -57,7 +61,9 @@ public class ColorFinder {
             if (match != null) return match;
         }
 
-        // 3) Default
+        // 3) Default. BLACK on a dark terminal is effectively invisible, so leave a trace.
+        org.slf4j.LoggerFactory.getLogger(ColorFinder.class)
+                               .debug("Unknown color name '{}', defaulting to BLACK", raw);
         return BasicColor.BLACK;
     }
 
@@ -90,4 +96,14 @@ final class HexColor implements ColorEnum {
     @Override public Short red() { return r; }
     @Override public Short green() { return g; }
     @Override public Short blue() { return b; }
+
+    @Override
+    public boolean equals(Object o) {
+        return o instanceof HexColor other && r == other.r && g == other.g && b == other.b;
+    }
+
+    @Override
+    public int hashCode() {
+        return (r << 16) | (g << 8) | b;
+    }
 }

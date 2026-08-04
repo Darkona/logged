@@ -173,6 +173,7 @@ public class Transformer {
      */
     public static String getSubstringUntil(String str, int begin, String delimiter) {
         if (str == null || str.isEmpty()) return "";
+        if (delimiter == null || delimiter.isEmpty()) return str.trim();
         int from = Math.max(0, begin);
         int idx = str.indexOf(delimiter, from);
         if (idx == -1) return str.trim();
