@@ -131,7 +131,8 @@ class LogbackLoggedEngineTest {
     }
     @Test
     void shouldBeProxied() {
-        System.out.println("TestObject class: " + logbackTestObject.getClass());
+        Assertions.assertTrue(org.springframework.aop.support.AopUtils.isAopProxy(logbackTestObject),
+                "TestObject should be advised by a Spring AOP proxy but was " + logbackTestObject.getClass());
     }
 
     private void callAndAssert(String methodName, Runnable methodCall, Consumer<List<ILoggingEvent>> assertions) {

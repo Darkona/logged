@@ -89,10 +89,11 @@ public class Data {
     /**
      * Returns a String-keyed view of this instance's tokens,
      * mapping {@code token.token()} → value. This is per-instance,
-     * NOT global. The returned map is a copy.
+     * NOT global. The returned map is unmodifiable; use
+     * {@link #addToken} or {@link #addFlexToken} to change tokens.
      */
     public Map<String, String> tok() {
-        return stokens;
+        return Collections.unmodifiableMap(stokens);
     }
 
     public List<String> argNames() {

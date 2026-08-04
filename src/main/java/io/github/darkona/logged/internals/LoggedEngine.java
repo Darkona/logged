@@ -35,6 +35,7 @@ public class LoggedEngine {
     private final List<LoggedPlugin> plugins;
     private List<Pattern> maskPatterns = List.of();
     private List<Class<?>> maskTypes = List.of();
+    private final Map<String, Optional<Pattern>> annoPatternCache = new java.util.concurrent.ConcurrentHashMap<>();
     @Setter
     private boolean woven;
 
@@ -169,12 +170,27 @@ public class LoggedEngine {
     }
 
     private void putDuration(Data data) {
-        data.addToken(LogToken.DURATION, Long.toString(System.currentTimeMillis() - data.start()));
+        data.addToken(LogToken.DURATION, Long.toString((System.nanoTime() - data.start()) / 1_000_000));
     }
 
+    /**
+     * First frame that belongs to application code, so EXCEPTION_ORIGIN_* tokens
+     * point at the user's class instead of JDK or framework internals.
+     */
     private StackTraceElement firstRelevantFrame(Throwable e) {
-        return (e.getStackTrace() != null && e.getStackTrace().length > 0) ? e.getStackTrace()[0] :
-               new StackTraceElement("unknown", "unknown", "unknown", -1);
+        var trace = e.getStackTrace();
+        if (trace == null || trace.length == 0) {
+            return new StackTraceElement("unknown", "unknown", "unknown", -1);
+        }
+        for (StackTraceElement frame : trace) {
+            String cn = frame.getClassName();
+            if (!cn.startsWith("java.") && !cn.startsWith("jdk.") && !cn.startsWith("sun.")
+                    && !cn.startsWith("org.springframework.") && !cn.startsWith("org.aspectj.")
+                    && !cn.startsWith("io.github.darkona.logged.")) {
+                return frame;
+            }
+        }
+        return trace[0];
     }
 
     @Nullable
@@ -194,7 +210,7 @@ public class LoggedEngine {
     @SuppressWarnings("unchecked")
     private Data assembleCallData(ProceedingJoinPoint pjp, Logged options) {
 
-        var start = System.currentTimeMillis();
+        var start = System.nanoTime();
         var depth = STACK.get().size();
         Map<LogToken, String> map = new HashMap<>();
         boolean themed = (props.isUseIconTheme() && props.getIconTheme() != null);
@@ -234,6 +250,13 @@ public class LoggedEngine {
 
         for (int i = 0; i < signature.getParameterTypes().length; i++) {
             Object raw = pjp.getArgs()[i];
+
+            // Values.NONE never prints values: skip the (possibly deep) stringification
+            if (options.argValues() == Logged.Values.NONE) {
+                args[i] = new Arg(signature.getParameterTypes()[i].getSimpleName(), names[i], "");
+                continue;
+            }
+
             String rawStr = Transformer.objectString(raw);
 
             boolean nameOrPos = masksByName.contains(names[i]) || maskIndexes.contains(i);
@@ -254,8 +277,12 @@ public class LoggedEngine {
 
     @SuppressWarnings("unchecked")
     private void assembleReturnData(Data data, Object o, Logged options) {
-        data.addToken(LogToken.DURATION, String.valueOf(System.currentTimeMillis() - data.start()));
         data.addToken(LogToken.RETURN_CLASS, (o == null) ? NULL : o.getClass().getSimpleName());
+
+        if (options != null && options.returnValue() == Logged.Values.NONE) {
+            data.addToken(LogToken.RETURN_VALUE, "");
+            return;
+        }
 
         String raw = Transformer.objectString(o);
 
@@ -293,9 +320,17 @@ public class LoggedEngine {
         if (annoPatterns != null) {
             for (String ap : annoPatterns) {
                 if (ap == null || ap.isBlank()) continue;
-                try {
-                    if (Pattern.compile(ap).matcher(s).find()) return true;
-                } catch (Throwable ignored) { /* ignore invalid patterns */ }
+                var compiled = annoPatternCache.computeIfAbsent(ap, key -> {
+                    try {
+                        return Optional.of(Pattern.compile(key));
+                    } catch (Exception ex) {
+                        // A typo'd pattern means the value the user believes masked is
+                        // logged in cleartext, so it must be loudly visible
+                        log.warn("@Logged ignoring invalid mask pattern '{}': {}", key, ex.getMessage());
+                        return Optional.<Pattern>empty();
+                    }
+                });
+                if (compiled.isPresent() && compiled.get().matcher(s).find()) return true;
             }
         }
         if (globalPatterns != null) {
@@ -321,7 +356,6 @@ public class LoggedEngine {
         data.addToken(LogToken.EXCEPTION_ORIGIN_CLASS, origin.getClassName());
         data.addToken(LogToken.EXCEPTION_ORIGIN_METHOD, origin.getMethodName());
         data.addToken(LogToken.LINE, String.valueOf(origin.getLineNumber()));
-        data.addToken(LogToken.NULL, String.valueOf(origin.getFileName()));
         data.addToken(LogToken.FILENAME, origin.getFileName());
     }
 
