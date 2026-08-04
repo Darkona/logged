@@ -2,7 +2,6 @@ package io.github.darkona.logged.api;
 
 import io.github.darkona.logged.colors.ColorEnum;
 import jakarta.annotation.Nullable;
-import org.springframework.stereotype.Component;
 
 /**
  * A decorator interface for enriching log messages with visual formatting and colors.
@@ -11,7 +10,6 @@ import org.springframework.stereotype.Component;
  * to make log output more readable and visually distinct.
  * </p>
  */
-@Component
 @SuppressWarnings("unused")
 public interface LogDecorator {
 

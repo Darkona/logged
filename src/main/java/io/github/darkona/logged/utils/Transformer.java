@@ -1,7 +1,6 @@
 package io.github.darkona.logged.utils;
 
 import jakarta.annotation.Nullable;
-import org.springframework.stereotype.Component;
 
 import java.text.BreakIterator;
 import java.util.Arrays;
@@ -15,7 +14,6 @@ import java.util.Locale;
  * specialized methods that are not invoked by default.</p>
  */
 @SuppressWarnings("unused")
-@Component
 public class Transformer {
 
     private Transformer() {}

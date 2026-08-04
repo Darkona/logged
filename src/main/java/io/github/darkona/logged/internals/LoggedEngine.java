@@ -15,17 +15,20 @@ import jakarta.annotation.PostConstruct;
 import lombok.Setter;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
+import org.springframework.aop.support.AopUtils;
+import org.springframework.core.annotation.AnnotationUtils;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
-@Component
 public class LoggedEngine {
 
     public static final String NULL = "null";
+    private static final Logger log = LoggerFactory.getLogger(LoggedEngine.class);
     private static final ThreadLocal<Deque<Data>> STACK = ThreadLocal.withInitial(ArrayDeque::new);
     private final LoggedProperties props;
     private final LogDecorator deco;
@@ -40,7 +43,6 @@ public class LoggedEngine {
         this.props = props;
         this.deco = deco;
         this.plugins = plugins;
-        this.woven = props.isLogDepth();
     }
 
     private static void pop() {
@@ -51,7 +53,6 @@ public class LoggedEngine {
 
     @PostConstruct
     void init() {
-        var log = LoggerFactory.getLogger(LoggedEngine.class);
         var msg = "@Logged engine initialized";
         if (props.isUseUtf8() && System.out.charset() != StandardCharsets.UTF_8) {
             Utf8Installer.install();
@@ -109,13 +110,22 @@ public class LoggedEngine {
     public Object logMethod(ProceedingJoinPoint pjp)
     throws Throwable {
         final var options = getLoggedOptions(pjp);
-        final var data = assembleCallData(pjp, options);
+        if (options == null) return pjp.proceed();
 
-        STACK.get().push(data);
-
-        plugins.forEach(p -> p.onCall(pjp, data, options));
-
+        final Data data;
         try {
+            data = assembleCallData(pjp, options);
+        } catch (Throwable t) {
+            log.warn("@Logged could not assemble call data for {}: {}", pjp.getSignature(), t.toString());
+            return pjp.proceed();
+        }
+
+        // Everything besides pjp.proceed() is isolated: a broken plugin must never
+        // prevent the business method from running, replace its result, or swallow
+        // its exception.
+        STACK.get().push(data);
+        try {
+            forEachPluginSafely("onCall", p -> p.onCall(pjp, data, options));
             final var result = pjp.proceed();
             afterSuccess(pjp, data, options, result);
             return result;
@@ -124,20 +134,38 @@ public class LoggedEngine {
             throw ex;
         } finally {
             pop();
-            plugins.forEach(LoggedPlugin::afterMethod);
+            forEachPluginSafely("afterMethod", LoggedPlugin::afterMethod);
+        }
+    }
+
+    private void forEachPluginSafely(String phase, Consumer<LoggedPlugin> action) {
+        for (LoggedPlugin p : plugins) {
+            try {
+                action.accept(p);
+            } catch (Throwable t) {
+                log.warn("@Logged plugin {} failed during {}: {}", p.getClass().getSimpleName(), phase, t.toString());
+            }
         }
     }
 
     private void afterSuccess(ProceedingJoinPoint pjp, Data data, Logged options, Object result) {
-        putDuration(data);
-        assembleReturnData(data, result, options);
-        plugins.forEach(p -> p.onReturn(pjp, data, options));
+        try {
+            putDuration(data);
+            assembleReturnData(data, result, options);
+        } catch (Throwable t) {
+            log.warn("@Logged could not assemble return data for {}: {}", pjp.getSignature(), t.toString());
+        }
+        forEachPluginSafely("onReturn", p -> p.onReturn(pjp, data, options));
     }
 
     private void afterFailure(ProceedingJoinPoint pjp, Data data, Logged options, Throwable ex) {
-        putDuration(data);
-        assembleExceptionData(ex, data);
-        plugins.forEach(p -> p.onException(pjp, data, options, ex));
+        try {
+            putDuration(data);
+            assembleExceptionData(ex, data);
+        } catch (Throwable t) {
+            log.warn("@Logged could not assemble exception data for {}: {}", pjp.getSignature(), t.toString());
+        }
+        forEachPluginSafely("onException", p -> p.onException(pjp, data, options, ex));
     }
 
     private void putDuration(Data data) {
@@ -149,10 +177,18 @@ public class LoggedEngine {
                new StackTraceElement("unknown", "unknown", "unknown", -1);
     }
 
+    @Nullable
     private Logged getLoggedOptions(ProceedingJoinPoint pjp) {
-        return ((MethodSignature) pjp.getSignature()).getMethod().getAnnotation(Logged.class) == null ?
-               pjp.getTarget().getClass().getAnnotation(Logged.class) :
-               ((MethodSignature) pjp.getSignature()).getMethod().getAnnotation(Logged.class);
+        var method = ((MethodSignature) pjp.getSignature()).getMethod();
+        // With interface-based proxies the signature method is the interface method,
+        // which lacks the annotation; resolve the implementation method first.
+        // getTarget() is null for static methods under load-time weaving.
+        var target = pjp.getTarget();
+        var targetClass = target != null ? AopUtils.getTargetClass(target) : method.getDeclaringClass();
+        var specificMethod = AopUtils.getMostSpecificMethod(method, targetClass);
+
+        var onMethod = AnnotationUtils.findAnnotation(specificMethod, Logged.class);
+        return onMethod != null ? onMethod : AnnotationUtils.findAnnotation(targetClass, Logged.class);
     }
 
     @SuppressWarnings("unchecked")
@@ -163,10 +199,11 @@ public class LoggedEngine {
         Map<LogToken, String> map = new HashMap<>();
         boolean themed = (props.isUseIconTheme() && props.getIconTheme() != null);
 
-        map.put(LogToken.CALL_ICON, themed ? props.getIconTheme().entry() : props.getCallIcon());
-        map.put(LogToken.EXCEPTION_ICON, themed ? props.getIconTheme().exception() : props.getExceptionIcon());
-        map.put(LogToken.RETURN_ICON, themed ? props.getIconTheme().exit() : props.getReturnIcon());
-        map.put(LogToken.DEPTH_ICON, themed ? props.getIconTheme().depth() : props.getDepthIcon());
+        // Data rejects null token values, so fall back to "" for unset icons
+        map.put(LogToken.CALL_ICON, orEmpty(themed ? props.getIconTheme().entry() : props.getCallIcon()));
+        map.put(LogToken.EXCEPTION_ICON, orEmpty(themed ? props.getIconTheme().exception() : props.getExceptionIcon()));
+        map.put(LogToken.RETURN_ICON, orEmpty(themed ? props.getIconTheme().exit() : props.getReturnIcon()));
+        map.put(LogToken.DEPTH_ICON, orEmpty(themed ? props.getIconTheme().depth() : props.getDepthIcon()));
 
         map.put(LogToken.CLASS_NAME, pjp.getSignature().getDeclaringType().getSimpleName());
         map.put(LogToken.CLASS_LONG, pjp.getSignature().getDeclaringType().getName());
@@ -267,6 +304,10 @@ public class LoggedEngine {
             }
         }
         return false;
+    }
+
+    private static String orEmpty(String s) {
+        return s != null ? s : "";
     }
 
     private String mask() {

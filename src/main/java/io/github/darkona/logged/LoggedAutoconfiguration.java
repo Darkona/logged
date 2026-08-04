@@ -14,24 +14,22 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
-import org.springframework.context.annotation.Primary;
 
 import java.util.List;
 
 @AutoConfiguration
 @ConditionalOnClass(name = {"org.slf4j.Logger", "org.slf4j.LoggerFactory"})
+@ConditionalOnBooleanProperty(value = "logged.enabled", matchIfMissing = true)
 @EnableConfigurationProperties({LoggedProperties.class})
 @EnableAspectJAutoProxy
-@ComponentScan("io.github.darkona.logged")
 public class LoggedAutoconfiguration {
 
 
     @Bean
-    @Primary
-    @ConditionalOnBooleanProperty(value = "logged.color")
+    @ConditionalOnBooleanProperty(value = "logged.color", matchIfMissing = true)
+    @ConditionalOnMissingBean(LogDecorator.class)
     public LogDecorator colorLogDecorator() {
         return new ColorLogDecorator();
     }
@@ -45,27 +43,25 @@ public class LoggedAutoconfiguration {
     @Bean("loggedEngine")
     @Conditional(Conditions.OnAspectJWeaving.class)
     public LoggedEngine wovenEngine(LogDecorator logDecorator, LoggedProperties loggedProperties, List<LoggedPlugin> plugins) {
-        return new LoggedEngine(loggedProperties, logDecorator, plugins);
+        var engine = new LoggedEngine(loggedProperties, logDecorator, plugins);
+        engine.setWoven(true);
+        return engine;
     }
 
     @Bean("loggedEngine")
-    @Primary
     @Conditional(Conditions.OnNoAspectJWeaving.class)
     public LoggedEngine loggedEngine(LogDecorator logDecorator, LoggedProperties loggedProperties, List<LoggedPlugin> plugins) {
-        loggedProperties.setLogDepth(false);
         return new LoggedEngine(loggedProperties, logDecorator, plugins);
     }
 
     @Bean
     @Conditional(Conditions.OnNoAspectJWeaving.class)
-    @ConditionalOnBooleanProperty(value = "logged.enabled", matchIfMissing = true)
     public LoggedAspect springAspect(LoggedEngine engine) {
         return new LoggedAspect(engine);
     }
 
     @Bean
     @Conditional(Conditions.OnAspectJWeaving.class)
-    @ConditionalOnBooleanProperty(value = "logged.enabled", matchIfMissing = true)
     public BridgeInstaller bridgeInstaller(LoggedEngine engine) {
         return new BridgeInstaller(engine);
     }
