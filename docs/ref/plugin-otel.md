@@ -30,7 +30,7 @@ This page documents the OpenTelemetry plugin, which creates INTERNAL spans aroun
 - `logged.otel.addExceptionMsg`: true (status description on error)
 - `logged.otel.addToMdc`: true (writes span name to MDC)
 - `logged.otel.mdcKey`: `span_name`
-- `logged.otel.spanIdTemplate`: `Logged: {c}${m}()`
+- `logged.otel.spanIdTemplate`: `Logged: {c}#{m}()`
 
 ---
 
@@ -56,7 +56,7 @@ This page documents the OpenTelemetry plugin, which creates INTERNAL spans aroun
   - Writes the computed span name into MDC under `mdcKey`; cleared on method completion.
 - mdcKey: string, default `span_name`
   - MDC key used when `addToMdc=true`.
-- spanIdTemplate: string, default `Logged: {c}${m}()`
+- spanIdTemplate: string, default `Logged: {c}#{m}()`
   - Template for span name; tokens come from the Logged token map (see below). Processed by the StringInterpolator.
 
 Example
