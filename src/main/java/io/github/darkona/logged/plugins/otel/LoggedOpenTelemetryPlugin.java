@@ -15,11 +15,11 @@ import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
+import io.opentelemetry.context.Scope;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
-import org.slf4j.spi.MDCAdapter;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -123,7 +123,13 @@ public class LoggedOpenTelemetryPlugin implements LoggedPlugin {
     private final LogDecorator deco;
     private final Tracer tracer;
     private final LoggedOpenTelemetryProperties props;
-    private final ThreadLocal<Deque<Span>> spanStack = ThreadLocal.withInitial(ArrayDeque::new);
+    /**
+     * Span plus the state to restore when it ends: its Scope (makeCurrent) and the
+     * MDC value the span replaced, so nested @Logged calls restore the outer one.
+     */
+    private record SpanEntry(Span span, Scope scope, String previousMdcValue) {}
+
+    private final ThreadLocal<Deque<SpanEntry>> spanStack = ThreadLocal.withInitial(ArrayDeque::new);
 
     public LoggedOpenTelemetryPlugin(LogDecorator deco, LoggedOpenTelemetryProperties props, Tracer tracer) {
         this.deco = deco;
@@ -143,24 +149,21 @@ public class LoggedOpenTelemetryPlugin implements LoggedPlugin {
 
     @Override
     public void afterMethod() {
-        if (props.isAddToMdc()) {
-            MDC.remove(props.getMdcKey());
-        }
+        // MDC restoration happens in endTopSpan, paired with the span that set it
     }
 
     @Override
     public void onCall(ProceedingJoinPoint pjp, Data data, Logged options) {
         if (!props.isEnabled()) return;
-        log.debug(deco.red("Otel Plugin called"));
+        if (log.isDebugEnabled()) log.debug(deco.red("Otel Plugin called"));
         String spanName = StringInterpolator.interpolate(props.getSpanIdTemplate(), data.tok());
-        MDCAdapter mdc = MDC.getMDCAdapter();
 
         var builder = tracer.spanBuilder(spanName)
                             .setParent(Context.current())
                             .setSpanKind(SpanKind.INTERNAL);
 
         if (props.isAddClass()) {
-            builder.setAttribute(CODE_NAMESPACE, data.get(LogToken.CLASS_NAME));
+            builder.setAttribute(CODE_NAMESPACE, data.get(LogToken.CLASS_LONG));
         }
 
         if (props.isAddMethod()) {
@@ -193,18 +196,22 @@ public class LoggedOpenTelemetryPlugin implements LoggedPlugin {
             builder.setAttribute(LOGGED_ARGS_MASKED, maskedArgNames(options, args));
         }
 
+        String previousMdcValue = null;
         if (props.isAddToMdc()) {
-            mdc.put(props.getMdcKey(), spanName);
+            previousMdcValue = MDC.get(props.getMdcKey());
+            MDC.put(props.getMdcKey(), spanName);
         }
         Span span = builder.startSpan();
-        spanStack.get().push(span);
+        // makeCurrent so nested @Logged spans parent to this one and Span.current() is correct
+        Scope scope = span.makeCurrent();
+        spanStack.get().push(new SpanEntry(span, scope, previousMdcValue));
     }
 
 
     @Override
     public void onReturn(ProceedingJoinPoint pjp, Data data, Logged options) {
         if (!props.isEnabled()) return;
-        Span span = safePeek(spanStack);
+        Span span = safePeekSpan();
 
         if (span != null && span.getSpanContext().isValid()) {
             if (options.onReturn()) {
@@ -225,7 +232,7 @@ public class LoggedOpenTelemetryPlugin implements LoggedPlugin {
     @Override
     public void onException(ProceedingJoinPoint pjp, Data data, Logged options, Throwable ex) {
         if (!props.isEnabled()) return;
-        Span span = safePeek(spanStack);
+        Span span = safePeekSpan();
         if (span != null && span.getSpanContext().isValid()) {
             if (options.onException() && ex != null) {
                 span.recordException(ex);
@@ -255,17 +262,29 @@ public class LoggedOpenTelemetryPlugin implements LoggedPlugin {
         return out;
     }
 
-    private <T> T safePeek(ThreadLocal<Deque<T>> stackThreadLocal) {
-        Deque<T> stack = stackThreadLocal.get();
-        return stack.isEmpty() ? null : stack.peek();
+    private Span safePeekSpan() {
+        Deque<SpanEntry> stack = spanStack.get();
+        return stack.isEmpty() ? null : stack.peek().span();
     }
 
     private void endTopSpan() {
-        Deque<Span> s = spanStack.get();
+        Deque<SpanEntry> s = spanStack.get();
+        if (s.isEmpty()) {
+            spanStack.remove();
+            return;
+        }
+        SpanEntry entry = s.pop();
         try {
-            if (!s.isEmpty()) s.peek().end();
+            entry.scope().close();
+            entry.span().end();
         } finally {
-            if (!s.isEmpty()) s.pop();
+            if (props.isAddToMdc()) {
+                if (entry.previousMdcValue() != null) {
+                    MDC.put(props.getMdcKey(), entry.previousMdcValue());
+                } else {
+                    MDC.remove(props.getMdcKey());
+                }
+            }
             if (s.isEmpty()) spanStack.remove();
         }
     }

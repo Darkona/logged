@@ -1,7 +1,6 @@
 package io.github.darkona.logged.utils;
 
 import jakarta.annotation.Nullable;
-import org.springframework.stereotype.Component;
 
 import java.text.BreakIterator;
 import java.util.Arrays;
@@ -15,7 +14,6 @@ import java.util.Locale;
  * specialized methods that are not invoked by default.</p>
  */
 @SuppressWarnings("unused")
-@Component
 public class Transformer {
 
     private Transformer() {}
@@ -175,6 +173,7 @@ public class Transformer {
      */
     public static String getSubstringUntil(String str, int begin, String delimiter) {
         if (str == null || str.isEmpty()) return "";
+        if (delimiter == null || delimiter.isEmpty()) return str.trim();
         int from = Math.max(0, begin);
         int idx = str.indexOf(delimiter, from);
         if (idx == -1) return str.trim();

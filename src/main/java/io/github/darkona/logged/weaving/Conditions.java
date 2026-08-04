@@ -18,8 +18,9 @@ public class Conditions {
                                  );
         if (!hasWeaving) return false;
 
+        // isFile() is false for resources inside a jar, so only exists() can be checked here
         var xml = (context.getResourceLoader().getResource("classpath:META-INF/aop.xml"));
-        if (xml.exists() && xml.isFile()) {
+        if (xml.exists()) {
             return XmlStringFinder.check(xml, WeavedAspect.class.getName());
         }
         return false;

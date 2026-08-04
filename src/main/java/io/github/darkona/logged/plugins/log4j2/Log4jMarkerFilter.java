@@ -31,73 +31,78 @@ public class Log4jMarkerFilter implements Filter {
 
     @Override
     public Result filter(Logger logger, Level level, org.apache.logging.log4j.Marker marker, String msg, Object... params) {
-        return marker.getName().equals(name) ? onMatch : onMismatch;
+        return decide(marker);
     }
 
     @Override
     public Result filter(Logger logger, Level level, org.apache.logging.log4j.Marker marker, String message, Object p0) {
-        return marker.getName().equals(name) ? onMatch : onMismatch;
+        return decide(marker);
     }
 
     @Override
     public Result filter(Logger logger, Level level, org.apache.logging.log4j.Marker marker, String message, Object p0, Object p1) {
-        return marker.getName().equals(name) ? onMatch : onMismatch;
+        return decide(marker);
     }
 
     @Override
     public Result filter(Logger logger, Level level, org.apache.logging.log4j.Marker marker, String message, Object p0, Object p1, Object p2) {
-        return marker.getName().equals(name) ? onMatch : onMismatch;
+        return decide(marker);
     }
 
     @Override
     public Result filter(Logger logger, Level level, org.apache.logging.log4j.Marker marker, String message, Object p0, Object p1, Object p2, Object p3) {
-        return marker.getName().equals(name) ? onMatch : onMismatch;
+        return decide(marker);
     }
 
     @Override
     public Result filter(Logger logger, Level level, org.apache.logging.log4j.Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4) {
-        return marker.getName().equals(name) ? onMatch : onMismatch;
+        return decide(marker);
     }
 
     @Override
     public Result filter(Logger logger, Level level, org.apache.logging.log4j.Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5) {
-        return marker.getName().equals(name) ? onMatch : onMismatch;
+        return decide(marker);
     }
 
     @Override
     public Result filter(Logger logger, Level level, org.apache.logging.log4j.Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6) {
-        return marker.getName().equals(name) ? onMatch : onMismatch;
+        return decide(marker);
     }
 
     @Override
     public Result filter(Logger logger, Level level, org.apache.logging.log4j.Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7) {
-        return marker.getName().equals(name) ? onMatch : onMismatch;
+        return decide(marker);
     }
 
     @Override
     public Result filter(Logger logger, Level level, org.apache.logging.log4j.Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7, Object p8) {
-        return marker.getName().equals(name) ? onMatch : onMismatch;
+        return decide(marker);
     }
 
     @Override
     public Result filter(Logger logger, Level level, org.apache.logging.log4j.Marker marker, String message, Object p0, Object p1, Object p2, Object p3, Object p4, Object p5, Object p6, Object p7, Object p8, Object p9) {
-        return marker.getName().equals(name) ? onMatch : onMismatch;
+        return decide(marker);
     }
 
     @Override
     public Result filter(Logger logger, Level level, org.apache.logging.log4j.Marker marker, Object msg, Throwable t) {
-        return marker.getName().equals(name) ? onMatch : onMismatch;
+        return decide(marker);
     }
 
     @Override
     public Result filter(Logger logger, Level level, org.apache.logging.log4j.Marker marker, Message msg, Throwable t) {
-        return marker.getName().equals(name) ? onMatch : onMismatch;
+        return decide(marker);
     }
 
     @Override
     public Result filter(LogEvent event) {
-        return event.getMarker()!=null ? (event.getMarker().getName().equals(name) ? onMatch : onMismatch )
-                                       : Result.NEUTRAL;
+        return decide(event.getMarker());
+    }
+
+    // Markerless log statements must pass through as NEUTRAL, never NPE
+    private Result decide(org.apache.logging.log4j.Marker marker) {
+        if (marker == null) return Result.NEUTRAL;
+        return marker.getName().equals(name) ? onMatch : onMismatch;
     }
 
     @Override

@@ -7,6 +7,8 @@ import io.github.darkona.logged.api.LoggedPlugin;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.appender.AbstractAppender;
 import org.aspectj.lang.ProceedingJoinPoint;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -14,6 +16,7 @@ import org.aspectj.lang.ProceedingJoinPoint;
  */
 public class LoggedLog4j2Plugin implements LoggedPlugin {
 
+    private static final Logger log = LoggerFactory.getLogger(LoggedLog4j2Plugin.class);
     private final LoggedLog4j2PluginProperties props;
     private final LogDecorator deco;
 
@@ -43,18 +46,17 @@ public class LoggedLog4j2Plugin implements LoggedPlugin {
                 (org.apache.logging.log4j.core.LoggerContext) LogManager.getContext(false);
         var cfg = ctx.getConfiguration();
 
-        if (props.getAppenderFilters().size() == 1) {
-            var marker = props.getAppenderFilters().getFirst();
-            AbstractAppender app = cfg.getAppender(marker.getAppenderName());
-            app.addFilter(new Log4jMarkerFilter(marker.getName(), marker.getOnMatch(), marker.getOnMismatch()));
-        } else {
-            props.getAppenderFilters().forEach(marker -> {
-                AbstractAppender app = cfg.getAppender(marker.getAppenderName());
-                if (app != null) {
-                    app.addFilter(new Log4jMarkerFilter(marker.getName(), marker.getOnMatch(), marker.getOnMismatch()));
-                }
-            });
-        }
+        props.getAppenderFilters().forEach(marker -> {
+            org.apache.logging.log4j.core.Appender appender = cfg.getAppender(marker.getAppenderName());
+            if (appender instanceof AbstractAppender app) {
+                var filter = new Log4jMarkerFilter(marker.getName(), marker.getOnMatch(), marker.getOnMismatch());
+                filter.start();
+                app.addFilter(filter);
+            } else {
+                log.warn("@Logged-Log4j2: appender '{}' not found or not filterable; marker filter '{}' not installed",
+                        marker.getAppenderName(), marker.getName());
+            }
+        });
     }
 
     @Override

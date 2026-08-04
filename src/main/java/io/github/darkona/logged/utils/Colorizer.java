@@ -95,6 +95,7 @@ public class Colorizer {
      * @return the colorized string, ending with a reset code to clear formatting
      */
     public static String rainbowify(String s) {
+        if (s == null) return "";
         var out = new StringBuilder();
         int x = 0;
         for (int i = 0; i < s.length(); i++) {

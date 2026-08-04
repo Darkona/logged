@@ -24,6 +24,7 @@ import org.slf4j.event.Level;
 import org.slf4j.spi.LoggingEventBuilder;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 
 import static io.github.darkona.logged.internals.LoggedEngine.NULL;
@@ -226,6 +227,10 @@ public class LoggedSlf4jPlugin implements LoggedPlugin {
     private void sendToLog(Logger log, Level level, String template, Map<String, String> tokens, Logged options, Throwable ex) {
         if (template == null || template.isEmpty()) return;
         LoggingEventBuilder builder = log.atLevel(level);
+
+        // Work on a local copy: the caller's map is Data's (unmodifiable) token view,
+        // and mutating shared state here would leak into the other plugins
+        tokens = new HashMap<>(tokens);
 
         String rvKey = LogToken.RETURN_VALUE.token();
         String rv = tokens.get(rvKey);

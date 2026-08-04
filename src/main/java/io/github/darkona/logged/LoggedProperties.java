@@ -29,8 +29,11 @@ public class LoggedProperties {
     /** Enable symbol icons in logs. */
     private boolean icons = true;
 
-    /** Enable UTF-8 for System.out to support pretty symbols. */
-    private boolean useUtf8 = true;
+    /**
+     * Enable UTF-8 for System.out to support pretty symbols.
+     * Opt-in: it replaces System.out and System.err JVM-wide.
+     */
+    private boolean useUtf8 = false;
 
     /** String to use for masking sensitive values. */
     private String maskString = "█";

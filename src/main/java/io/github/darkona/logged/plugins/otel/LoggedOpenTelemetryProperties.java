@@ -59,5 +59,5 @@ public class LoggedOpenTelemetryProperties {
     /**
      * The template to follow for the span name
      */
-    private String spanIdTemplate = "Logged: {c}${m}()";
+    private String spanIdTemplate = "Logged: {c}#{m}()";
 }

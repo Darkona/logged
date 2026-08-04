@@ -87,7 +87,11 @@ public class Bannerizer {
             int right = width - clean.length() - left;
             sb.append(Transformer.fill(" ", left)).append(line).append(Transformer.fill(" ", right)).append(System.lineSeparator());
         }
-        return sb.toString().trim();
+        // Only drop the final line separator: trim() would also strip the
+        // centering padding of the first and last lines
+        var sep = System.lineSeparator();
+        if (sb.length() >= sep.length()) sb.setLength(sb.length() - sep.length());
+        return sb.toString();
     }
 
     /**
@@ -193,12 +197,22 @@ public class Bannerizer {
 
     private static Skin currentSkin() { return supportsUtf8() ? UTF : ASCII; }
 
-    private static int visibleLen(String s) { return clearColor(s).length(); }
+    // Code points, not UTF-16 units, so astral symbols (emoji themes) count as one
+    private static int visibleLen(String s) {
+        String clean = clearColor(s);
+        return clean.codePointCount(0, clean.length());
+    }
 
     private static String padRight(String s, int width) {
         int len = visibleLen(s);
         if (len == width) return s;
-        if (len > width) return Transformer.truncate(clearColor(s), width);
+        if (len > width) {
+            // Transformer.truncate yields width+1 chars (ellipsis appended after the
+            // cut), which would break the table borders; fit ellipsis inside width
+            if (width <= 0) return "";
+            String clean = clearColor(s);
+            return width == 1 ? clean.substring(0, 1) : clean.substring(0, width - 1) + "…";
+        }
         return s + Transformer.fill(" ", width - len);
     }
 

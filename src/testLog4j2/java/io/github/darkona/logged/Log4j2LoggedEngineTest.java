@@ -143,7 +143,9 @@ class Log4j2LoggedEngineTest {
 
     @Test
     void shouldBeProxied() {
-        System.out.println("TestObject class: " + testObject.getClass());
+        org.junit.jupiter.api.Assertions.assertTrue(
+                org.springframework.aop.support.AopUtils.isAopProxy(testObject),
+                "TestObject should be advised by a Spring AOP proxy but was " + testObject.getClass());
     }
 
     private void callAndAssert(String methodName, Runnable methodCall, Consumer<List<LogEvent>> assertions) {

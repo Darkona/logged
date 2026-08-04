@@ -36,7 +36,7 @@ Maven
 <dependency>
   <groupId>io.github.darkona</groupId>
   <artifactId>logged</artifactId>
-  <version>1.5.3</version>
+  <version>1.6.0</version>
 </dependency>
 ```
 
@@ -44,7 +44,7 @@ Gradle (Groovy)
 
 ```groovy
 dependencies {
-    implementation "io.github.darkona:logged:1.5.3"
+    implementation "io.github.darkona:logged:1.6.0"
 }
 ```
 
@@ -113,7 +113,7 @@ logged:
   enabled: true
   color: true
   icons: true
-  useUtf8: true
+  useUtf8: true # opt-in (default false): replaces System.out/System.err JVM-wide
   callIcon: "↓○"
   returnIcon:  "↑○"
   exceptionIcon: "↑x"

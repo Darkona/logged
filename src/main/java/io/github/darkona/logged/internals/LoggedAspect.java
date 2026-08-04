@@ -13,7 +13,7 @@ public class LoggedAspect {
         this.loggedEngine = loggedEngine;
     }
 
-    @Around(value = "execution(* *(..)) && (@annotation(io.github.darkona.logged.Logged) ||  @within(io.github.darkona.logged.Logged))")
+    @Around(value = "execution(* *(..)) && !execution(* lambda$*(..)) && (@annotation(io.github.darkona.logged.Logged) || @within(io.github.darkona.logged.Logged))")
     public Object logMethod(ProceedingJoinPoint pjp)
     throws Throwable {
         return loggedEngine.logMethod(pjp);
