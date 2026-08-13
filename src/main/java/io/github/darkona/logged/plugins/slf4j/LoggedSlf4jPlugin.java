@@ -52,6 +52,18 @@ public class LoggedSlf4jPlugin implements LoggedPlugin {
     @Setter
     private LoggedProperties rootProps;
 
+    // Config-sourced templates precompiled once in onLoad() so the per-event
+    // path does no string concatenation or cache lookups
+    private StringInterpolator.Template callMsgArgsT;
+    private StringInterpolator.Template callMsgNoArgsT;
+    private StringInterpolator.Template returnMsgT;
+    private StringInterpolator.Template returnMsgValueT;
+    private StringInterpolator.Template returnMsgTimeT;
+    private StringInterpolator.Template returnMsgValueTimeT;
+    private StringInterpolator.Template exceptionMsgT;
+    private StringInterpolator.Template exceptionMsgTimeT;
+    private StringInterpolator.Template argsTemplateT;
+
     public LoggedSlf4jPlugin(LogDecorator deco, LoggedSlf4jProperties props) {
         this.props = props;
         this.deco = deco;
@@ -62,6 +74,21 @@ public class LoggedSlf4jPlugin implements LoggedPlugin {
             exceptionIconColor = ColorFinder.findColor(props.getExceptionIconColor());
             depthIconColor = ColorFinder.findColor(props.getDepthIconColor());
         }
+
+        callMsgArgsT = StringInterpolator.compileWithDefaults(props.getCallMsgArgs());
+        callMsgNoArgsT = StringInterpolator.compileWithDefaults(props.getCallMsgNoArgs());
+        returnMsgT = StringInterpolator.compileWithDefaults(props.getReturnMsg());
+        returnMsgValueT = StringInterpolator.compileWithDefaults(props.getReturnMsgValue());
+        returnMsgTimeT = StringInterpolator.compileWithDefaults(withTime(props.getReturnMsg()));
+        returnMsgValueTimeT = StringInterpolator.compileWithDefaults(withTime(props.getReturnMsgValue()));
+        exceptionMsgT = StringInterpolator.compileWithDefaults(props.getExceptionMsg());
+        exceptionMsgTimeT = StringInterpolator.compileWithDefaults(props.getExceptionMsg() + " " + props.getTimeTakenMsg());
+        argsTemplateT = StringInterpolator.compile(props.getArgsTemplate());
+    }
+
+    // An empty base template means "don't log", so it must not grow a time suffix
+    private String withTime(String template) {
+        return (template == null || template.isEmpty()) ? template : template + " " + props.getTimeTakenMsg();
     }
 
     @Override
@@ -125,9 +152,9 @@ public class LoggedSlf4jPlugin implements LoggedPlugin {
 
             if (options.args()) {
                 data.addToken(LogToken.ARGUMENTS, makePrintableArgs(data.args(), options.argValues()));
-                sendToLog(log, level, props.getCallMsgArgs(), data.tok(), options, null);
+                sendToLog(log, level, callMsgArgsT, data.tok(), options, null);
             } else {
-                sendToLog(log, level, props.getCallMsgNoArgs(), data.tok(), options, null);
+                sendToLog(log, level, callMsgNoArgsT, data.tok(), options, null);
             }
 
         }
@@ -185,13 +212,13 @@ public class LoggedSlf4jPlugin implements LoggedPlugin {
     private void logReturn(Logger log, Level level, Data data, Logged options) {
         if (options.onReturn() && options.returnMsg().isEmpty()) {
             var rv = data.tokens().get(LogToken.RETURN_VALUE);
-            String template = switch (options.returnValue()) {
-                case ALL -> props.getReturnMsgValue();
-                case NULL -> rv.equals(NULL) ? props.getReturnMsgValue() : props.getReturnMsg();
-                case NONE -> "";
+            boolean time = options.time();
+            StringInterpolator.Template template = switch (options.returnValue()) {
+                case ALL -> time ? returnMsgValueTimeT : returnMsgValueT;
+                case NULL -> NULL.equals(rv) ? (time ? returnMsgValueTimeT : returnMsgValueT)
+                                             : (time ? returnMsgTimeT : returnMsgT);
+                case NONE -> null;
             };
-            if (template.isEmpty()) return;
-            if (options.time()) template += " " + props.getTimeTakenMsg();
             sendToLog(log, level, template, data.tok(), options, null);
         } else if (!options.returnMsg().isEmpty()) {
             sendToLog(log, level, options.returnMsg(), data.tok(), options, null);
@@ -213,19 +240,28 @@ public class LoggedSlf4jPlugin implements LoggedPlugin {
 
         if (!options.onException() && options.exceptionMsg().isBlank()) return;
 
-        String template = options.exceptionMsg().isBlank()
-                          ? props.getExceptionMsg() + (options.time() ? " " + props.getTimeTakenMsg() : "")
-                          : options.exceptionMsg();
-
-        if (options.logStackTrace()) {
-            sendToLog(log, level, template, data.tok(), options, e);
+        Throwable cause = options.logStackTrace() ? e : null;
+        if (options.exceptionMsg().isBlank()) {
+            sendToLog(log, level, options.time() ? exceptionMsgTimeT : exceptionMsgT, data.tok(), options, cause);
         } else {
-            sendToLog(log, level, template, data.tok(), options, null);
+            sendToLog(log, level, options.exceptionMsg(), data.tok(), options, cause);
         }
     }
 
+    // Annotation-sourced templates arrive as strings; they are compile-time
+    // constants, so the interpolator's LRU cache makes reparsing cheap
     private void sendToLog(Logger log, Level level, String template, Map<String, String> tokens, Logged options, Throwable ex) {
         if (template == null || template.isEmpty()) return;
+        sendToLog(log, level, tokens, options, ex, toks -> StringInterpolator.interpolateWithDefaults(template, toks));
+    }
+
+    private void sendToLog(Logger log, Level level, StringInterpolator.Template template, Map<String, String> tokens, Logged options, Throwable ex) {
+        if (template == null || template.isEmpty()) return;
+        sendToLog(log, level, tokens, options, ex, template::render);
+    }
+
+    private void sendToLog(Logger log, Level level, Map<String, String> tokens, Logged options, Throwable ex,
+                           java.util.function.Function<Map<String, String>, String> renderer) {
         LoggingEventBuilder builder = log.atLevel(level);
 
         // Work on a local copy: the caller's map is Data's (unmodifiable) token view,
@@ -259,7 +295,7 @@ public class LoggedSlf4jPlugin implements LoggedPlugin {
 
         if (ex != null) builder = builder.setCause(ex);
 
-        builder.log(StringInterpolator.interpolateWithDefaults(template, tokens));
+        builder.log(renderer.apply(tokens));
     }
 
 
@@ -280,7 +316,7 @@ public class LoggedSlf4jPlugin implements LoggedPlugin {
         StringBuilder sb = new StringBuilder(args.length * 16);
         for (int i = 0; i < args.length; i++) {
             Arg a = args[i];
-            if (a != null) sb.append(a.toString(props.getArgsTemplate(), argValues, props.getMaxValueLength()));
+            if (a != null) sb.append(a.toString(argsTemplateT, argValues, props.getMaxValueLength()));
             if (i < args.length - 1) sb.append(", ");
         }
         return sb.toString();

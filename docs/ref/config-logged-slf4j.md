@@ -138,6 +138,12 @@ Threshold
 - threshold.warnMs: long, default -1: global slow-call threshold in ms; `< 0` disables.
 - threshold.promoteLevel: org.slf4j.event.Level, default WARN: level to promote slow calls to; effective level is max(base, promote).
 
+Stack Frames
+- stack.skip-prefixes: list<string>, default `[java., jdk., sun., org.springframework., org.aspectj., io.github.darkona.logged.]`: class-name prefixes skipped when resolving the exception origin frame (`{ec}`, `{em}`, `{L}`, `{f}` tokens). Setting this property replaces the defaults, so include them if you only want to append.
+
+Caches
+- cache.max-annotation-patterns: int, default 512: maximum number of compiled `@Logged(maskPatterns=...)` regexes retained in an LRU cache (invalid patterns are negatively cached). Mask patterns should be compile-time constants; avoid generating them dynamically.
+
 ---
 
 ## Full Reference — `logged.slf4j.*`

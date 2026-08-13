@@ -230,6 +230,7 @@ class UserService {
 
 - Use `argValues = NONE` on public-facing boundaries; enable `ALL` only where risk is low.
 - Prefer `maskTypes` for sensitive classes (credentials, tokens) and complement with `maskPatterns` for strings.
+- Keep `maskPatterns` values as compile-time constants. Compiled patterns are kept in a bounded LRU cache (`logged.cache.max-annotation-patterns`, default 512); generating patterns dynamically churns the cache and forces repeated recompilation.
 - Enable a global `threshold.warnMs` (e.g., 250 ms) and fine-tune with `warnIfOverMs` for critical paths.
 - Annotate at class level for consistent defaults; override only where needed.
 - Turn on `logStackTrace` selectively where stacks add value and won’t overwhelm logs.

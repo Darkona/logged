@@ -13,6 +13,17 @@
       "description": "Level to promote when the threshold is exceeded."
     },
     {
+      "name": "logged.cache.max-annotation-patterns",
+      "type": "java.lang.Integer",
+      "defaultValue": 512,
+      "description": "Maximum number of compiled @Logged maskPatterns regexes kept in an LRU cache (invalid patterns are negatively cached). Mask patterns should be compile-time constants; avoid generating them dynamically."
+    },
+    {
+      "name": "logged.stack.skip-prefixes",
+      "type": "java.util.List<java.lang.String>",
+      "description": "Class-name prefixes skipped when resolving the exception origin frame (EXCEPTION_ORIGIN_*, LINE and FILENAME tokens). Setting this replaces the built-in defaults: java., jdk., sun., org.springframework., org.aspectj., io.github.darkona.logged."
+    },
+    {
       "name": "logged.useIconTheme",
       "type": "java.lang.Boolean",
       "defaultValue": false,

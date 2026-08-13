@@ -1,10 +1,11 @@
 package io.github.darkona.logged.utils;
 
+import io.github.darkona.logged.internals.BoundedLruMap;
+
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
 
 /**
  * Utility class for interpolating placeholders within a string template using values from a provided map.
@@ -24,6 +25,11 @@ import java.util.regex.Pattern;
  * Thread-safety: uses small synchronized LRU caches (256 entries per mode) to store a compiled
  * representation of recently used templates. Methods are safe for concurrent use without
  * external synchronization.
+ * <p>
+ * Callers with a stable template (e.g. one bound from configuration at startup) can skip the
+ * cache entirely: {@link #compile(String)} / {@link #compileWithDefaults(String)} return a
+ * reusable {@link Template} whose {@link Template#render(Map)} applies values without
+ * reparsing or cache lookups.
  *
  * Escaping:
  * - "{{" renders a single '{'
@@ -31,8 +37,8 @@ import java.util.regex.Pattern;
  *
  * Defaults syntax:
  * - Use {key:default} to provide a fallback when the key is absent (only in
- *   {@link #interpolateWithDefaults(String, Map)}). The first ':' splits key/default; the default
- *   may contain additional ':' characters.
+ *   {@link #interpolateWithDefaults(String, Map)} and {@link #compileWithDefaults(String)}).
+ *   The first ':' splits key/default; the default may contain additional ':' characters.
  * </p>
  */
 @SuppressWarnings("unused")
@@ -40,24 +46,46 @@ public class StringInterpolator {
 
     // --- Micro-cache for compiled templates ---
     private static final int CACHE_CAPACITY = 256;
-    private static final Map<String, CompiledTemplate> CACHE_PLAIN = java.util.Collections.synchronizedMap(new LruMap(CACHE_CAPACITY));
-    private static final Map<String, CompiledTemplate> CACHE_DEFAULTABLE = java.util.Collections.synchronizedMap(new LruMap(CACHE_CAPACITY));
+    private static final Map<String, CompiledTemplate> CACHE_PLAIN = Collections.synchronizedMap(new BoundedLruMap<>(CACHE_CAPACITY));
+    private static final Map<String, CompiledTemplate> CACHE_DEFAULTABLE = Collections.synchronizedMap(new BoundedLruMap<>(CACHE_CAPACITY));
 
     private enum Mode { PLAIN, DEFAULTABLE }
-
-    private static final class LruMap extends LinkedHashMap<String, CompiledTemplate> {
-        private final int capacity;
-        LruMap(int capacity) { super(capacity, 0.75f, true); this.capacity = capacity; }
-        @Override
-        protected boolean removeEldestEntry(Map.Entry<String, CompiledTemplate> eldest) {
-            return size() > capacity;
-        }
-    }
 
     private static final class CompiledTemplate {
         final List<Segment> segments;
         CompiledTemplate(List<Segment> segments) { this.segments = segments; }
     }
+
+    /**
+     * A reusable pre-parsed template. Obtain via {@link #compile(String)} or
+     * {@link #compileWithDefaults(String)}; call {@link #render(Map)} on each event.
+     * Immutable and safe for concurrent use.
+     */
+    public static final class Template {
+        private final CompiledTemplate ct;
+        private final int sizeHint;
+
+        private Template(CompiledTemplate ct, int sizeHint) {
+            this.ct = ct;
+            this.sizeHint = sizeHint;
+        }
+
+        /** True when this template was compiled from a null or empty string and always renders "". */
+        public boolean isEmpty() {
+            return ct.segments.isEmpty();
+        }
+
+        /** Applies the given values to this template. Missing keys behave as in the non-strict methods. */
+        public String render(Map<String, String> values) {
+            if (ct.segments.isEmpty()) return "";
+            if (values == null) values = Map.of();
+            StringBuilder out = new StringBuilder(sizeHint);
+            for (Segment s : ct.segments) s.render(out, values, false);
+            return out.toString();
+        }
+    }
+
+    private static final Template EMPTY_TEMPLATE = new Template(new CompiledTemplate(List.of()), 0);
 
     private interface Segment { void render(StringBuilder out, Map<String,String> values, boolean strict); }
 
@@ -85,13 +113,35 @@ public class StringInterpolator {
         }
     }
 
-    private static CompiledTemplate compile(String template, Mode mode) {
-        if (template == null || template.isEmpty()) return new CompiledTemplate(List.of(new Literal(template)));
-        // Select cache
+    /**
+     * Pre-parses a template with plain {@code {key}} placeholders, bypassing the LRU cache.
+     * Ideal for templates that are stable for the lifetime of the application (configuration
+     * values): parse once at startup, then {@link Template#render(Map)} per event.
+     */
+    public static Template compile(String template) {
+        if (template == null || template.isEmpty()) return EMPTY_TEMPLATE;
+        return new Template(parse(template, Mode.PLAIN), template.length() + 16);
+    }
+
+    /**
+     * Pre-parses a template supporting {@code {key:default}} placeholders, bypassing the LRU cache.
+     * See {@link #compile(String)}.
+     */
+    public static Template compileWithDefaults(String template) {
+        if (template == null || template.isEmpty()) return EMPTY_TEMPLATE;
+        return new Template(parse(template, Mode.DEFAULTABLE), template.length() + 16);
+    }
+
+    private static CompiledTemplate compileCached(String template, Mode mode) {
         Map<String, CompiledTemplate> cache = (mode == Mode.DEFAULTABLE) ? CACHE_DEFAULTABLE : CACHE_PLAIN;
         CompiledTemplate cached = cache.get(template);
         if (cached != null) return cached;
+        CompiledTemplate ct = parse(template, mode);
+        cache.put(template, ct);
+        return ct;
+    }
 
+    private static CompiledTemplate parse(String template, Mode mode) {
         List<Segment> segs = new ArrayList<>();
         int i = 0, n = template.length();
         StringBuilder lit = new StringBuilder();
@@ -136,9 +186,7 @@ public class StringInterpolator {
             }
         }
         if (lit.length() > 0) segs.add(new Literal(lit.toString()));
-        CompiledTemplate ct = new CompiledTemplate(List.copyOf(segs));
-        cache.put(template, ct);
-        return ct;
+        return new CompiledTemplate(List.copyOf(segs));
     }
 
     /**
@@ -155,7 +203,7 @@ public class StringInterpolator {
     public static String interpolate(String template, Map<String, String> values) {
         if (template == null || template.isEmpty()) return "";
         if (values == null) values = Map.of();
-        CompiledTemplate ct = compile(template, Mode.PLAIN);
+        CompiledTemplate ct = compileCached(template, Mode.PLAIN);
         StringBuilder out = new StringBuilder(template.length() + 16);
         for (Segment s : ct.segments) s.render(out, values, false);
         return out.toString();
@@ -181,7 +229,7 @@ public class StringInterpolator {
     public static String interpolateStrict(String template, Map<String, String> values) {
         if (template == null || template.isEmpty()) return "";
         if (values == null) values = Map.of();
-        CompiledTemplate ct = compile(template, Mode.PLAIN);
+        CompiledTemplate ct = compileCached(template, Mode.PLAIN);
         StringBuilder out = new StringBuilder(template.length() + 16);
         for (Segment s : ct.segments) s.render(out, values, true);
         return out.toString();
@@ -208,7 +256,7 @@ public class StringInterpolator {
     public static String interpolateWithDefaults(String template, Map<String, String> values) {
         if (template == null || template.isEmpty()) return "";
         if (values == null) values = Map.of();
-        CompiledTemplate ct = compile(template, Mode.DEFAULTABLE);
+        CompiledTemplate ct = compileCached(template, Mode.DEFAULTABLE);
         StringBuilder out = new StringBuilder(template.length() + 16);
         for (Segment s : ct.segments) s.render(out, values, false);
         return out.toString();

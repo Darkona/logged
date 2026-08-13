@@ -36,7 +36,7 @@ Maven
 <dependency>
   <groupId>io.github.darkona</groupId>
   <artifactId>logged</artifactId>
-  <version>1.6.0</version>
+  <version>1.6.1</version>
 </dependency>
 ```
 
@@ -44,7 +44,7 @@ Gradle (Groovy)
 
 ```groovy
 dependencies {
-    implementation "io.github.darkona:logged:1.6.0"
+    implementation "io.github.darkona:logged:1.6.1"
 }
 ```
 
@@ -152,6 +152,34 @@ logged:
 logged:
   useIconTheme: true
   iconTheme: SJET_3
+```
+
+### Caches
+
+```yaml
+logged:
+  cache:
+    # Max compiled @Logged(maskPatterns=...) regexes kept in an LRU cache.
+    # Mask patterns should be compile-time constants; generating them
+    # dynamically churns the cache and forces repeated recompilation.
+    max-annotation-patterns: 512
+```
+
+### Stack Frames
+
+```yaml
+logged:
+  stack:
+    # Class-name prefixes skipped when resolving the exception origin frame
+    # ({ec}, {em}, {L} and {f} tokens). Setting this REPLACES the defaults,
+    # so include them if you only want to add more prefixes.
+    skip-prefixes:
+      - "java."
+      - "jdk."
+      - "sun."
+      - "org.springframework."
+      - "org.aspectj."
+      - "io.github.darkona.logged."
 ```
 
 ### SLF4J Plugin

@@ -82,4 +82,40 @@ class StringInterpolatorTest {
             assertEquals("Hi, Javi!", r);
         }
     }
+
+    @Test
+    void compiledTemplateMatchesInterpolate() {
+        String t = "Hello {name}, use {unknown}, {{escaped}}!";
+        Map<String, String> values = Map.of("name", "Javi");
+        var compiled = StringInterpolator.compile(t);
+        assertEquals(StringInterpolator.interpolate(t, values), compiled.render(values));
+    }
+
+    @Test
+    void compiledTemplateWithDefaultsMatchesInterpolateWithDefaults() {
+        String t = "Hello {name:guest}, val {k:a:b:c}, lang {lang:Java}";
+        Map<String, String> values = Map.of("lang", "Rust");
+        var compiled = StringInterpolator.compileWithDefaults(t);
+        assertEquals(StringInterpolator.interpolateWithDefaults(t, values), compiled.render(values));
+    }
+
+    @Test
+    void compiledTemplateIsReusable() {
+        var compiled = StringInterpolator.compile("{greet}, {name}!");
+        assertEquals("Hi, Javi!", compiled.render(Map.of("greet", "Hi", "name", "Javi")));
+        assertEquals("Hola, Ana!", compiled.render(Map.of("greet", "Hola", "name", "Ana")));
+    }
+
+    @Test
+    void compileNullOrEmptyRendersEmpty() {
+        assertTrue(StringInterpolator.compile(null).isEmpty());
+        assertTrue(StringInterpolator.compileWithDefaults("").isEmpty());
+        assertEquals("", StringInterpolator.compile(null).render(Map.of("a", "b")));
+        assertEquals("", StringInterpolator.compileWithDefaults("").render(null));
+    }
+
+    @Test
+    void compiledTemplateToleratesNullValuesMap() {
+        assertEquals("Hi {name}", StringInterpolator.compile("Hi {name}").render(null));
+    }
 }

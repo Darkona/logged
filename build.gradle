@@ -13,7 +13,7 @@ plugins {
 group = 'io.github.darkona'
 // The release workflow passes the git-tag version via ORG_GRADLE_PROJECT_version;
 // assigning unconditionally here would override it, so only fall back when absent.
-version = providers.gradleProperty('version').getOrElse('1.6.0')
+version = providers.gradleProperty('version').getOrElse('1.6.1')
 
 def logbackVersion = "1.5.38"
 def filename = "${rootProject.name}-${this.version}.jar"

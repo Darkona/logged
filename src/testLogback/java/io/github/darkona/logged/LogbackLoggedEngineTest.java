@@ -70,6 +70,13 @@ class LogbackLoggedEngineTest {
     }
 
     @Test
+    void stackSkipPrefixesBindFromYaml() {
+        Assertions.assertEquals(
+                List.of("java.", "jdk.", "sun.", "org.springframework.", "org.aspectj.", "io.github.darkona.logged."),
+                props.getStack().getSkipPrefixes());
+    }
+
+    @Test
     void shouldSeeLoggedAspectInContext() {
         String matchedBean = Arrays.stream(context.getBeanDefinitionNames())
                                    .filter(name -> name.toLowerCase().contains("loggedengine"))

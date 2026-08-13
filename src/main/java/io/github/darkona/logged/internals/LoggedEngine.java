@@ -3,13 +3,10 @@ package io.github.darkona.logged.internals;
 
 import io.github.darkona.logged.Logged;
 import io.github.darkona.logged.LoggedProperties;
-import io.github.darkona.logged.api.Arg;
 import io.github.darkona.logged.api.Data;
 import io.github.darkona.logged.api.LogDecorator;
-import io.github.darkona.logged.api.LogToken;
 import io.github.darkona.logged.api.LoggedPlugin;
 import io.github.darkona.logged.colors.Orange;
-import io.github.darkona.logged.utils.Transformer;
 import jakarta.annotation.Nullable;
 import jakarta.annotation.PostConstruct;
 import lombok.Setter;
@@ -21,10 +18,16 @@ import org.springframework.aop.support.AopUtils;
 import org.springframework.core.annotation.AnnotationUtils;
 
 import java.nio.charset.StandardCharsets;
-import java.util.*;
-import java.util.function.Consumer;
-import java.util.regex.Pattern;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.List;
 
+/**
+ * Orchestrates the around-advice flow: resolves {@code @Logged} options,
+ * maintains the per-thread call stack, and coordinates its collaborators —
+ * {@link TokenAssembler} builds the token data, {@link MaskingPolicy} decides
+ * what gets masked, and {@link PluginDispatcher} isolates plugin callbacks.
+ */
 public class LoggedEngine {
 
     public static final String NULL = "null";
@@ -32,10 +35,9 @@ public class LoggedEngine {
     private static final ThreadLocal<Deque<Data>> STACK = ThreadLocal.withInitial(ArrayDeque::new);
     private final LoggedProperties props;
     private final LogDecorator deco;
-    private final List<LoggedPlugin> plugins;
-    private List<Pattern> maskPatterns = List.of();
-    private List<Class<?>> maskTypes = List.of();
-    private final Map<String, Optional<Pattern>> annoPatternCache = new java.util.concurrent.ConcurrentHashMap<>();
+    private final MaskingPolicy masking;
+    private final TokenAssembler assembler;
+    private final PluginDispatcher dispatcher;
     @Setter
     private boolean woven;
 
@@ -43,7 +45,9 @@ public class LoggedEngine {
     public LoggedEngine(LoggedProperties props, LogDecorator deco, List<LoggedPlugin> plugins) {
         this.props = props;
         this.deco = deco;
-        this.plugins = plugins;
+        this.masking = new MaskingPolicy(props);
+        this.assembler = new TokenAssembler(props, masking);
+        this.dispatcher = new PluginDispatcher(plugins);
     }
 
     private static void pop() {
@@ -64,48 +68,9 @@ public class LoggedEngine {
 
         log.info(deco.custom(Orange.DARK_ORANGE, msg));
 
-        plugins.forEach(loggedPlugin -> {
-            try {
-                loggedPlugin.onLoad();
-                if (props.isAnnounceLoad() && !loggedPlugin.announceLoad().isBlank()) log.info(loggedPlugin.announceLoad());
-            } catch (Exception e) {
-                var  m = "Error loading plugin: " + loggedPlugin.getClass().getSimpleName();
-                log.error(m, e);
-            }
-        });
+        dispatcher.loadAll(props.isAnnounceLoad());
 
-        // Pre-compile global mask patterns and resolve mask types once
-        if (props.getMaskPatterns() != null && !props.getMaskPatterns().isEmpty()) {
-            List<Pattern> compiled = new ArrayList<>();
-            for (String p : props.getMaskPatterns()) {
-                if (p == null || p.isBlank()) continue;
-                try {
-                    compiled.add(Pattern.compile(p));
-                } catch (Exception ex) {
-                    if (props.isFailOnInvalidMaskPatterns()) {
-                        throw new IllegalArgumentException("Invalid mask pattern: " + p, ex);
-                    }
-                    log.warn("Ignoring invalid mask pattern '{}': {}", p, ex.getMessage());
-                }
-            }
-            this.maskPatterns = List.copyOf(compiled);
-        }
-
-        if (props.getMaskTypeNames() != null && !props.getMaskTypeNames().isEmpty()) {
-            List<Class<?>> resolved = new ArrayList<>();
-            for (String cn : props.getMaskTypeNames()) {
-                if (cn == null || cn.isBlank()) continue;
-                try {
-                    resolved.add(Class.forName(cn));
-                } catch (Throwable t) {
-                    if (props.isFailOnUnresolvedMaskTypes()) {
-                        throw new IllegalArgumentException("Could not resolve mask type: " + cn, t);
-                    }
-                    log.warn("Could not resolve mask type: {}", cn);
-                }
-            }
-            this.maskTypes = List.copyOf(resolved);
-        }
+        masking.init();
     }
 
     public Object logMethod(ProceedingJoinPoint pjp)
@@ -115,7 +80,7 @@ public class LoggedEngine {
 
         final Data data;
         try {
-            data = assembleCallData(pjp, options);
+            data = assembler.assembleCallData(pjp, options, STACK.get().size());
         } catch (Throwable t) {
             log.warn("@Logged could not assemble call data for {}: {}", pjp.getSignature(), t.toString());
             return pjp.proceed();
@@ -126,7 +91,7 @@ public class LoggedEngine {
         // its exception.
         STACK.get().push(data);
         try {
-            forEachPluginSafely("onCall", p -> p.onCall(pjp, data, options));
+            dispatcher.dispatch("onCall", p -> p.onCall(pjp, data, options));
             final var result = pjp.proceed();
             afterSuccess(pjp, data, options, result);
             return result;
@@ -135,62 +100,28 @@ public class LoggedEngine {
             throw ex;
         } finally {
             pop();
-            forEachPluginSafely("afterMethod", LoggedPlugin::afterMethod);
-        }
-    }
-
-    private void forEachPluginSafely(String phase, Consumer<LoggedPlugin> action) {
-        for (LoggedPlugin p : plugins) {
-            try {
-                action.accept(p);
-            } catch (Throwable t) {
-                log.warn("@Logged plugin {} failed during {}: {}", p.getClass().getSimpleName(), phase, t.toString());
-            }
+            dispatcher.dispatch("afterMethod", LoggedPlugin::afterMethod);
         }
     }
 
     private void afterSuccess(ProceedingJoinPoint pjp, Data data, Logged options, Object result) {
         try {
-            putDuration(data);
-            assembleReturnData(data, result, options);
+            assembler.putDuration(data);
+            assembler.assembleReturnData(data, result, options);
         } catch (Throwable t) {
             log.warn("@Logged could not assemble return data for {}: {}", pjp.getSignature(), t.toString());
         }
-        forEachPluginSafely("onReturn", p -> p.onReturn(pjp, data, options));
+        dispatcher.dispatch("onReturn", p -> p.onReturn(pjp, data, options));
     }
 
     private void afterFailure(ProceedingJoinPoint pjp, Data data, Logged options, Throwable ex) {
         try {
-            putDuration(data);
-            assembleExceptionData(ex, data);
+            assembler.putDuration(data);
+            assembler.assembleExceptionData(ex, data);
         } catch (Throwable t) {
             log.warn("@Logged could not assemble exception data for {}: {}", pjp.getSignature(), t.toString());
         }
-        forEachPluginSafely("onException", p -> p.onException(pjp, data, options, ex));
-    }
-
-    private void putDuration(Data data) {
-        data.addToken(LogToken.DURATION, Long.toString((System.nanoTime() - data.start()) / 1_000_000));
-    }
-
-    /**
-     * First frame that belongs to application code, so EXCEPTION_ORIGIN_* tokens
-     * point at the user's class instead of JDK or framework internals.
-     */
-    private StackTraceElement firstRelevantFrame(Throwable e) {
-        var trace = e.getStackTrace();
-        if (trace == null || trace.length == 0) {
-            return new StackTraceElement("unknown", "unknown", "unknown", -1);
-        }
-        for (StackTraceElement frame : trace) {
-            String cn = frame.getClassName();
-            if (!cn.startsWith("java.") && !cn.startsWith("jdk.") && !cn.startsWith("sun.")
-                    && !cn.startsWith("org.springframework.") && !cn.startsWith("org.aspectj.")
-                    && !cn.startsWith("io.github.darkona.logged.")) {
-                return frame;
-            }
-        }
-        return trace[0];
+        dispatcher.dispatch("onException", p -> p.onException(pjp, data, options, ex));
     }
 
     @Nullable
@@ -205,158 +136,6 @@ public class LoggedEngine {
 
         var onMethod = AnnotationUtils.findAnnotation(specificMethod, Logged.class);
         return onMethod != null ? onMethod : AnnotationUtils.findAnnotation(targetClass, Logged.class);
-    }
-
-    @SuppressWarnings("unchecked")
-    private Data assembleCallData(ProceedingJoinPoint pjp, Logged options) {
-
-        var start = System.nanoTime();
-        var depth = STACK.get().size();
-        Map<LogToken, String> map = new HashMap<>();
-        boolean themed = (props.isUseIconTheme() && props.getIconTheme() != null);
-
-        // Data rejects null token values, so fall back to "" for unset icons
-        map.put(LogToken.CALL_ICON, orEmpty(themed ? props.getIconTheme().entry() : props.getCallIcon()));
-        map.put(LogToken.EXCEPTION_ICON, orEmpty(themed ? props.getIconTheme().exception() : props.getExceptionIcon()));
-        map.put(LogToken.RETURN_ICON, orEmpty(themed ? props.getIconTheme().exit() : props.getReturnIcon()));
-        map.put(LogToken.DEPTH_ICON, orEmpty(themed ? props.getIconTheme().depth() : props.getDepthIcon()));
-
-        map.put(LogToken.CLASS_NAME, pjp.getSignature().getDeclaringType().getSimpleName());
-        map.put(LogToken.CLASS_LONG, pjp.getSignature().getDeclaringType().getName());
-        map.put(LogToken.METHOD_NAME, pjp.getSignature().getName());
-
-
-        if (!options.args()) return new Data(map, new Arg[]{}, start, depth, Collections.emptySet());
-
-        var signature = (MethodSignature) pjp.getSignature();
-        map.put(LogToken.METHOD_TYPE, signature.getReturnType().getSimpleName());
-        Arg[] args = signature.getParameterTypes() != null ? new Arg[signature.getParameterTypes().length] : new Arg[0];
-
-        var names = ParameterNames.resolve(pjp);
-
-        Set<String> masksByName = new HashSet<>();
-        Set<Integer> maskIndexes = new HashSet<>();
-
-        if (options.maskArgValues().length > 0) {
-            masksByName.addAll(Arrays.asList(options.maskArgValues()));
-        }
-        if (options.maskAtPos().length > 0) {
-            Arrays.stream(options.maskAtPos()).forEach(maskIndexes::add);
-        }
-
-        // Merge annotation-level masking rules
-        List<Class<?>> annoTypes = Arrays.asList(options.maskTypes());
-        List<String> annoPatterns = Arrays.asList(options.maskPatterns());
-
-        for (int i = 0; i < signature.getParameterTypes().length; i++) {
-            Object raw = pjp.getArgs()[i];
-
-            // Values.NONE never prints values: skip the (possibly deep) stringification
-            if (options.argValues() == Logged.Values.NONE) {
-                args[i] = new Arg(signature.getParameterTypes()[i].getSimpleName(), names[i], "");
-                continue;
-            }
-
-            String rawStr = Transformer.objectString(raw);
-
-            boolean nameOrPos = masksByName.contains(names[i]) || maskIndexes.contains(i);
-            boolean typeMatch = matchesType(raw, signature.getParameterTypes()[i], annoTypes, this.maskTypes);
-            boolean patternMatch = matchesPattern(rawStr, annoPatterns, this.maskPatterns);
-
-            String value;
-            if (nameOrPos || typeMatch || patternMatch) {
-                value = mask();
-            } else {
-                value = Transformer.truncate(rawStr, props.getMaxValueLength());
-            }
-
-            args[i] = new Arg(signature.getParameterTypes()[i].getSimpleName(), names[i], value);
-        }
-        return new Data(map, args, start, depth, maskIndexes);
-    }
-
-    @SuppressWarnings("unchecked")
-    private void assembleReturnData(Data data, Object o, Logged options) {
-        data.addToken(LogToken.RETURN_CLASS, (o == null) ? NULL : o.getClass().getSimpleName());
-
-        if (options != null && options.returnValue() == Logged.Values.NONE) {
-            data.addToken(LogToken.RETURN_VALUE, "");
-            return;
-        }
-
-        String raw = Transformer.objectString(o);
-
-        boolean mustMask = props.isMaskReturn() || (options != null && options.maskReturn());
-        if (!mustMask) {
-            mustMask = matchesType(o, (o != null ? o.getClass() : null), List.of(), this.maskTypes)
-                    || matchesPattern(raw, List.of(), this.maskPatterns);
-        }
-
-        String value;
-        if (mustMask) {
-            value = mask();
-        } else {
-            value = Transformer.truncate(raw, props.getMaxValueLength());
-        }
-        data.addToken(LogToken.RETURN_VALUE, value);
-    }
-
-    @SuppressWarnings("unchecked")
-    private boolean matchesType(Object value, Class<?> declaredType, List<Class<?>>... sources) {
-        Class<?> runtime = (value != null) ? value.getClass() : null;
-        for (List<Class<?>> list : sources) {
-            if (list == null) continue;
-            for (Class<?> t : list) {
-                if (t == null) continue;
-                if (runtime != null && t.isAssignableFrom(runtime)) return true;
-                if (declaredType != null && t.isAssignableFrom(declaredType)) return true;
-            }
-        }
-        return false;
-    }
-
-    private boolean matchesPattern(String s, List<String> annoPatterns, List<Pattern> globalPatterns) {
-        if (s == null) return false;
-        if (annoPatterns != null) {
-            for (String ap : annoPatterns) {
-                if (ap == null || ap.isBlank()) continue;
-                var compiled = annoPatternCache.computeIfAbsent(ap, key -> {
-                    try {
-                        return Optional.of(Pattern.compile(key));
-                    } catch (Exception ex) {
-                        // A typo'd pattern means the value the user believes masked is
-                        // logged in cleartext, so it must be loudly visible
-                        log.warn("@Logged ignoring invalid mask pattern '{}': {}", key, ex.getMessage());
-                        return Optional.<Pattern>empty();
-                    }
-                });
-                if (compiled.isPresent() && compiled.get().matcher(s).find()) return true;
-            }
-        }
-        if (globalPatterns != null) {
-            for (Pattern p : globalPatterns) {
-                if (p != null && p.matcher(s).find()) return true;
-            }
-        }
-        return false;
-    }
-
-    private static String orEmpty(String s) {
-        return s != null ? s : "";
-    }
-
-    private String mask() {
-        return Transformer.truncate(Transformer.fill(props.getMaskString(), props.getMaskLength()), props.getMaskLength());
-    }
-
-    private void assembleExceptionData(Throwable e, Data data) {
-        var origin = firstRelevantFrame(e);
-        data.addToken(LogToken.EXCEPTION_CLASS, e.getClass().getSimpleName());
-        data.addToken(LogToken.EXCEPTION_MESSAGE, e.getLocalizedMessage());
-        data.addToken(LogToken.EXCEPTION_ORIGIN_CLASS, origin.getClassName());
-        data.addToken(LogToken.EXCEPTION_ORIGIN_METHOD, origin.getMethodName());
-        data.addToken(LogToken.LINE, String.valueOf(origin.getLineNumber()));
-        data.addToken(LogToken.FILENAME, origin.getFileName());
     }
 
 }

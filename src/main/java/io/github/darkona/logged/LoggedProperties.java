@@ -76,11 +76,41 @@ public class LoggedProperties {
     /** Threshold configuration for slow calls. */
     private Threshold threshold = new Threshold();
 
+    /** Exception-origin stack frame filtering. */
+    private Stack stack = new Stack();
+
+    /** Internal cache sizing. */
+    private Cache cache = new Cache();
+
     @Data
     public static class Threshold {
         /** Global threshold in milliseconds. If < 0 the feature is disabled globally. */
         private long warnMs = -1L;
         /** Level to promote to when threshold is exceeded. */
         private org.slf4j.event.Level promoteLevel = org.slf4j.event.Level.WARN;
+    }
+
+    @Data
+    public static class Cache {
+        /**
+         * Maximum number of compiled {@code @Logged(maskPatterns=...)} regexes
+         * retained in an LRU cache (invalid patterns are negatively cached).
+         * Mask patterns should be compile-time constants; avoid generating
+         * them dynamically.
+         */
+        private int maxAnnotationPatterns = 512;
+    }
+
+    @Data
+    public static class Stack {
+        /**
+         * Class-name prefixes skipped when locating the exception origin frame
+         * (EXCEPTION_ORIGIN_*, LINE and FILENAME tokens), so they point at
+         * application code instead of JDK or framework internals.
+         * Setting this property replaces the built-in defaults.
+         */
+        private java.util.List<String> skipPrefixes = java.util.List.of(
+                "java.", "jdk.", "sun.",
+                "org.springframework.", "org.aspectj.", "io.github.darkona.logged.");
     }
 }

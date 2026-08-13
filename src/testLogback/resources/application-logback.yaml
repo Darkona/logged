@@ -18,6 +18,16 @@ logged:
   threshold:
     warnMs: 5
     promoteLevel: WARN
+  # Same values as the built-in defaults: exercises the binding without
+  # changing which frames are skipped in the suite's exception tests
+  stack:
+    skip-prefixes:
+      - "java."
+      - "jdk."
+      - "sun."
+      - "org.springframework."
+      - "org.aspectj."
+      - "io.github.darkona.logged."
   slf4j:
     color: true
     enabled: true

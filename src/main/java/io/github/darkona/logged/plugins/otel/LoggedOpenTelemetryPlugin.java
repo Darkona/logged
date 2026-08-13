@@ -131,10 +131,13 @@ public class LoggedOpenTelemetryPlugin implements LoggedPlugin {
 
     private final ThreadLocal<Deque<SpanEntry>> spanStack = ThreadLocal.withInitial(ArrayDeque::new);
 
+    private final StringInterpolator.Template spanIdTemplate;
+
     public LoggedOpenTelemetryPlugin(LogDecorator deco, LoggedOpenTelemetryProperties props, Tracer tracer) {
         this.deco = deco;
         this.tracer = tracer;
         this.props = props;
+        this.spanIdTemplate = StringInterpolator.compile(props.getSpanIdTemplate());
     }
 
     @Override
@@ -156,7 +159,7 @@ public class LoggedOpenTelemetryPlugin implements LoggedPlugin {
     public void onCall(ProceedingJoinPoint pjp, Data data, Logged options) {
         if (!props.isEnabled()) return;
         if (log.isDebugEnabled()) log.debug(deco.red("Otel Plugin called"));
-        String spanName = StringInterpolator.interpolate(props.getSpanIdTemplate(), data.tok());
+        String spanName = spanIdTemplate.render(data.tok());
 
         var builder = tracer.spanBuilder(spanName)
                             .setParent(Context.current())

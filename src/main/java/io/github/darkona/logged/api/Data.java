@@ -8,7 +8,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public class Data {
 
@@ -21,7 +20,12 @@ public class Data {
     private final Map<String, String> stokens;
 
     public Data(Map<LogToken, String> tokens, Arg[] args, long start, int depth, Set<Integer> redactedPos) {
-        this.tokens = tokens == null ? new HashMap<>() : new HashMap<>(tokens);
+        this.tokens = new HashMap<>();
+        if (tokens != null) {
+            for (var e : tokens.entrySet()) {
+                this.tokens.put(e.getKey(), nz(e.getValue()));
+            }
+        }
         this.args = args == null ? new Arg[0] : args;
         this.start = start;
         this.depth = depth;
@@ -46,44 +50,53 @@ public class Data {
     }
 
     private Map<String, String> syncTokens() {
-        return tokens.entrySet().stream()
-                     .collect(Collectors.toMap(e -> e.getKey().token(),
-                             Map.Entry::getValue, (a, b) -> b, () -> new HashMap<>(tokens.size())));
+        Map<String, String> synced = new HashMap<>(tokens.size());
+        for (var e : tokens.entrySet()) {
+            synced.put(e.getKey().token(), nz(e.getValue()));
+        }
+        return synced;
+    }
+
+    // Null values normalize to "" so templates render cleanly instead of "null"
+    private static String nz(String s) {
+        return s == null ? "" : s;
     }
 
     /**
-     * Add or replace a token value (per-instance).
+     * Add or replace a token value (per-instance). Null values are stored as "".
      */
     public void addToken(LogToken token, String value) {
-        tokens.put(token, value);
-        stokens.put(token.token(), value);
+        tokens.put(token, nz(value));
+        stokens.put(token.token(), nz(value));
     }
 
     /**
-     * Add a token with a custom key, as a String
+     * Add a token with a custom key, as a String. Null values are stored as "".
      *
      * @param key   String key
      * @param value String value
      */
     public void addFlexToken(String key, String value) {
-        stokens.put(key, value);
+        stokens.put(key, nz(value));
     }
 
     /**
      * Get a token value (by String key)
      *
      * @param key String key
-     * @return the token value
+     * @return the token value, or "" if absent
      */
     public String get(String key) {
-        return stokens.get(key) == null ? "" : stokens.get(key);
+        var v = stokens.get(key);
+        return v == null ? "" : v;
     }
 
     /**
      * Get a token value (by LogToken key).
      */
     public String get(LogToken token) {
-        return tokens.get(token) == null ? "" : tokens.get(token);
+        var v = tokens.get(token);
+        return v == null ? "" : v;
     }
 
     /**
