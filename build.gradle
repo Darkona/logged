@@ -13,7 +13,7 @@ plugins {
 group = 'io.github.darkona'
 // The release workflow passes the git-tag version via ORG_GRADLE_PROJECT_version;
 // assigning unconditionally here would override it, so only fall back when absent.
-version = providers.gradleProperty('version').getOrElse('1.6.1')
+version = providers.gradleProperty('version').getOrElse('1.7.0')
 
 def logbackVersion = "1.5.38"
 def filename = "${rootProject.name}-${this.version}.jar"
@@ -84,8 +84,8 @@ mavenPublishing {
         url = "https://github.com/Darkona/logged"
         licenses {
             license {
-                name = "LGPL-3.0-or-later"
-                url = "https://www.gnu.org/licenses/lgpl-3.0.txt"
+                name = "Apache-2.0"
+                url = "https://www.apache.org/licenses/LICENSE-2.0.txt"
                 distribution = "repo"
             }
         }

@@ -36,7 +36,7 @@ Maven
 <dependency>
   <groupId>io.github.darkona</groupId>
   <artifactId>logged</artifactId>
-  <version>1.6.1</version>
+  <version>1.7.0</version>
 </dependency>
 ```
 
@@ -44,7 +44,7 @@ Gradle (Groovy)
 
 ```groovy
 dependencies {
-    implementation "io.github.darkona:logged:1.6.1"
+    implementation "io.github.darkona:logged:1.7.0"
 }
 ```
 
@@ -319,4 +319,6 @@ public String greet(String name) { return "Hello, " + name; }
 
 ## License
 
-Logged is licensed under **LGPL-3.0**. Free for commercial and open-source use. If you modify and distribute the library itself, you must publish your changes under the same license.
+Logged is licensed under the [Apache License 2.0](LICENSE). Free for commercial and open-source use, modification and redistribution.
+
+Versions up to and including 1.6.1 were published under LGPL-3.0 and remain so; the Apache 2.0 license applies from 1.7.0 onwards.
