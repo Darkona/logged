@@ -275,7 +275,62 @@ Spring AOP proxies only intercept public methods. To log private/self calls, use
 
 ### Compile-Time Weaving (CTW)
 
-Use `aspectj-maven-plugin` or a Gradle AspectJ plugin (e.g., FreeFair). Classes are woven at build time; no agent needed.
+Classes are woven at build time, so no agent runs. Three things are required, and skipping
+any of them breaks the app at the first annotated call:
+
+1. Put logged on the AspectJ aspect path, non-transitively.
+2. Pass the shipped allow-list `META-INF/logged/logged-weaving.xml` to `ajc`. The jar carries
+   two aspects and ajc weaves both unless told otherwise.
+3. Set `logged.weaving: enabled`. CTW leaves no agent for the default `auto` detection to
+   find, so Spring would otherwise register its proxy next to the woven aspect and every
+   annotated method would be instrumented twice.
+
+```groovy
+plugins {
+    id 'io.freefair.aspectj.post-compile-weaving' version '9.5.0'
+}
+
+configurations { loggedArtifact }
+
+dependencies {
+    implementation "io.github.darkona:logged:1.7.0"
+    aspect("io.github.darkona:logged:1.7.0") { transitive = false }
+    loggedArtifact("io.github.darkona:logged:1.7.0") { transitive = false }
+}
+
+def weavingConfigDir = layout.buildDirectory.dir('aspectj')
+def weavingConfig = weavingConfigDir.map { it.file('META-INF/logged/logged-weaving.xml') }
+
+tasks.register('extractLoggedWeavingConfig', Copy) {
+    from({ zipTree(configurations.loggedArtifact.singleFile) }) {
+        include 'META-INF/logged/logged-weaving.xml'
+    }
+    into weavingConfigDir
+}
+
+tasks.withType(JavaCompile).configureEach {
+    def ajc = extensions.findByName('ajc')
+    if (ajc != null) {
+        dependsOn 'extractLoggedWeavingConfig'
+        ajc.options.compilerArgs.addAll('-xmlConfigured', weavingConfig.get().asFile.absolutePath)
+        // Neither the compiler args nor the file they name are task inputs by default:
+        // without this line, editing the allow-list leaves compileJava UP-TO-DATE and the
+        // previous weaving in place.
+        inputs.file(weavingConfig).withPropertyName('loggedWeavingConfig')
+    }
+}
+```
+
+```yaml
+logged:
+  weaving: enabled
+```
+
+CTW weaves only the module being compiled. In a multi-module build, apply the plugin to
+every module whose classes you want woven.
+
+See [docs/ref/weaving-aspectj.md](docs/ref/weaving-aspectj.md) for Maven, for load-time
+weaving and for troubleshooting.
 
 Both LTW and CTW:
 
