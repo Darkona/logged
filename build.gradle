@@ -160,6 +160,12 @@ sourceSets {
         compileClasspath += sourceSets.main.output
         runtimeClasspath += output + compileClasspath
     }
+    testWeaving {
+        java.srcDir 'src/testWeaving/java'
+        resources.srcDir 'src/testWeaving/resources'
+        compileClasspath += sourceSets.main.output
+        runtimeClasspath += output + compileClasspath
+    }
     test {
         java.srcDir 'src/test/java'
         resources.srcDir 'src/test/resources'
@@ -180,6 +186,12 @@ configurations {
     testLogbackRuntimeOnly.extendsFrom testRuntimeOnly
     testLogbackCompileOnly.extendsFrom testCompileOnly
     testLogbackAnnotationProcessor.extendsFrom testAnnotationProcessor
+
+    // --- Compile-time weaving suite ---
+    testWeavingImplementation.extendsFrom testImplementation
+    testWeavingRuntimeOnly.extendsFrom testRuntimeOnly
+    testWeavingCompileOnly.extendsFrom testCompileOnly
+    testWeavingAnnotationProcessor.extendsFrom testAnnotationProcessor
 
     configureEach {
         resolutionStrategy {
@@ -310,6 +322,34 @@ tasks.register('testLogback', Test) {
     systemProperty "spring.profiles.active", "logback"
 }
 
+// --- Compile-time weaving regression suite --------------------------------
+// Weaves the testWeaving classes with ajc the way a consumer would, and asserts that an
+// annotated method is instrumented exactly once. Three regressions live or die here:
+// the missing aspectOf() factory, both aspects being woven at once, and Spring keeping
+// its proxy alongside the woven aspect.
+def loggedWeavingConfig = layout.projectDirectory.file('src/main/resources/META-INF/logged/logged-weaving.xml')
+
+// The aspect path is what ajc weaves FROM.
+sourceSets.testWeaving.aspectPath.from(sourceSets.main.output)
+
+tasks.named('compileTestWeavingJava') {
+    def ajc = extensions.findByName('ajc')
+    if (ajc != null) {
+        // Without the allow-list ajc also weaves LoggedAspect, which takes the engine
+        // through its constructor, and the first call dies with NoAspectBoundException.
+        ajc.options.compilerArgs.addAll('-xmlConfigured', loggedWeavingConfig.asFile.absolutePath)
+        inputs.file(loggedWeavingConfig).withPropertyName('loggedWeavingConfig').withPathSensitivity(PathSensitivity.RELATIVE)
+    }
+}
+
+tasks.register('testWeaving', Test) {
+    description = 'Runs the compile-time weaving regression suite'
+    group = 'verification'
+    testClassesDirs = sourceSets.testWeaving.output.classesDirs
+    classpath = sourceSets.testWeaving.runtimeClasspath
+    useJUnitPlatform()
+}
+
 // Ensure default test task (src/test) uses JUnit Platform
 tasks.named('test', Test) {
     useJUnitPlatform()
@@ -352,6 +392,7 @@ tasks.named('check').configure {
     dependsOn 'test'
     dependsOn 'testLog4j2'
     dependsOn 'testLogback'
+    dependsOn 'testWeaving'
     dependsOn 'checkReadmeVersion'
 }
 
