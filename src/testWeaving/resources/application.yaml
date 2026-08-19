@@ -1,0 +1,5 @@
+logged:
+  # Compile-time weaving leaves no javaagent behind, so AUTO cannot detect it.
+  weaving: enabled
+  announce-load: false
+  color: false

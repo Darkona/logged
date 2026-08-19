@@ -2,12 +2,46 @@ import org.springframework.boot.gradle.plugin.SpringBootPlugin
 
 import java.util.regex.Pattern
 
+// --- Build classpath security floors --------------------------------------
+// The publishing plugin drags vulnerable transitives into the build classpath.
+// They never reach the published artifact, but Dependabot reports them and the
+// build machine still runs them, so they are pinned here.
+//
+// Constraints on the buildscript classpath, not the ones further down: that
+// block covers what the library compiles and ships against.
+buildscript {
+    dependencies {
+        constraints {
+            classpath('org.apache.httpcomponents.core5:httpcore5:5.4.3') {
+                because 'GHSA-hf6x-8p5f-cgmf, high. com.vanniktech.maven.publish 0.34.0 resolves 5.3.6.'
+            }
+            classpath('org.apache.httpcomponents.core5:httpcore5-h2:5.4.3') {
+                because 'GHSA-v3jc-474w-2wm6, high. com.vanniktech.maven.publish 0.34.0 resolves 5.3.6.'
+            }
+            classpath('org.apache.httpcomponents.client5:httpclient5:5.6.4') {
+                because 'GHSA-hjcp-jmpx-g3qm. com.vanniktech.maven.publish 0.34.0 resolves 5.5.2.'
+            }
+            classpath('com.fasterxml.jackson.core:jackson-databind:2.21.6') {
+                because 'GHSA-5gvw-p9qm-jgwh, GHSA-5jmj-h7xm-6q6v, GHSA-mhm7-754m-9p8w. Resolves 2.21.4 here.'
+            }
+            classpath('org.apache.commons:commons-lang3:3.18.0') {
+                because 'GHSA-j288-q9x7-2f5v: uncontrolled recursion in ClassUtils. Resolves 3.16.0 here.'
+            }
+        }
+    }
+}
+
+
 plugins {
     id 'java-library'
     id 'maven-publish'
     id 'org.springframework.boot' version '3.5.16' apply false
     id 'io.spring.dependency-management' version '1.1.7'
     id 'com.vanniktech.maven.publish' version '0.34.0'
+    // Compiles the aspects with ajc so WeavedAspect gets the aspectOf() factory that
+    // compile-time weaving in a consumer build needs. javac alone does not emit it, and
+    // load-time weaving hides the gap because the agent generates it on class load.
+    id 'io.freefair.aspectj.post-compile-weaving' version '9.5.0'
 }
 
 group = 'io.github.darkona'
@@ -66,6 +100,19 @@ jar {
 }
 
 compileJava.dependsOn(processResources)
+
+// ajc lint configuration. Declared as a task input because neither the compiler args nor
+// the file they point at are inputs by default: editing the file would otherwise leave
+// compileJava UP-TO-DATE and the previous weaving in place.
+def ajcLintFile = layout.projectDirectory.file('gradle/aspectj-lint.properties')
+tasks.withType(JavaCompile).configureEach {
+    // io.freefair.aspectj.post-compile-weaving hangs its AjcAction off the compile task.
+    def ajc = extensions.findByName('ajc')
+    if (ajc != null) {
+        ajc.options.compilerArgs.addAll('-Xlintfile', ajcLintFile.asFile.absolutePath)
+        inputs.file(ajcLintFile).withPropertyName('ajcLintFile').withPathSensitivity(PathSensitivity.RELATIVE)
+    }
+}
 
 mavenPublishing {
 
@@ -143,6 +190,12 @@ sourceSets {
         compileClasspath += sourceSets.main.output
         runtimeClasspath += output + compileClasspath
     }
+    testWeaving {
+        java.srcDir 'src/testWeaving/java'
+        resources.srcDir 'src/testWeaving/resources'
+        compileClasspath += sourceSets.main.output
+        runtimeClasspath += output + compileClasspath
+    }
     test {
         java.srcDir 'src/test/java'
         resources.srcDir 'src/test/resources'
@@ -164,9 +217,61 @@ configurations {
     testLogbackCompileOnly.extendsFrom testCompileOnly
     testLogbackAnnotationProcessor.extendsFrom testAnnotationProcessor
 
+    // --- Compile-time weaving suite ---
+    testWeavingImplementation.extendsFrom testImplementation
+    testWeavingRuntimeOnly.extendsFrom testRuntimeOnly
+    testWeavingCompileOnly.extendsFrom testCompileOnly
+    testWeavingAnnotationProcessor.extendsFrom testAnnotationProcessor
+
     configureEach {
         resolutionStrategy {
             cacheChangingModulesFor 60, 'seconds'
+        }
+    }
+}
+
+// --- Security floors ------------------------------------------------------
+// Patched versions for transitive dependencies flagged by Dependabot. Each
+// entry names the advisory it closes, so the block can be pruned once the
+// upstream BOM already resolves at or above the floor.
+//
+// Two mechanisms, because they do not overlap:
+//
+//  * BOM property overrides. io.spring.dependency-management pins managed
+//    versions hard, and a Gradle constraint loses against that pin. These
+//    properties are the supported way to move a Spring Boot managed version.
+//  * Gradle constraints, for coordinates no BOM manages, and to carry the
+//    floors to consumers through the published metadata.
+
+// GHSA-3pxv-7cmr-fjr4, GHSA-445c-vh5m-36rj, GHSA-6hg6-v5c8-fphq and
+// GHSA-vc5p-v9hr-52mj (log4j-core), GHSA-qv9r-c865-cp47 (log4j-api).
+// Spring Boot 3.5.16 manages 2.24.3.
+ext['log4j2.version'] = '2.25.5'
+
+// GHSA-5gvw-p9qm-jgwh, GHSA-5jmj-h7xm-6q6v, GHSA-mhm7-754m-9p8w.
+// Spring Boot 3.5.16 manages 2.21.4.
+ext['jackson-bom.version'] = '2.21.6'
+
+// Aligns the transitive logback from spring-boot-starter-logging (1.5.34)
+// with the version this library compiles against.
+ext['logback.version'] = logbackVersion
+
+dependencies {
+    constraints {
+        def floors = [
+                'net.minidev:json-smart:2.5.2'                      :
+                        'GHSA-pq2g-wx69-c263 (CVE-2024-57699), high: uncontrolled recursion. json-path 2.9.0 resolves 2.5.0, and no BOM manages it.',
+                'org.apache.logging.log4j:log4j-core:2.25.5'        :
+                        'Carries the log4j2.version floor to consumers that do not apply the Spring Boot BOM.',
+                'org.apache.logging.log4j:log4j-api:2.25.5'         :
+                        'Carries the log4j2.version floor to consumers that do not apply the Spring Boot BOM.',
+                'com.fasterxml.jackson.core:jackson-databind:2.21.6':
+                        'Carries the jackson-bom.version floor to consumers that do not apply the Spring Boot BOM.'
+        ]
+        floors.each { coordinates, rationale ->
+            ['implementation', 'compileOnly'].each { conf ->
+                add(conf, coordinates) { because rationale }
+            }
         }
     }
 }
@@ -176,6 +281,9 @@ dependencies {
 
     compileOnly "org.springframework.boot:spring-boot-autoconfigure"
 
+    // ajc wants aspectjrt on the compile classpath; spring-boot-starter-aop only brings
+    // aspectjweaver at runtime. Version comes from the Spring Boot BOM.
+    compileOnly 'org.aspectj:aspectjrt'
     compileOnly 'org.projectlombok:lombok'
     compileOnly "io.opentelemetry.instrumentation:opentelemetry-spring-boot-starter"
     compileOnly 'org.springframework.boot:spring-boot-starter-log4j2'
@@ -192,6 +300,9 @@ dependencies {
 
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
+    // Same as main: ajc runs over every source set, so it needs aspectjrt here too.
+    // testLog4j2CompileOnly and testLogbackCompileOnly extend this configuration.
+    testCompileOnly 'org.aspectj:aspectjrt'
     testCompileOnly 'org.projectlombok:lombok'
 
     testAnnotationProcessor 'org.projectlombok:lombok'
@@ -241,6 +352,34 @@ tasks.register('testLogback', Test) {
     systemProperty "spring.profiles.active", "logback"
 }
 
+// --- Compile-time weaving regression suite --------------------------------
+// Weaves the testWeaving classes with ajc the way a consumer would, and asserts that an
+// annotated method is instrumented exactly once. Three regressions live or die here:
+// the missing aspectOf() factory, both aspects being woven at once, and Spring keeping
+// its proxy alongside the woven aspect.
+def loggedWeavingConfig = layout.projectDirectory.file('src/main/resources/META-INF/logged/logged-weaving.xml')
+
+// The aspect path is what ajc weaves FROM.
+sourceSets.testWeaving.aspectPath.from(sourceSets.main.output)
+
+tasks.named('compileTestWeavingJava') {
+    def ajc = extensions.findByName('ajc')
+    if (ajc != null) {
+        // Without the allow-list ajc also weaves LoggedAspect, which takes the engine
+        // through its constructor, and the first call dies with NoAspectBoundException.
+        ajc.options.compilerArgs.addAll('-xmlConfigured', loggedWeavingConfig.asFile.absolutePath)
+        inputs.file(loggedWeavingConfig).withPropertyName('loggedWeavingConfig').withPathSensitivity(PathSensitivity.RELATIVE)
+    }
+}
+
+tasks.register('testWeaving', Test) {
+    description = 'Runs the compile-time weaving regression suite'
+    group = 'verification'
+    testClassesDirs = sourceSets.testWeaving.output.classesDirs
+    classpath = sourceSets.testWeaving.runtimeClasspath
+    useJUnitPlatform()
+}
+
 // Ensure default test task (src/test) uses JUnit Platform
 tasks.named('test', Test) {
     useJUnitPlatform()
@@ -283,6 +422,7 @@ tasks.named('check').configure {
     dependsOn 'test'
     dependsOn 'testLog4j2'
     dependsOn 'testLogback'
+    dependsOn 'testWeaving'
     dependsOn 'checkReadmeVersion'
 }
 

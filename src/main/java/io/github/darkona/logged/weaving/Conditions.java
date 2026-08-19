@@ -9,7 +9,28 @@ import java.lang.management.ManagementFactory;
 
 public class Conditions {
 
+    /**
+     * Read straight from the Environment, not from LoggedProperties: conditions are evaluated
+     * before any bean exists. LoggedProperties declares the same key so it reaches the IDE and
+     * the configuration metadata.
+     */
+    static final String WEAVING_MODE_PROPERTY = "logged.weaving";
+
     public static boolean weavingEnabled(ConditionContext context) {
+        var mode = context.getEnvironment().getProperty(WEAVING_MODE_PROPERTY, WeavingMode.class, WeavingMode.AUTO);
+        return switch (mode) {
+            case ENABLED -> true;
+            case DISABLED -> false;
+            case AUTO -> agentWeavingDetected(context);
+        };
+    }
+
+    /**
+     * Load-time weaving leaves two traces: the agent on the command line and an aop.xml naming
+     * the aspect. Compile-time weaving leaves neither, which is why it needs
+     * {@link WeavingMode#ENABLED}.
+     */
+    private static boolean agentWeavingDetected(ConditionContext context) {
         var args = ManagementFactory.getRuntimeMXBean().getInputArguments();
 
         boolean hasWeaving = args.stream()
