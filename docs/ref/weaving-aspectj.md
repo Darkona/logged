@@ -138,13 +138,13 @@ repositories { mavenCentral() }
 configurations { loggedArtifact }
 
 dependencies {
-  implementation "io.github.darkona:logged:1.7.0"                    // use your version
+  implementation "io.github.darkona:logged:1.7.1"                    // use your version
 
   // What ajc weaves from.
-  aspect("io.github.darkona:logged:1.7.0") { transitive = false }
+  aspect("io.github.darkona:logged:1.7.1") { transitive = false }
 
   // The same jar again, as a plain file, to pull the allow-list out of it.
-  loggedArtifact("io.github.darkona:logged:1.7.0") { transitive = false }
+  loggedArtifact("io.github.darkona:logged:1.7.1") { transitive = false }
 }
 
 def weavingConfigDir = layout.buildDirectory.dir('aspectj')

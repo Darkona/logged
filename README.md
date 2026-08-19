@@ -36,7 +36,7 @@ Maven
 <dependency>
   <groupId>io.github.darkona</groupId>
   <artifactId>logged</artifactId>
-  <version>1.7.0</version>
+  <version>1.7.1</version>
 </dependency>
 ```
 
@@ -44,7 +44,7 @@ Gradle (Groovy)
 
 ```groovy
 dependencies {
-    implementation "io.github.darkona:logged:1.7.0"
+    implementation "io.github.darkona:logged:1.7.1"
 }
 ```
 
@@ -293,9 +293,9 @@ plugins {
 configurations { loggedArtifact }
 
 dependencies {
-    implementation "io.github.darkona:logged:1.7.0"
-    aspect("io.github.darkona:logged:1.7.0") { transitive = false }
-    loggedArtifact("io.github.darkona:logged:1.7.0") { transitive = false }
+    implementation "io.github.darkona:logged:1.7.1"
+    aspect("io.github.darkona:logged:1.7.1") { transitive = false }
+    loggedArtifact("io.github.darkona:logged:1.7.1") { transitive = false }
 }
 
 def weavingConfigDir = layout.buildDirectory.dir('aspectj')
