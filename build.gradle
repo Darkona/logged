@@ -2,6 +2,36 @@ import org.springframework.boot.gradle.plugin.SpringBootPlugin
 
 import java.util.regex.Pattern
 
+// --- Build classpath security floors --------------------------------------
+// The publishing plugin drags vulnerable transitives into the build classpath.
+// They never reach the published artifact, but Dependabot reports them and the
+// build machine still runs them, so they are pinned here.
+//
+// Constraints on the buildscript classpath, not the ones further down: that
+// block covers what the library compiles and ships against.
+buildscript {
+    dependencies {
+        constraints {
+            classpath('org.apache.httpcomponents.core5:httpcore5:5.4.3') {
+                because 'GHSA-hf6x-8p5f-cgmf, high. com.vanniktech.maven.publish 0.34.0 resolves 5.3.6.'
+            }
+            classpath('org.apache.httpcomponents.core5:httpcore5-h2:5.4.3') {
+                because 'GHSA-v3jc-474w-2wm6, high. com.vanniktech.maven.publish 0.34.0 resolves 5.3.6.'
+            }
+            classpath('org.apache.httpcomponents.client5:httpclient5:5.6.4') {
+                because 'GHSA-hjcp-jmpx-g3qm. com.vanniktech.maven.publish 0.34.0 resolves 5.5.2.'
+            }
+            classpath('com.fasterxml.jackson.core:jackson-databind:2.21.6') {
+                because 'GHSA-5gvw-p9qm-jgwh, GHSA-5jmj-h7xm-6q6v, GHSA-mhm7-754m-9p8w. Resolves 2.21.4 here.'
+            }
+            classpath('org.apache.commons:commons-lang3:3.18.0') {
+                because 'GHSA-j288-q9x7-2f5v: uncontrolled recursion in ClassUtils. Resolves 3.16.0 here.'
+            }
+        }
+    }
+}
+
+
 plugins {
     id 'java-library'
     id 'maven-publish'
