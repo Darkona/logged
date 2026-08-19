@@ -171,6 +171,52 @@ configurations {
     }
 }
 
+// --- Security floors ------------------------------------------------------
+// Patched versions for transitive dependencies flagged by Dependabot. Each
+// entry names the advisory it closes, so the block can be pruned once the
+// upstream BOM already resolves at or above the floor.
+//
+// Two mechanisms, because they do not overlap:
+//
+//  * BOM property overrides. io.spring.dependency-management pins managed
+//    versions hard, and a Gradle constraint loses against that pin. These
+//    properties are the supported way to move a Spring Boot managed version.
+//  * Gradle constraints, for coordinates no BOM manages, and to carry the
+//    floors to consumers through the published metadata.
+
+// GHSA-3pxv-7cmr-fjr4, GHSA-445c-vh5m-36rj, GHSA-6hg6-v5c8-fphq and
+// GHSA-vc5p-v9hr-52mj (log4j-core), GHSA-qv9r-c865-cp47 (log4j-api).
+// Spring Boot 3.5.16 manages 2.24.3.
+ext['log4j2.version'] = '2.25.5'
+
+// GHSA-5gvw-p9qm-jgwh, GHSA-5jmj-h7xm-6q6v, GHSA-mhm7-754m-9p8w.
+// Spring Boot 3.5.16 manages 2.21.4.
+ext['jackson-bom.version'] = '2.21.6'
+
+// Aligns the transitive logback from spring-boot-starter-logging (1.5.34)
+// with the version this library compiles against.
+ext['logback.version'] = logbackVersion
+
+dependencies {
+    constraints {
+        def floors = [
+                'net.minidev:json-smart:2.5.2'                      :
+                        'GHSA-pq2g-wx69-c263 (CVE-2024-57699), high: uncontrolled recursion. json-path 2.9.0 resolves 2.5.0, and no BOM manages it.',
+                'org.apache.logging.log4j:log4j-core:2.25.5'        :
+                        'Carries the log4j2.version floor to consumers that do not apply the Spring Boot BOM.',
+                'org.apache.logging.log4j:log4j-api:2.25.5'         :
+                        'Carries the log4j2.version floor to consumers that do not apply the Spring Boot BOM.',
+                'com.fasterxml.jackson.core:jackson-databind:2.21.6':
+                        'Carries the jackson-bom.version floor to consumers that do not apply the Spring Boot BOM.'
+        ]
+        floors.each { coordinates, rationale ->
+            ['implementation', 'compileOnly'].each { conf ->
+                add(conf, coordinates) { because rationale }
+            }
+        }
+    }
+}
+
 dependencies {
     implementation "org.springframework.boot:spring-boot-starter-aop"
 
