@@ -1,6 +1,7 @@
 package io.github.darkona.logged;
 
 import io.github.darkona.logged.utils.SymbolTheme;
+import io.github.darkona.logged.weaving.WeavingMode;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
@@ -19,6 +20,17 @@ public class LoggedProperties {
 
     /** Enable/disable the library. */
     private boolean enabled = true;
+
+    /**
+     * Which aspect intercepts annotated methods.
+     * AUTO detects a load-time weaving agent, ENABLED forces the woven aspect (needed for
+     * compile-time weaving, which leaves no agent to detect), DISABLED forces Spring AOP.
+     *
+     * <p>Declared here for the configuration metadata. The switch itself reads the raw key from
+     * the Environment, because it runs before this bean exists. See
+     * {@code io.github.darkona.logged.weaving.Conditions}.</p>
+     */
+    private WeavingMode weaving = WeavingMode.AUTO;
 
     /** Announce when Logged and its plugins are loaded. */
     private boolean announceLoad = true;

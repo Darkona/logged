@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Aspect allow-list for Logged.
+
+  The jar ships two aspects: WeavedAspect (AspectJ, delegates through
+  LoggedBridge) and internals.LoggedAspect (Spring AOP, receives the engine
+  through its constructor). ajc weaves every @Aspect it reaches on the
+  aspectpath and knows nothing about Spring conditions, so without this file
+  it also weaves LoggedAspect and fails at runtime with
+  NoAspectBoundException: LoggedAspect: method 'void <init>()' not found.
+
+  Compile-time weaving: pass this file to ajc with -xmlConfigured.
+  Load-time weaving: name the same aspect in your own META-INF/aop.xml.
+
+  See docs/ref/weaving-aspectj.md.
+-->
+<aspectj>
+    <aspects>
+        <aspect name="io.github.darkona.logged.weaving.WeavedAspect"/>
+    </aspects>
+</aspectj>
